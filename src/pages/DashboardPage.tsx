@@ -67,8 +67,8 @@ function useDashboardStats() {
     thirtyDaysAgo.setDate(today.getDate() - 30);
 
     const activeEmployeesList = employees.filter(e => e.isActive);
-    const visitsThisWeek = allRecords.filter(r => r.timestamp >= startOfWeekTime).length;
-    const visitsThisMonth = allRecords.filter(r => r.timestamp >= startOfMonthTime).length;
+    const visitsThisWeek = allAttendanceRecords.filter(r => r.timestamp >= startOfWeekTime).length;
+    const visitsThisMonth = allAttendanceRecords.filter(r => r.timestamp >= startOfMonthTime).length;
 
     // Original: Hotels by City
     const hotelsByCityMap = hotels.reduce((acc, hotel) => {
@@ -88,14 +88,14 @@ function useDashboardStats() {
     }, {} as Record<string, number>);
 
     // 3. Visits by City
-    const visitsByCity = allRecords.reduce((acc, record) => {
+    const visitsByCity = allAttendanceRecords.reduce((acc, record) => {
       const city = hotelCityMap.get(record.hotelId) || 'Sin Ciudad';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     // 4. Hotel Ranking by Visits
-    const visitsByHotel = allRecords.reduce((acc, record) => {
+    const visitsByHotel = allAttendanceRecords.reduce((acc, record) => {
       acc[record.hotelId] = (acc[record.hotelId] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -106,7 +106,7 @@ function useDashboardStats() {
     })).sort((a, b) => b.visits - a.visits);
 
     // 5. Visits Over Time (last 30 days)
-    const visitsOverTime = allRecords
+    const visitsOverTime = allAttendanceRecords
       .filter(r => r.timestamp >= thirtyDaysAgo.getTime())
       .reduce((acc, record) => {
         const date = new Date(record.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
@@ -114,7 +114,7 @@ function useDashboardStats() {
         return acc;
       }, {} as Record<string, number>);
     const visitsOverTimeChartData = Object.entries(visitsOverTime)
-      .map(([date, visits]) => ({ date, visits }))
+      .map(([date, visits]: [string, number]) => ({ date, visits }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const oneMonthAgo = new Date();
@@ -150,15 +150,15 @@ function useDashboardStats() {
       visitsThisMonth,
       hotelsByCity, // Keep original
       // New stats (formatted for charts)
-      activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
-      visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
+      activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]: [string, number]) => ({ name, value })),
+      visitsByCity: Object.entries(visitsByCity).map(([name, value]: [string, number]) => ({ name, value })),
       hotelRankingByVisits,
       visitsOverTime: visitsOverTimeChartData,
       newEmployeesLastMonth,
       payrollsToReview,
       payrollsReviewedInPeriod,
       blacklistedEmployees,
-      employeesByHotel: Object.entries(employeesByHotel).map(([name, value]) => ({ name, value })),
+      employeesByHotel: Object.entries(employeesByHotel).map(([name, value]: [string, number]) => ({ name, value })),
     };
   }, [employees, hotels, allRecords]);
 
@@ -297,24 +297,23 @@ function DashboardPage() {
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
           <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
-            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
+            <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} />
             </Grid>
-            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
+            <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
-            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
-              <StatCard title="Nuevos (Mes)" value={stats.newEmployeesLastMonth} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
+            <Grid xs={12} sm={4} md={2}>
             </Grid>
-                      <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
+                      <Grid item xs={12} sm={4} md={2}>
                         <StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} />
-                      </Grid>            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
+                      </Grid>            <Grid xs={12} sm={4} md={2}>
               <StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
-            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
+            <Grid xs={12} sm={4} md={2}>
               <StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
-            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
+            <Grid xs={12} sm={4} md={2}>
               <StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
           </Grid>
@@ -333,10 +332,10 @@ function DashboardPage() {
 
           {/* Row 3: Charts */}
           <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
-            <Grid grid={{ xs: 12, md: 6 }}>
+            <Grid xs={12} md={6}>
               <DashboardBarChart title="Visitas por Ciudad" data={stats.visitsByCity} />
             </Grid>
-            <Grid grid={{ xs: 12, md: 6 }}>
+            <Grid xs={12} md={6}>
               <DashboardPieChart title="Personal por Posición" data={stats.activeEmployeesByRole} />
             </Grid>
           </Grid>

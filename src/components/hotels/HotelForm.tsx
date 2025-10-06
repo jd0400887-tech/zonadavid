@@ -115,17 +115,12 @@ export default function HotelForm({ hotelData, onFormChange, uploadHotelImage, i
         </Button>
       </Box>
       <Grid container spacing={2} columns={12}>
-        <Grid grid={{ xs: 6 }}>
-          <TextField
-            margin="dense"
-            id="latitude"
-            label="Latitud"
-            type="number"
-            fullWidth
-            variant="outlined"
-            value={hotelData.latitude || ''}
-            disabled
-          />
+          <Grid grid={{ xs: 6 }}>
+            <TextField
+              label="Latitud"
+              value={hotelData.latitude || ''}
+              disabled
+            />
         </Grid>
         <Grid grid={{ xs: 6 }}>
           <TextField
