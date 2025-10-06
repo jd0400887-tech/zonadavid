@@ -192,7 +192,7 @@ function DashboardPage() {
 
     const weeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
     const prevWeeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevWeekStart, prevWeekEnd);
-    generateReportPDF(weeklyStats, 'weekly', start, end, prevWeeklyStats);
+    generateReportPDF(weeklyStats as DashboardStats, 'weekly', start, end, prevWeeklyStats as DashboardStats);
   };
 
   const handleGenerateMonthlyReport = () => {
@@ -206,7 +206,7 @@ function DashboardPage() {
 
     const monthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
     const prevMonthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevMonthStart, prevMonthEnd);
-    generateReportPDF(monthlyStats, 'monthly', start, end, prevMonthlyStats);
+    generateReportPDF(monthlyStats as DashboardStats, 'monthly', start, end, prevMonthlyStats as DashboardStats);
   };
 
   const handleGenerateSemestralReport = () => {
@@ -234,7 +234,7 @@ function DashboardPage() {
 
     const semestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
     const prevSemestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevStart, prevEnd);
-    generateReportPDF(semestralStats, 'semestral', start, end, prevSemestralStats);
+    generateReportPDF(semestralStats as DashboardStats, 'semestral', start, end, prevSemestralStats as DashboardStats);
   };
 
   useEffect(() => {
