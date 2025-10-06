@@ -2,7 +2,7 @@ import { isWithinInterval } from 'date-fns';
 
 import type { Employee, Hotel, AttendanceRecord } from '../types';
 
-interface DashboardStats {
+export interface DashboardStats {
   totalHotels: number;
   activeEmployees: number;
   visitsInPeriod: number;
