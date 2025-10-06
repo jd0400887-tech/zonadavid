@@ -35,7 +35,7 @@ export default function AttendanceFilters({
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
       <Grid container spacing={2} columns={12} alignItems="center">
-        <Grid grid={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
             label="Fecha de inicio"
             type="date"
@@ -47,7 +47,7 @@ export default function AttendanceFilters({
             }}
           />
         </Grid>
-        <Grid grid={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
             label="Fecha de fin"
             type="date"
@@ -59,7 +59,7 @@ export default function AttendanceFilters({
             }}
           />
         </Grid>
-        <Grid grid={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Autocomplete
             options={hotels}
             getOptionLabel={(option) => option.name}

@@ -111,7 +111,7 @@ export default function EmployeesPage() {
         console.warn(
           `Employee "${item.name}" is associated with a missing hotel ID "${item.hotelId}". Displaying as "Hotel Desconocido".`
         );
-        currentHotel = { id: 'unknown', name: 'Hotel Desconocido', address: 'N/A' };
+        currentHotel = { id: 'unknown', name: 'Hotel Desconocido', address: 'N/A', city: 'Desconocida', latitude: 0, longitude: 0, imageUrl: '' };
       }
 
         addEmployee({

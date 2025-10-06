@@ -160,7 +160,7 @@ function useDashboardStats() {
       blacklistedEmployees,
       employeesByHotel: Object.entries(employeesByHotel).map(([name, value]: [string, number]) => ({ name, value })),
     };
-  }, [employees, hotels, allRecords]);
+  }, [employees, hotels, allAttendanceRecords]);
 
   return stats;
 }
@@ -188,8 +188,8 @@ function DashboardPage() {
     const prevWeekEnd = subMonths(start, 1); // Go back one week from current start
     const prevWeekStart = startOfWeek(prevWeekEnd, { weekStartsOn: 0 });
 
-    const weeklyStats = getPeriodStats(employees, allHotels, allAttendanceRecords, start, end);
-    const prevWeeklyStats = getPeriodStats(employees, allHotels, allAttendanceRecords, prevWeekStart, prevWeekEnd);
+    const weeklyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    const prevWeeklyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevWeekStart, prevWeekEnd);
     generateReportPDF(weeklyStats, 'weekly', start, end, prevWeeklyStats);
   };
 
@@ -202,8 +202,8 @@ function DashboardPage() {
     const prevMonthEnd = subMonths(start, 1); // Go back one month from current start
     const prevMonthStart = startOfMonth(prevMonthEnd);
 
-    const monthlyStats = getPeriodStats(employees, allHotels, allAttendanceRecords, start, end);
-    const prevMonthlyStats = getPeriodStats(employees, allHotels, allAttendanceRecords, prevMonthStart, prevMonthEnd);
+    const monthlyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    const prevMonthlyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevMonthStart, prevMonthEnd);
     generateReportPDF(monthlyStats, 'monthly', start, end, prevMonthlyStats);
   };
 
@@ -230,8 +230,8 @@ function DashboardPage() {
       prevEnd = new Date(today.getFullYear(), 5, 30); // Jun 30th of current year
     }
 
-    const semestralStats = getPeriodStats(employees, allHotels, allAttendanceRecords, start, end);
-    const prevSemestralStats = getPeriodStats(employees, allHotels, allAttendanceRecords, prevStart, prevEnd);
+    const semestralStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    const prevSemestralStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevStart, prevEnd);
     generateReportPDF(semestralStats, 'semestral', start, end, prevSemestralStats);
   };
 
@@ -303,17 +303,17 @@ function DashboardPage() {
             <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
-            <Grid xs={12} sm={4} md={2}>
+            <Grid item xs={12} sm={4} md={2}>
             </Grid>
                       <Grid item xs={12} sm={4} md={2}>
                         <StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} />
-                      </Grid>            <Grid xs={12} sm={4} md={2}>
+                      </Grid>            <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
-            <Grid xs={12} sm={4} md={2}>
+            <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
-            <Grid xs={12} sm={4} md={2}>
+            <Grid item xs={12} sm={4} md={2}>
               <StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
           </Grid>
@@ -332,10 +332,10 @@ function DashboardPage() {
 
           {/* Row 3: Charts */}
           <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
-            <Grid xs={12} md={6}>
+            <Grid item xs={12} md={6}>
               <DashboardBarChart title="Visitas por Ciudad" data={stats.visitsByCity} />
             </Grid>
-            <Grid xs={12} md={6}>
+            <Grid item xs={12} md={6}>
               <DashboardPieChart title="Personal por Posición" data={stats.activeEmployeesByRole} />
             </Grid>
           </Grid>

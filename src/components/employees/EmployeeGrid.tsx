@@ -16,10 +16,10 @@ export default function EmployeeGrid({ employees, hotels, onEdit, onDelete }: Em
     <Grid container spacing={3} columns={12}>
       {employees.map((employee) => {
         return (
-          <Grid key={employee.id} grid={{ xs: 12, sm: 6, md: 4 }}>
+          <Grid item key={employee.id} xs={12} sm={6} md={4}>
             <EmployeeCard 
               employee={employee} 
-              hotel={hotels.find(h => h.id === employee.hotelId) || { id: 'unknown', name: 'Hotel Desconocido', address: 'N/A' }} 
+              hotel={hotels.find(h => h.id === employee.hotelId)} 
               onEdit={onEdit}
               onDelete={onDelete}
             />

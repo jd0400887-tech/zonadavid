@@ -69,7 +69,7 @@ export default function HotelDetailPage() {
         <Typography variant="h4" gutterBottom>{hotel.name}</Typography>
         
         <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
-          <Grid grid={{ xs: 12, sm: 6 }}>
+          <Grid item xs={12} sm={6}>
             <Paper sx={{ p: 2, height: '100%' }}>
               {hotel.imageUrl && (
                 <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
@@ -97,7 +97,7 @@ export default function HotelDetailPage() {
               )}
             </Paper>
           </Grid>
-          <Grid grid={{ xs: 12, sm: 6 }}>
+          <Grid item xs={12} sm={6}>
             {mapCenter ? (
               <Box sx={{ height: 250, borderRadius: 1, overflow: 'hidden' }}>
                 <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }}>

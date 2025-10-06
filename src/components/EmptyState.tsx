@@ -20,7 +20,9 @@ export default function EmptyState({ icon, title, subtitle }: EmptyStateProps) {
         color: 'text.secondary',
       }}
     >
-      {React.cloneElement(icon, { sx: { fontSize: 60, mb: 2 } })}
+      <Box sx={{ fontSize: 60, mb: 2 }}>
+        {icon}
+      </Box>
       <Typography variant="h6" component="p" sx={{ mb: 1 }}>
         {title}
       </Typography>
