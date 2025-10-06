@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths } from 'date-fns';
 import type { AttendanceRecord } from '../types';
+import type { DashboardStats } from '../utils/getPeriodStats';
 
 // Hooks
 import { useHotels } from '../hooks/useHotels';
@@ -189,8 +190,8 @@ function DashboardPage() {
     const prevWeekEnd = subMonths(start, 1); // Go back one week from current start
     const prevWeekStart = startOfWeek(prevWeekEnd, { weekStartsOn: 0 });
 
-    const weeklyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
-    const prevWeeklyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevWeekStart, prevWeekEnd);
+    const weeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    const prevWeeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevWeekStart, prevWeekEnd);
     generateReportPDF(weeklyStats, 'weekly', start, end, prevWeeklyStats);
   };
 
@@ -203,8 +204,8 @@ function DashboardPage() {
     const prevMonthEnd = subMonths(start, 1); // Go back one month from current start
     const prevMonthStart = startOfMonth(prevMonthEnd);
 
-    const monthlyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
-    const prevMonthlyStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevMonthStart, prevMonthEnd);
+    const monthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    const prevMonthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevMonthStart, prevMonthEnd);
     generateReportPDF(monthlyStats, 'monthly', start, end, prevMonthlyStats);
   };
 
@@ -231,8 +232,8 @@ function DashboardPage() {
       prevEnd = new Date(today.getFullYear(), 5, 30); // Jun 30th of current year
     }
 
-    const semestralStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
-    const prevSemestralStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevStart, prevEnd);
+    const semestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    const prevSemestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevStart, prevEnd);
     generateReportPDF(semestralStats, 'semestral', start, end, prevSemestralStats);
   };
 
