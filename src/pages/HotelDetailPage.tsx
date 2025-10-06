@@ -5,7 +5,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { initialEmployees } from '../data/initialData';
-import type { Employee, Hotel } from '../types';
+import type { Employee } from '../types';
 import L from 'leaflet';
 import { useHotels } from '../hooks/useHotels';
 

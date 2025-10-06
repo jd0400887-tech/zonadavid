@@ -6,6 +6,7 @@ import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
 
 import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths } from 'date-fns';
+import type { AttendanceRecord } from '../types';
 
 // Hooks
 import { useHotels } from '../hooks/useHotels';

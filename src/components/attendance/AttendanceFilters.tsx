@@ -64,7 +64,7 @@ export default function AttendanceFilters({
             options={hotels}
             getOptionLabel={(option) => option.name}
             value={selectedHotel}
-            onChange={(event, newValue) => {
+            onChange={(_event, newValue) => {
               onHotelChange(newValue?.id);
             }}
             renderInput={(params) => <TextField {...params} label="Filtrar por hotel" />}
