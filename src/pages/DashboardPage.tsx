@@ -1,11 +1,11 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Container, Fab } from '@mui/material';
+import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
 import { useNavigate } from 'react-router-dom';
 
-import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths, addMonths } from 'date-fns';
+import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths } from 'date-fns';
 
 // Hooks
 import { useHotels } from '../hooks/useHotels';
@@ -14,7 +14,7 @@ import { useAttendance } from '../hooks/useAttendance';
 
 // Components
 import StatCard from '../components/dashboard/StatCard';
-import HotelsByCityChart from '../components/dashboard/HotelsByCityChart';
+
 import VisitsOverTimeChart from '../components/dashboard/VisitsOverTimeChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
 import DashboardPieChart from '../components/dashboard/DashboardPieChart';
@@ -57,7 +57,7 @@ const LazyPopup = lazy(() => import('react-leaflet').then(module => ({
 function useDashboardStats() {
   const { employees } = useEmployees();
   const { hotels } = useHotels();
-  const { allRecords } = useAttendance({ start: null, end: null }); // Fetch all records for stats
+  const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null }); // Fetch all records for stats
 
   const stats = useMemo(() => {
     const today = new Date();
@@ -168,7 +168,7 @@ function useDashboardStats() {
 function DashboardPage() {
   const navigate = useNavigate();
   const { hotels } = useHotels();
-  const { allRecords, addRecord } = useAttendance({ start: null, end: null });
+  const { addRecord } = useAttendance({ start: null, end: null });
   
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [snackbarInfo, setSnackbarInfo] = useState<{open: boolean, message: string, severity: 'success' | 'error'}>({ open: false, message: '', severity: 'success' });
@@ -296,26 +296,25 @@ function DashboardPage() {
       <Box>
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
-          {/* Row 1: Stat Cards */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={4} md={2}>
+          <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
+            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
               <StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} />
             </Grid>
-            <Grid item xs={12} sm={4} md={2}>
+            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
               <StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
-            <Grid item xs={12} sm={4} md={2}>
+            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
               <StatCard title="Nuevos (Mes)" value={stats.newEmployeesLastMonth} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
-                      <Grid item xs={12} sm={4} md={2}>
+                      <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
                         <StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} />
-                      </Grid>            <Grid item xs={12} sm={4} md={2}>
+                      </Grid>            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
               <StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
-            <Grid item xs={12} sm={4} md={2}>
+            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
               <StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
-            <Grid item xs={12} sm={4} md={2}>
+            <Grid grid={{ xs: 12, sm: 4, md: 2 }}>
               <StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
           </Grid>
@@ -333,11 +332,11 @@ function DashboardPage() {
           </Box>
 
           {/* Row 3: Charts */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={6}>
+          <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
+            <Grid grid={{ xs: 12, md: 6 }}>
               <DashboardBarChart title="Visitas por Ciudad" data={stats.visitsByCity} />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid grid={{ xs: 12, md: 6 }}>
               <DashboardPieChart title="Personal por Posición" data={stats.activeEmployeesByRole} />
             </Grid>
           </Grid>

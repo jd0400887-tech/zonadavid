@@ -4,6 +4,7 @@ import { Paper, Typography, Box } from '@mui/material';
 interface HotelsByCityData {
   city: string;
   count: number;
+  [key: string]: any; // Add index signature
 }
 
 interface HotelsByCityChartProps {
@@ -29,7 +30,7 @@ export default function HotelsByCityChart({ data }: HotelsByCityChartProps) {
               dataKey="count"
               nameKey="city"
             >
-              {data.map((entry, index) => (
+              {data.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>

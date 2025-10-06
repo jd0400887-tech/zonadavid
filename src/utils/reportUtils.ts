@@ -53,7 +53,7 @@ export const generateReportPDF = async (
 
   // Define common table styles
   const tableStyles = {
-    headStyles: { fillColor: [255, 140, 0] }, // DarkOrange in RGB
+    headStyles: { fillColor: [255, 140, 0] as [number, number, number] }, // DarkOrange in RGB
     styles: { font: 'Times-Roman', fontSize: 9 },
     margin: { left: 14, right: 14 },
   };

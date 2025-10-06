@@ -23,8 +23,8 @@ export function useHotels() {
 
   const addHotel = async (hotelData: Partial<Hotel>) => {
     const processedData = { ...hotelData };
-    if (processedData.latitude === '') processedData.latitude = null;
-    if (processedData.longitude === '') processedData.longitude = null;
+    if ((processedData.latitude as any) === '') processedData.latitude = null;
+    if ((processedData.longitude as any) === '') processedData.longitude = null;
 
     const newHotel: Hotel = {
       id: `hotel-${Date.now()}`,
@@ -42,8 +42,8 @@ export function useHotels() {
   const updateHotel = async (updatedHotel: Partial<Hotel>) => {
     if (!updatedHotel.id) return;
     const processedData = { ...updatedHotel };
-    if (processedData.latitude === '') processedData.latitude = null;
-    if (processedData.longitude === '') processedData.longitude = null;
+    if ((processedData.latitude as any) === '') processedData.latitude = null;
+    if ((processedData.longitude as any) === '') processedData.longitude = null;
 
     const { data, error } = await supabase.from('hotels').update(processedData).eq('id', updatedHotel.id).select();
     if (error) {

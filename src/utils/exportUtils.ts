@@ -64,7 +64,7 @@ export const exportEmployeesToExcel = (employees: Employee[], hotels: Hotel[]) =
 };
 
 export const exportHotelsToExcel = (hotels: Hotel[]) => {
-  const tableColumn = ['Nombre', 'Ciudad', 'Dirección', 'Teléfono', 'Email'];
+  const tableColumn = ['Nombre', 'Ciudad', 'Dirección'];
   const tableRows: any[] = [];
 
   hotels.forEach(hotel => {
@@ -72,8 +72,6 @@ export const exportHotelsToExcel = (hotels: Hotel[]) => {
       hotel.name,
       hotel.city,
       hotel.address,
-      hotel.phone,
-      hotel.email,
     ];
     tableRows.push(hotelData);
   });

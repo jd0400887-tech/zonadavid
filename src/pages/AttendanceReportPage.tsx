@@ -23,7 +23,7 @@ export default function AttendanceReportPage() {
 
   const { filteredRecords, visitsByHotel, hotels, hotelsLoading } = useAttendance(dateRange, selectedHotelId);
 
-  const handleViewChange = (event: React.MouseEvent<HTMLElement>, nextView: string | null) => {
+  const handleViewChange = (_event: React.MouseEvent<HTMLElement>, nextView: string | null) => {
     if (nextView !== null) {
       setViewMode(nextView);
     }

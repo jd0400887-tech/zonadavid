@@ -90,7 +90,7 @@ export default function EmployeesPage() {
     handleCloseModal();
   };
 
-  const handleViewChange = (event: React.MouseEvent<HTMLElement>, nextView: string | null) => {
+  const handleViewChange = (_event: React.MouseEvent<HTMLElement>, nextView: string | null) => {
     if (nextView !== null) {
       setViewMode(nextView);
     }
@@ -102,7 +102,7 @@ export default function EmployeesPage() {
     let successCount = 0;
     let errorCount = 0;
 
-    const existingHotelIds = new Set(hotels.map(h => h.id));
+
 
     for (const item of parsedData) {
       if (item.name && item.hotelId && item.role && item.payrollType) {
@@ -111,7 +111,7 @@ export default function EmployeesPage() {
         console.warn(
           `Employee "${item.name}" is associated with a missing hotel ID "${item.hotelId}". Displaying as "Hotel Desconocido".`
         );
-        currentHotel = { id: 'unknown', name: 'Hotel Desconocido', address: 'N/A', phone: 'N/A', email: 'N/A' };
+        currentHotel = { id: 'unknown', name: 'Hotel Desconocido', address: 'N/A' };
       }
 
         addEmployee({

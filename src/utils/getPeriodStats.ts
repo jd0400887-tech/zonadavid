@@ -24,8 +24,7 @@ export function getPeriodStats(
   endDate: Date
 ): DashboardStats {
 
-  const periodStart = startDate.getTime();
-  const periodEnd = endDate.getTime();
+
 
   // Filter attendance records within the period
   const visitsInPeriodRecords = allRecords.filter(r =>

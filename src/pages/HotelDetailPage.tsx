@@ -8,7 +8,7 @@ import { initialEmployees } from '../data/initialData';
 import type { Employee } from '../types';
 import L from 'leaflet';
 import { useHotels } from '../hooks/useHotels';
-import type { Hotel } from '../types';
+import { Hotel } from '../types';
 
 // Leaflet icon fix
 import icon from 'leaflet/dist/images/marker-icon.png';

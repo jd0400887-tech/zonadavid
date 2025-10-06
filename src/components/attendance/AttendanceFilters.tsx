@@ -1,4 +1,4 @@
-import { Paper, TextField, Box, Autocomplete, Grid } from '@mui/material';
+import { Paper, TextField, Autocomplete, Grid } from '@mui/material';
 import type { Hotel } from '../../types';
 import type { DateRange } from '../../hooks/useAttendance';
 

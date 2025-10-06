@@ -114,8 +114,8 @@ export default function HotelForm({ hotelData, onFormChange, uploadHotelImage, i
           Obtener Ubicación Actual
         </Button>
       </Box>
-      <Grid container spacing={2}>
-        <Grid item xs={6}>
+      <Grid container spacing={2} columns={12}>
+        <Grid grid={{ xs: 6 }}>
           <TextField
             margin="dense"
             id="latitude"
@@ -127,7 +127,7 @@ export default function HotelForm({ hotelData, onFormChange, uploadHotelImage, i
             disabled
           />
         </Grid>
-        <Grid item xs={6}>
+        <Grid grid={{ xs: 6 }}>
           <TextField
             margin="dense"
             id="longitude"

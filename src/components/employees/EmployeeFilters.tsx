@@ -21,7 +21,7 @@ export default function EmployeeFilters({
           color="primary"
           value={statusFilter}
           exclusive
-          onChange={(e, newFilter) => newFilter && onStatusChange(newFilter)}
+          onChange={(_e, newFilter) => newFilter && onStatusChange(newFilter)}
           aria-label="Filtro de estado"
         >
           <ToggleButton value="active">Activos</ToggleButton>

@@ -17,7 +17,7 @@ export function useAuth() {
 
     getSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       setSession(session);
     });
 
@@ -29,7 +29,7 @@ export function useAuth() {
   return {
     session,
     loading,
-    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+    signIn: (email: string, password: string) => supabase.auth.signInWithPassword({ email, password }),
     signOut: () => supabase.auth.signOut(),
   };
 }
