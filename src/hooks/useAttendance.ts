@@ -3,18 +3,17 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { supabase } from '../utils/supabase';
 import type { AttendanceRecord } from '../types';
 import { useHotels } from './useHotels';
+import { useAuth } from './useAuth'; // Import useAuth
 
 export interface DateRange {
   start: Date | null;
   end: Date | null;
 }
 
-// TODO: Replace with a proper user management solution
-const TEMP_USER_ID = 'user-123';
-
 export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const { hotels, loading: hotelsLoading } = useHotels();
+  const { session } = useAuth(); // Get session from useAuth
 
   useEffect(() => {
     const fetchAttendanceRecords = async () => {
@@ -30,10 +29,16 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
   }, []);
 
   const addRecord = async (hotelId: string) => {
+    const userId = session?.user?.id;
+    if (!userId) {
+      console.error("User not authenticated. Cannot add attendance record.");
+      return;
+    }
+
     const newRecord: Partial<AttendanceRecord> = {
       id: `att-${Date.now()}`,
       hotelId: hotelId,
-      employeeId: TEMP_USER_ID, // Temporary user ID
+      employeeId: userId, // Use the actual user ID
       timestamp: new Date().getTime(),
     };
     const { data, error } = await supabase.from('attendance_records').insert([newRecord]).select();
