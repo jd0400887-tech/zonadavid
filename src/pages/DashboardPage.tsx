@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths } from 'date-fns';
 import type { AttendanceRecord } from '../types';
-import type { DashboardStats } from '../utils/getPeriodStats';
+
 
 // Hooks
 import { useHotels } from '../hooks/useHotels';
@@ -24,7 +24,7 @@ import { DashboardBarChart } from '../components/dashboard/DashboardBarChart';
 
 // Utils
 import { getDistanceInMeters } from '../utils/geolocation';
-import { generateReportPDF } from '../utils/reportUtils';
+
 import { getPeriodStats } from '../utils/getPeriodStats';
 
 // Icons
@@ -190,9 +190,9 @@ function DashboardPage() {
     const prevWeekEnd = subMonths(start, 1); // Go back one week from current start
     const prevWeekStart = startOfWeek(prevWeekEnd, { weekStartsOn: 0 });
 
-    const weeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
-    const prevWeeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevWeekStart, prevWeekEnd);
-    // generateReportPDF(weeklyStats as DashboardStats, 'weekly', start, end, prevWeeklyStats as DashboardStats);
+    // const weeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    // const prevWeeklyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevWeekStart, prevWeekEnd);
+    // // generateReportPDF(weeklyStats as DashboardStats, 'weekly', start, end, prevWeeklyStats as DashboardStats);
   };
 
   const handleGenerateMonthlyReport = () => {
@@ -204,9 +204,9 @@ function DashboardPage() {
     const prevMonthEnd = subMonths(start, 1); // Go back one month from current start
     const prevMonthStart = startOfMonth(prevMonthEnd);
 
-    const monthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
-    const prevMonthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevMonthStart, prevMonthEnd);
-    // generateReportPDF(monthlyStats as DashboardStats, 'monthly', start, end, prevMonthlyStats as DashboardStats);
+    // const monthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    // const prevMonthlyStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevMonthStart, prevMonthEnd);
+    // // generateReportPDF(monthlyStats as DashboardStats, 'monthly', start, end, prevMonthlyStats as DashboardStats);
   };
 
   const handleGenerateSemestralReport = () => {
@@ -232,9 +232,9 @@ function DashboardPage() {
       prevEnd = new Date(today.getFullYear(), 5, 30); // Jun 30th of current year
     }
 
-    const semestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
-    const prevSemestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevStart, prevEnd);
-    // generateReportPDF(semestralStats as DashboardStats, 'semestral', start, end, prevSemestralStats as DashboardStats);
+    // const semestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], start, end);
+    // const prevSemestralStats: DashboardStats = getPeriodStats(employees, allHotels, allAttendanceRecords as AttendanceRecord[], prevStart, prevEnd);
+    // // generateReportPDF(semestralStats as DashboardStats, 'semestral', start, end, prevSemestralStats as DashboardStats);
   };
 
   useEffect(() => {
