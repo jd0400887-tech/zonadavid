@@ -177,58 +177,54 @@ function DashboardPage() {
 
   const stats = useDashboardStats();
 
-  const { employees } = useEmployees();
-  const { hotels: allHotels } = useHotels();
-  const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
-
   const handleGenerateWeeklyReport = () => {
     const today = new Date();
-    const start = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
-    const end = endOfWeek(today, { weekStartsOn: 0 }); // Saturday
-
-    // Calculate previous week
-    const prevWeekEnd = subMonths(start, 1); // Go back one week from current start
-    const prevWeekStart = startOfWeek(prevWeekEnd, { weekStartsOn: 0 });
-
-
+    const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const end = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
+    navigate('/reporte-asistencia', { 
+      state: { 
+        title: 'Reporte Semanal',
+        startDate: start.toISOString(),
+        endDate: end.toISOString()
+      } 
+    });
   };
 
   const handleGenerateMonthlyReport = () => {
     const today = new Date();
     const start = startOfMonth(today);
     const end = endOfMonth(today);
-
-    // Calculate previous month
-    const prevMonthEnd = subMonths(start, 1); // Go back one month from current start
-    const prevMonthStart = startOfMonth(prevMonthEnd);
-
-
+    navigate('/reporte-asistencia', { 
+      state: { 
+        title: 'Reporte Mensual',
+        startDate: start.toISOString(),
+        endDate: end.toISOString()
+      } 
+    });
   };
 
   const handleGenerateSemestralReport = () => {
     const today = new Date();
     let start: Date;
     let end: Date;
-    let prevStart: Date;
-    let prevEnd: Date;
 
     const currentMonth = today.getMonth(); // 0-indexed
 
     if (currentMonth >= 0 && currentMonth <= 5) { // First semester (Jan-Jun)
       start = new Date(today.getFullYear(), 0, 1); // Jan 1st
-      end = new Date(today.getFullYear(), 5, 30); // Jun 30th
-
-      prevStart = new Date(today.getFullYear() - 1, 6, 1); // July 1st of previous year
-      prevEnd = new Date(today.getFullYear() - 1, 11, 31); // Dec 31st of previous year
+      end = new Date(today.getFullYear(), 5, 30, 23, 59, 59, 999); // Jun 30th
     } else { // Second semester (Jul-Dec)
       start = new Date(today.getFullYear(), 6, 1); // July 1st
-      end = new Date(today.getFullYear(), 11, 31); // Dec 31st
-
-      prevStart = new Date(today.getFullYear(), 0, 1); // Jan 1st of current year
-      prevEnd = new Date(today.getFullYear(), 5, 30); // Jun 30th of current year
+      end = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999); // Dec 31st
     }
-
-
+    
+    navigate('/reporte-asistencia', { 
+      state: { 
+        title: 'Reporte Semestral',
+        startDate: start.toISOString(),
+        endDate: end.toISOString()
+      } 
+    });
   };
 
   useEffect(() => {
@@ -292,7 +288,7 @@ function DashboardPage() {
       <Box>
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
-          <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
+          <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} />
             </Grid>
@@ -300,14 +296,13 @@ function DashboardPage() {
               <StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
-            </Grid>
-                      <Grid item xs={12} sm={4} md={2}>
-                        <StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} />
-                      </Grid>            <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
               <StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
+            </Grid>
+            <Grid item xs={12} sm={4} md={2}>
+              <StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} />
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
               <StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} />
