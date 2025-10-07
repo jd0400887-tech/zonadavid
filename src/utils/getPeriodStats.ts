@@ -22,7 +22,7 @@ export function getPeriodStats(
   allRecords: AttendanceRecord[],
   startDate: Date,
   endDate: Date
-): DashboardStats {
+): any {
 
 
 
