@@ -10,7 +10,7 @@ const StatComparison = ({ title, currentValue, previousValue }: { title: string,
   const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
 
   return (
-    <Paper sx={{ p: 2, textAlign: 'center' }}>
+    <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
       <Typography variant="h6" color="text.secondary">{title}</Typography>
       <Typography variant="h4" component="p">{currentValue}</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: changeColor }}>
@@ -44,7 +44,7 @@ function InformesPage() {
     return <Typography sx={{ p: 3 }}>No se pudieron cargar los datos para el informe.</Typography>;
   }
 
-  const { currentPeriod, previousPeriod, activeEmployees, blacklistedEmployees, totalHotels } = data;
+  const { currentPeriod, previousPeriod, activeEmployees, blacklistedEmployees, totalHotels, payrollsToReview, activeEmployeesByRole } = data;
 
   return (
     <Box sx={{ p: 3 }}>
@@ -66,40 +66,60 @@ function InformesPage() {
           <StatComparison title="Nuevos Empleados" currentValue={currentPeriod.newEmployees} previousValue={previousPeriod?.newEmployees || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Empleados Activos</Typography><Typography variant="h4">{activeEmployees}</Typography></Paper>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Total Hoteles</Typography><Typography variant="h4">{totalHotels}</Typography></Paper>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
         </Grid>
       </Grid>
 
       {/* Section 2: Hotel Ranking */}
-      <Typography variant="h5" gutterBottom>Ranking de Hoteles por Visitas</Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ '& th': { backgroundColor: 'primary.main', color: 'common.white' } }}>
-              <TableCell>#</TableCell>
-              <TableCell>Hotel</TableCell>
-              <TableCell align="right">Visitas (Período Actual)</TableCell>
-              <TableCell align="right">Visitas (Período Anterior)</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {currentPeriod.hotelRanking.map((hotel: any, index: number) => {
-              const prevRank = previousPeriod?.hotelRanking.find((h: any) => h.id === hotel.id);
-              return (
-                <TableRow key={hotel.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{hotel.name}</TableCell>
-                  <TableCell align="right">{hotel.visits}</TableCell>
-                  <TableCell align="right">{prevRank?.visits || 0}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" gutterBottom>Ranking de Hoteles por Visitas</Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead><TableRow sx={{ '& th': { backgroundColor: 'primary.main', color: 'common.white' } }}><TableCell>#</TableCell><TableCell>Hotel</TableCell><TableCell align="right">Visitas (Actual)</TableCell><TableCell align="right">Visitas (Anterior)</TableCell></TableRow></TableHead>
+            <TableBody>
+              {currentPeriod.hotelRanking.map((hotel: any, index: number) => {
+                const prevRank = previousPeriod?.hotelRanking.find((h: any) => h.id === hotel.id);
+                return (
+                  <TableRow key={hotel.id}><TableCell>{index + 1}</TableCell><TableCell>{hotel.name}</TableCell><TableCell align="right">{hotel.visits}</TableCell><TableCell align="right">{prevRank?.visits || 0}</TableCell></TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+
+      {/* Section 3: Personnel and City Analysis */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>Personal Activo por Cargo</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Cargo</TableCell><TableCell align="right">Cantidad</TableCell></TableRow></TableHead>
+              <TableBody>
+                {activeEmployeesByRole.map((role: any) => (
+                  <TableRow key={role.name}><TableCell>{role.name}</TableCell><TableCell align="right">{role.value}</TableCell></TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>Visitas por Ciudad</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Ciudad</TableCell><TableCell align="right">Visitas</TableCell></TableRow></TableHead>
+              <TableBody>
+                {currentPeriod.visitsByCity.map((city: any) => (
+                  <TableRow key={city.name}><TableCell>{city.name}</TableCell><TableCell align="right">{city.value}</TableCell></TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+      </Grid>
 
     </Box>
   );

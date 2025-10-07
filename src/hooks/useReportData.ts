@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useEmployees } from './useEmployees';
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
-import { differenceInDays, subDays } from 'date-fns';
+import { differenceInDays, subDays, startOfWeek } from 'date-fns';
 
 // A function to calculate stats for a given period
 const calculatePeriodStats = (
@@ -64,7 +64,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
 
   const reportData = useMemo(() => {
     if (loading || !startDate || !endDate) {
-      return { currentPeriod: null, previousPeriod: null, activeEmployees: 0, blacklistedEmployees: 0, totalHotels: 0 };
+      return { currentPeriod: null, previousPeriod: null, activeEmployees: 0, blacklistedEmployees: 0, totalHotels: 0, activeEmployeesByRole: [], payrollsToReview: 0 };
     }
 
     const currentStart = new Date(startDate);
@@ -78,10 +78,22 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, currentStart, currentEnd);
     const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, previousStart, previousEnd);
 
-    // We can also add overall stats that are not period-dependent
-    const activeEmployees = employees.filter(e => e.isActive).length;
+    // --- Snapshot Stats (not period-dependent) ---
+    const activeEmployeesList = employees.filter(e => e.isActive);
+    const activeEmployees = activeEmployeesList.length;
     const blacklistedEmployees = employees.filter(e => e.isBlacklisted).length;
     const totalHotels = hotels.length;
+
+    const activeEmployeesByRole = activeEmployeesList.reduce((acc, employee) => {
+      const role = employee.role || 'Sin Cargo';
+      acc[role] = (acc[role] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const payrollsToReview = employees.filter(emp => 
+      emp.payrollType === 'Workrecord' && 
+      (!emp.lastReviewedTimestamp || emp.lastReviewedTimestamp < startOfWeek(new Date(), { weekStartsOn: 1 }).getTime())
+    ).length;
 
     return {
       currentPeriod: currentPeriodStats,
@@ -89,6 +101,8 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       activeEmployees,
       blacklistedEmployees,
       totalHotels,
+      activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
+      payrollsToReview,
     };
 
   }, [loading, startDate, endDate, employees, hotels, allRecords]);
