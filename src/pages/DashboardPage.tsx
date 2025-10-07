@@ -22,7 +22,6 @@ import { DashboardBarChart } from '../components/dashboard/DashboardBarChart';
 
 // Utils
 import { getDistanceInMeters } from '../utils/geolocation';
-import { generatePdfReport } from '../utils/generateReport';
 
 // Icons
 import MyLocationIcon from '@mui/icons-material/MyLocation';
@@ -136,16 +135,26 @@ function DashboardPage() {
     const today = new Date();
     const start = startOfWeek(today, { weekStartsOn: 0 });
     const end = endOfWeek(today, { weekStartsOn: 0 });
-    const period = `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
-    generatePdfReport(stats, 'Reporte Semanal', period);
+    navigate('/informes', {
+      state: {
+        title: 'Reporte Semanal',
+        startDate: start.toISOString(),
+        endDate: end.toISOString()
+      }
+    });
   };
 
   const handleGenerateMonthlyReport = () => {
     const today = new Date();
     const start = startOfMonth(today);
     const end = endOfMonth(today);
-    const period = `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
-    generatePdfReport(stats, 'Reporte Mensual', period);
+    navigate('/informes', {
+      state: {
+        title: 'Reporte Mensual',
+        startDate: start.toISOString(),
+        endDate: end.toISOString()
+      }
+    });
   };
 
   const handleGenerateSemestralReport = () => {
@@ -160,8 +169,13 @@ function DashboardPage() {
       start = new Date(today.getFullYear(), 6, 1);
       end = new Date(today.getFullYear(), 11, 31);
     }
-    const period = `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
-    generatePdfReport(stats, 'Reporte Semestral', period);
+    navigate('/informes', {
+      state: {
+        title: 'Reporte Semestral',
+        startDate: start.toISOString(),
+        endDate: end.toISOString()
+      }
+    });
   };
 
   useEffect(() => {
