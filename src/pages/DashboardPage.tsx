@@ -5,9 +5,8 @@ import L from 'leaflet';
 
 import { useNavigate } from 'react-router-dom';
 
-import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths } from 'date-fns';
-
-
+import { format } from 'date-fns';
+import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths, subWeeks } from 'date-fns';
 
 // Hooks
 import { useHotels } from '../hooks/useHotels';
@@ -16,7 +15,6 @@ import { useAttendance } from '../hooks/useAttendance';
 
 // Components
 import StatCard from '../components/dashboard/StatCard';
-
 import VisitsOverTimeChart from '../components/dashboard/VisitsOverTimeChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
 import DashboardPieChart from '../components/dashboard/DashboardPieChart';
@@ -24,8 +22,7 @@ import { DashboardBarChart } from '../components/dashboard/DashboardBarChart';
 
 // Utils
 import { getDistanceInMeters } from '../utils/geolocation';
-
-import { getPeriodStats } from '../utils/getPeriodStats';
+import { generatePdfReport } from '../utils/generateReport';
 
 // Icons
 import MyLocationIcon from '@mui/icons-material/MyLocation';
@@ -42,100 +39,62 @@ import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 const CHECK_IN_RADIUS_METERS = 150;
 
 // Dynamically import MapContainer
-const LazyMapContainer = lazy(() => import('react-leaflet').then(module => ({
-  default: module.MapContainer,
-})));
-const LazyTileLayer = lazy(() => import('react-leaflet').then(module => ({
-  default: module.TileLayer,
-})));
-const LazyMarker = lazy(() => import('react-leaflet').then(module => ({
-  default: module.Marker,
-})));
-const LazyPopup = lazy(() => import('react-leaflet').then(module => ({
-  default: module.Popup,
-})));
+const LazyMapContainer = lazy(() => import('react-leaflet').then(module => ({ default: module.MapContainer })));
+const LazyTileLayer = lazy(() => import('react-leaflet').then(module => ({ default: module.TileLayer })));
+const LazyMarker = lazy(() => import('react-leaflet').then(module => ({ default: module.Marker })));
+const LazyPopup = lazy(() => import('react-leaflet').then(module => ({ default: module.Popup })));
 
-// A small custom hook inside the component to organize statistics calculation
 function useDashboardStats() {
   const { employees } = useEmployees();
   const { hotels } = useHotels();
-  const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null }); // Fetch all records for stats
+  const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
 
-  const stats = useMemo(() => {
+  return useMemo(() => {
     const today = new Date();
     const startOfWeekTime = startOfWeek(today, { weekStartsOn: 1 }).getTime();
-    const startOfMonthTime = startOfMonth(today).getTime();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
 
     const activeEmployeesList = employees.filter(e => e.isActive);
-    const visitsThisWeek = allAttendanceRecords.filter(r => r.timestamp >= startOfWeekTime).length;
-    const visitsThisMonth = allAttendanceRecords.filter(r => r.timestamp >= startOfMonthTime).length;
 
-    // Original: Hotels by City
-    const hotelsByCityMap = hotels.reduce((acc, hotel) => {
-      acc[hotel.city] = (acc[hotel.city] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    const hotelsByCity = Object.entries(hotelsByCityMap).map(([city, count]) => ({ city, count }));
-
-    // Helper map for hotelId -> city
     const hotelCityMap = new Map(hotels.map(h => [h.id, h.city]));
 
-    // 2. Active Personnel by Role
     const activeEmployeesByRole = activeEmployeesList.reduce((acc, employee) => {
       const role = employee.role || 'Sin Cargo';
       acc[role] = (acc[role] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // 3. Visits by City
     const visitsByCity = allAttendanceRecords.reduce((acc, record) => {
       const city = hotelCityMap.get(record.hotelId) || 'Sin Ciudad';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // 4. Hotel Ranking by Visits
     const visitsByHotel = allAttendanceRecords.reduce((acc, record) => {
       acc[record.hotelId] = (acc[record.hotelId] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+
     const hotelRankingByVisits = hotels.map(hotel => ({
       id: hotel.id,
       name: hotel.name,
       visits: visitsByHotel[hotel.id] || 0,
     })).sort((a, b) => b.visits - a.visits);
 
-    // 5. Visits Over Time (last 30 days)
     const visitsOverTime = allAttendanceRecords
       .filter(r => r.timestamp >= thirtyDaysAgo.getTime())
       .reduce((acc, record) => {
-        const date = new Date(record.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+        const date = format(new Date(record.timestamp), 'yyyy-MM-dd');
         acc[date] = (acc[date] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
-    const visitsOverTimeChartData = Object.entries(visitsOverTime)
-      .map(([date, visits]: [string, number]) => ({ date, visits }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(today.getMonth() - 1);
+    const oneMonthAgo = subMonths(today, 1);
     const newEmployeesLastMonth = employees.filter(e => {
       const idTimestamp = parseInt(e.id.split('-')[1]);
       return !isNaN(idTimestamp) && idTimestamp >= oneMonthAgo.getTime();
     }).length;
-
-    const payrollsToReview = employees.filter(emp => 
-      emp.payrollType === 'Workrecord' && 
-      (!emp.lastReviewedTimestamp || emp.lastReviewedTimestamp < startOfWeekTime)
-    ).length;
-
-    const payrollsReviewedInPeriod = employees.filter(emp =>
-      emp.payrollType === 'Workrecord' &&
-      emp.lastReviewedTimestamp &&
-      emp.lastReviewedTimestamp >= startOfWeekTime
-    ).length;
 
     const blacklistedEmployees = employees.filter(e => e.isBlacklisted).length;
 
@@ -148,23 +107,19 @@ function useDashboardStats() {
     return {
       totalHotels: hotels.length,
       activeEmployees: activeEmployeesList.length,
-      visitsThisWeek,
-      visitsThisMonth,
-      hotelsByCity, // Keep original
-      // New stats (formatted for charts)
-      activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]: [string, number]) => ({ name, value })),
-      visitsByCity: Object.entries(visitsByCity).map(([name, value]: [string, number]) => ({ name, value })),
+      visitsThisWeek: allAttendanceRecords.filter(r => r.timestamp >= startOfWeek(today, { weekStartsOn: 0 }).getTime()).length,
+      visitsThisMonth: allAttendanceRecords.filter(r => r.timestamp >= startOfMonth(today).getTime()).length,
+      activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
+      visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
       hotelRankingByVisits,
-      visitsOverTime: visitsOverTimeChartData,
+      visitsOverTime: Object.entries(visitsOverTime).map(([date, visits]) => ({ date, visits })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
       newEmployeesLastMonth,
-      payrollsToReview,
-      payrollsReviewedInPeriod,
+      payrollsToReview: employees.filter(emp => emp.payrollType === 'Workrecord' && (!emp.lastReviewedTimestamp || emp.lastReviewedTimestamp < startOfWeekTime)).length,
+      payrollsReviewedInPeriod: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.lastReviewedTimestamp && emp.lastReviewedTimestamp >= startOfWeekTime).length,
       blacklistedEmployees,
-      employeesByHotel: Object.entries(employeesByHotel).map(([name, value]: [string, number]) => ({ name, value })),
+      employeesByHotel: Object.entries(employeesByHotel).map(([name, value]) => ({ name, value })),
     };
   }, [employees, hotels, allAttendanceRecords]);
-
-  return stats;
 }
 
 function DashboardPage() {
@@ -179,61 +134,38 @@ function DashboardPage() {
 
   const handleGenerateWeeklyReport = () => {
     const today = new Date();
-    const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
-    const end = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
-    navigate('/reporte-asistencia', { 
-      state: { 
-        title: 'Reporte Semanal',
-        startDate: start.toISOString(),
-        endDate: end.toISOString()
-      } 
-    });
+    const start = startOfWeek(today, { weekStartsOn: 0 });
+    const end = endOfWeek(today, { weekStartsOn: 0 });
+    const period = `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
+    generatePdfReport(stats, 'Reporte Semanal', period);
   };
 
   const handleGenerateMonthlyReport = () => {
     const today = new Date();
     const start = startOfMonth(today);
     const end = endOfMonth(today);
-    navigate('/reporte-asistencia', { 
-      state: { 
-        title: 'Reporte Mensual',
-        startDate: start.toISOString(),
-        endDate: end.toISOString()
-      } 
-    });
+    const period = `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
+    generatePdfReport(stats, 'Reporte Mensual', period);
   };
 
   const handleGenerateSemestralReport = () => {
     const today = new Date();
-    let start: Date;
-    let end: Date;
+    let start: Date, end: Date;
+    const currentMonth = today.getMonth();
 
-    const currentMonth = today.getMonth(); // 0-indexed
-
-    if (currentMonth >= 0 && currentMonth <= 5) { // First semester (Jan-Jun)
-      start = new Date(today.getFullYear(), 0, 1); // Jan 1st
-      end = new Date(today.getFullYear(), 5, 30, 23, 59, 59, 999); // Jun 30th
-    } else { // Second semester (Jul-Dec)
-      start = new Date(today.getFullYear(), 6, 1); // July 1st
-      end = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999); // Dec 31st
+    if (currentMonth < 6) {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 5, 30);
+    } else {
+      start = new Date(today.getFullYear(), 6, 1);
+      end = new Date(today.getFullYear(), 11, 31);
     }
-    
-    navigate('/reporte-asistencia', { 
-      state: { 
-        title: 'Reporte Semestral',
-        startDate: start.toISOString(),
-        endDate: end.toISOString()
-      } 
-    });
+    const period = `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
+    generatePdfReport(stats, 'Reporte Semestral', period);
   };
 
   useEffect(() => {
-    const DefaultIcon = L.icon({
-      iconUrl: icon,
-      shadowUrl: iconShadow,
-      iconSize: [25, 41],
-      iconAnchor: [12, 41]
-    });
+    const DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
     L.Marker.prototype.options.icon = DefaultIcon;
   }, []);
 
@@ -289,97 +221,35 @@ function DashboardPage() {
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
           <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={4} md={2}>
-              <StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} />
-            </Grid>
-            <Grid item xs={12} sm={4} md={2}>
-              <StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} />
-            </Grid>
-            <Grid item xs={12} sm={4} md={2}>
-              <StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
-            </Grid>
-            <Grid item xs={12} sm={4} md={2}>
-              <StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} />
-            </Grid>
-            <Grid item xs={12} sm={4} md={2}>
-              <StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} />
-            </Grid>
-            <Grid item xs={12} sm={4} md={2}>
-              <StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} />
-            </Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} /></Grid>
           </Grid>
 
-          {/* Report Generation Buttons */}
           <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
             <Button variant="contained" onClick={handleGenerateWeeklyReport}>Generar Reporte Semanal</Button>
             <Button variant="contained" onClick={handleGenerateMonthlyReport}>Generar Reporte Mensual</Button>
             <Button variant="contained" onClick={handleGenerateSemestralReport}>Generar Reporte Semestral</Button>
           </Stack>
 
-          {/* Row 2: Visits Over Time (Full Width) */}
-          <Box sx={{ mb: 3 }}>
-            <VisitsOverTimeChart data={stats.visitsOverTime} />
-          </Box>
+          <Box sx={{ mb: 3 }}><VisitsOverTimeChart data={stats.visitsOverTime} /></Box>
 
-          {/* Row 3: Charts */}
           <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={6}>
-              <DashboardBarChart title="Visitas por Ciudad" data={stats.visitsByCity} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <DashboardPieChart title="Personal por Posición" data={stats.activeEmployeesByRole} />
-            </Grid>
+            <Grid item xs={12} md={6}><DashboardBarChart title="Visitas por Ciudad" data={stats.visitsByCity} /></Grid>
+            <Grid item xs={12} md={6}><DashboardPieChart title="Personal por Posición" data={stats.activeEmployeesByRole} /></Grid>
           </Grid>
 
-          {/* Row 4: Employee Distribution */}
-          <Box sx={{ mb: 3 }}>
-            <DashboardBarChart title="Distribución de Empleados por Hotel" data={stats.employeesByHotel} />
-          </Box>
+          <Box sx={{ mb: 3 }}><DashboardBarChart title="Distribución de Empleados por Hotel" data={stats.employeesByHotel} /></Box>
 
-          {/* Row 5: Ranking Table (Full Width) */}
-          <Box sx={{ mb: 3 }}>
-            <HotelRankingTable data={stats.hotelRankingByVisits} />
-          </Box>
+          <Box sx={{ mb: 3 }}><HotelRankingTable data={stats.hotelRankingByVisits} /></Box>
 
-          {/* Row 6: Map (Full Width) */}
-          <Paper sx={{ height: '60vh', overflow: 'hidden' }}>
-            <Typography variant="h6" sx={{ p: 2, pb: 0 }}>Mapa de Hoteles</Typography>
-            <Suspense fallback={
-              <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CircularProgress /><Typography sx={{ ml: 2 }}>Cargando mapa...</Typography>
-              </Box>
-            }>
-              <LazyMapContainer center={mapCenter} zoom={4} style={{ height: '100%', width: '100%' }}>
-                <LazyTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                {hotelsWithLocation.map((hotel) => (
-                  <LazyMarker key={hotel.id} position={[hotel.latitude!, hotel.longitude!]}><LazyPopup><b>{hotel.name}</b><br />{hotel.address}</LazyPopup></LazyMarker>
-                ))}
-              </LazyMapContainer>
-            </Suspense>
-          </Paper>
+          <Paper sx={{ height: '60vh', overflow: 'hidden' }}><Typography variant="h6" sx={{ p: 2, pb: 0 }}>Mapa de Hoteles</Typography><Suspense fallback={<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress /><Typography sx={{ ml: 2 }}>Cargando mapa...</Typography></Box>}><LazyMapContainer center={mapCenter} zoom={4} style={{ height: '100%', width: '100%' }}><LazyTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{hotelsWithLocation.map((hotel) => (<LazyMarker key={hotel.id} position={[hotel.latitude!, hotel.longitude!]}><LazyPopup><b>{hotel.name}</b><br />{hotel.address}</LazyPopup></LazyMarker>))}</LazyMapContainer></Suspense></Paper>
         </Box>
-        <Fab
-          color="primary"
-          aria-label="registrar asistencia"
-          sx={{
-            position: 'fixed',
-            bottom: 32,
-            right: 32,
-            transition: 'box-shadow 0.3s ease-in-out',
-            '&:hover': {
-              boxShadow: `0 0 12px 3px #FF5722`,
-            }
-          }}
-          onClick={handleCheckIn}
-          disabled={isCheckingIn}
-        >
-          {isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon />}
-        </Fab>
-        <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-          <Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>
-            {snackbarInfo.message}
-          </Alert>
-        </Snackbar>
+        <Fab color="primary" aria-label="registrar asistencia" sx={{ position: 'fixed', bottom: 32, right: 32, transition: 'box-shadow 0.3s ease-in-out', '&:hover': { boxShadow: `0 0 12px 3px #FF5722`, } }} onClick={handleCheckIn} disabled={isCheckingIn}>{isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon />}</Fab>
+        <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}><Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
       </Box>
     </>
   );

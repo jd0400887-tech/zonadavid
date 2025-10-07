@@ -19,6 +19,8 @@
     "@types/papaparse": "^5.3.16",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.22",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "papaparse": "^5.5.3",
     "react": "^19.1.1",
