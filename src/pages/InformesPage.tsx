@@ -1,8 +1,9 @@
 import { useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { ArrowUpward, ArrowDownward, Remove } from '@mui/icons-material';
+import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button } from '@mui/material';
+import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
+import { exportToExcel } from '../utils/exportToExcel';
 
 // A small component to display a stat with its change from the previous period
 const StatComparison = ({ title, currentValue, previousValue }: { title: string, currentValue: number, previousValue: number }) => {
@@ -73,13 +74,33 @@ function InformesPage() {
     };
   });
 
+  const handleExport = () => {
+    const excelData = {
+      hotelData: hotelChartData.map(h => ({ 'Hotel': h.name, 'Visitas': h.Visitas, 'Visitas (Anterior)': h['Visitas (Anterior)'] })).sort((a,b) => b.Visitas - a.Visitas),
+      roleData: activeEmployeesByRole.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
+      cityData: cityComparisonData.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
+      reportTitle: title || 'Informe_Personalizado',
+    };
+    exportToExcel(excelData);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        {title || 'Informe Personalizado'}
-      </Typography>
-      <Paper sx={{ p: 2, mb: 3, background: '#f5f5f5' }}>
-        <Typography variant="h6">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h4" gutterBottom component="h1">
+          {title || 'Informe Personalizado'}
+        </Typography>
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<CloudDownloadIcon />}
+          onClick={handleExport}
+        >
+          Exportar a Excel
+        </Button>
+      </Box>
+      <Paper sx={{ p: 2, mb: 3, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h6" component="h2" sx={{ color: 'text.primary' }}>
           Período del Informe: {formattedStartDate} - {formattedEndDate}
         </Typography>
       </Paper>
