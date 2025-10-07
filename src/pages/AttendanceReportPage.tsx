@@ -8,7 +8,7 @@ import { subDays } from 'date-fns';
 
 import { useAttendance } from '../hooks/useAttendance';
 import type { DateRange } from '../hooks/useAttendance';
-import { exportAttendanceToPDF } from '../utils/exportUtils';
+
 
 import EmptyState from '../components/EmptyState';
 import AttendanceFilters from '../components/attendance/AttendanceFilters';
@@ -35,14 +35,14 @@ export default function AttendanceReportPage() {
       <Box component="main" sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
           <Typography variant="h4">Reporte de Visitas</Typography>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<PictureAsPdfIcon />}
             onClick={() => exportAttendanceToPDF(filteredRecords, hotels)}
             disabled={filteredRecords.length === 0}
           >
             Exportar a PDF
-          </Button>
+          </Button> */}
         </Box>
 
         <AttendanceFilters 
