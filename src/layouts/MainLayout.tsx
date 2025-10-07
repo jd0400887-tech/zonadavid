@@ -122,7 +122,7 @@ export default function MainLayout() {
             <MenuIcon />
           </IconButton>
           <Grid container alignItems="center" spacing={2}>
-            <Grid>
+            <Grid item sx={{ mr: 3 }}>
               <Typography variant="h6" noWrap component="div" sx={{
                 color: 'primary.main',
                 textShadow: '0 0 4px #FF5722, 0 0 8px #FF5722'
@@ -130,12 +130,12 @@ export default function MainLayout() {
                 {getGreeting()}
               </Typography>
             </Grid>
-            <Grid>
+            <Grid item>
               <Typography variant="body1" noWrap sx={{ display: { xs: 'none', sm: 'block' } }}>
                 {currentDate}
               </Typography>
             </Grid>
-            <Grid sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
+            <Grid item sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 'auto' }}>
                <ThermostatIcon sx={{ mr: 1 }} />
                <Typography variant="body1">Clima no disponible</Typography>
             </Grid>
