@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove } from '@mui/icons-material';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
 
 // A small component to display a stat with its change from the previous period
@@ -46,6 +47,17 @@ function InformesPage() {
 
   const { currentPeriod, previousPeriod, activeEmployees, blacklistedEmployees, totalHotels, payrollsToReview, activeEmployeesByRole } = data;
 
+  const hotelChartData = [...currentPeriod.hotelRanking]
+    .map(hotel => {
+      const prevHotel = previousPeriod?.hotelRanking.find((h: any) => h.id === hotel.id);
+      return {
+        name: hotel.name,
+        Visitas: hotel.visits,
+        'Visitas (Anterior)': prevHotel?.visits || 0,
+      };
+    })
+    .sort((a, b) => a.Visitas - b.Visitas);
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
@@ -73,22 +85,22 @@ function InformesPage() {
         </Grid>
       </Grid>
 
-      {/* Section 2: Hotel Ranking */}
+      {/* Section 2: Hotel Ranking Chart */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" gutterBottom>Ranking de Hoteles por Visitas</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead><TableRow sx={{ '& th': { backgroundColor: 'primary.main', color: 'common.white' } }}><TableCell>#</TableCell><TableCell>Hotel</TableCell><TableCell align="right">Visitas (Actual)</TableCell><TableCell align="right">Visitas (Anterior)</TableCell></TableRow></TableHead>
-            <TableBody>
-              {currentPeriod.hotelRanking.map((hotel: any, index: number) => {
-                const prevRank = previousPeriod?.hotelRanking.find((h: any) => h.id === hotel.id);
-                return (
-                  <TableRow key={hotel.id}><TableCell>{index + 1}</TableCell><TableCell>{hotel.name}</TableCell><TableCell align="right">{hotel.visits}</TableCell><TableCell align="right">{prevRank?.visits || 0}</TableCell></TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Paper sx={{ height: 400, p: 2, width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={hotelChartData} margin={{ top: 5, right: 30, left: 120, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="name" type="category" width={80} />
+              <Tooltip wrapperStyle={{ zIndex: 1000 }} />
+              <Legend />
+              <Bar dataKey="Visitas" fill="#8884d8" />
+              <Bar dataKey="Visitas (Anterior)" fill="#82ca9d" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Paper>
       </Box>
 
       {/* Section 3: Personnel and City Analysis */}
