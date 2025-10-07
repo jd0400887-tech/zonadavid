@@ -58,6 +58,21 @@ function InformesPage() {
     })
     .sort((a, b) => a.Visitas - b.Visitas);
 
+  const allCities = [...new Set([
+    ...currentPeriod.visitsByCity.map((c: any) => c.name),
+    ...(previousPeriod?.visitsByCity.map((c: any) => c.name) || [])
+  ])];
+
+  const cityComparisonData = allCities.map(cityName => {
+    const current = currentPeriod.visitsByCity.find((c: any) => c.name === cityName);
+    const previous = previousPeriod?.visitsByCity.find((c: any) => c.name === cityName);
+    return {
+      name: cityName,
+      currentVisits: current?.value || 0,
+      previousVisits: previous?.value || 0,
+    };
+  });
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>
@@ -122,11 +137,23 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Visitas por Ciudad</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Ciudad</TableCell><TableCell align="right">Visitas</TableCell></TableRow></TableHead>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Ciudad</TableCell><TableCell align="right">Visitas (Actual)</TableCell><TableCell align="right">Visitas (Anterior)</TableCell><TableCell align="right">Cambio</TableCell></TableRow></TableHead>
               <TableBody>
-                {currentPeriod.visitsByCity.map((city: any) => (
-                  <TableRow key={city.name}><TableCell>{city.name}</TableCell><TableCell align="right">{city.value}</TableCell></TableRow>
-                ))}
+                {cityComparisonData.map((city: any) => {
+                  const change = city.currentVisits - city.previousVisits;
+                  const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
+                  const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
+                  return (
+                    <TableRow key={city.name}>
+                      <TableCell>{city.name}</TableCell>
+                      <TableCell align="right">{city.currentVisits}</TableCell>
+                      <TableCell align="right">{city.previousVisits}</TableCell>
+                      <TableCell align="right" sx={{ color: changeColor, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} /> {change}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
