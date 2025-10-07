@@ -3,7 +3,7 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { supabase } from '../utils/supabase';
 import type { AttendanceRecord } from '../types';
 import { useHotels } from './useHotels';
-import { useAuth } from './useAuth'; // Import useAuth
+import { useUserProfile } from './useUserProfile'; // Import useUserProfile
 
 export interface DateRange {
   start: Date | null;
@@ -13,7 +13,7 @@ export interface DateRange {
 export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const { hotels, loading: hotelsLoading } = useHotels();
-  const { session } = useAuth(); // Get session from useAuth
+  const { profile } = useUserProfile(); // Get user profile
 
   useEffect(() => {
     const fetchAttendanceRecords = async () => {
@@ -29,16 +29,17 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
   }, []);
 
   const addRecord = async (hotelId: string) => {
-    const userId = session?.user?.id;
-    if (!userId) {
-      console.error("User not authenticated. Cannot add attendance record.");
+    const employeeId = profile?.id;
+    if (!employeeId) {
+      console.error("User profile not loaded. Cannot add attendance record.");
+      // Optionally, show an error to the user here.
       return;
     }
 
     const newRecord: Partial<AttendanceRecord> = {
       id: `att-${Date.now()}`,
       hotelId: hotelId,
-      employeeId: userId, // Use the actual user ID
+      employeeId: employeeId, // Use the correct employee profile ID
       timestamp: new Date().getTime(),
     };
     const { data, error } = await supabase.from('attendance_records').insert([newRecord]).select();
