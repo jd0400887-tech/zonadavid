@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button } from '@mui/material';
+import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
@@ -85,7 +85,8 @@ function InformesPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Toolbar />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h4" gutterBottom component="h1">
           {title || 'Informe Personalizado'}
