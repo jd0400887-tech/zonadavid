@@ -39,7 +39,6 @@ export function useEmployees() {
   };
 
   const updateEmployee = async (updatedEmployee: Partial<Employee>) => {
-    console.log('Updating employee:', updatedEmployee);
     if (!updatedEmployee.id) return;
     const { data, error } = await supabase.from('employees').update(updatedEmployee).eq('id', updatedEmployee.id).select();
     if (error) {

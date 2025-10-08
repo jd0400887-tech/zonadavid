@@ -34,7 +34,7 @@ export default function PayrollReviewPage() {
     .filter(emp => emp.payrollType === 'Workrecord')
     .filter(emp => selectedHotel === 'all' || emp.hotelId === selectedHotel)
     .map(emp => {
-      const needsReview = !emp.lastReviewedTimestamp || emp.lastReviewedTimestamp < startOfWeekTimestamp;
+      const needsReview = !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp;
       return { ...emp, needsReview };
     })
     .sort((a, b) => (b.needsReview ? 1 : -1) - (a.needsReview ? 1 : -1) || a.name.localeCompare(b.name)); // Sort by needsReview first, then by name
@@ -45,9 +45,8 @@ export default function PayrollReviewPage() {
   const progressPercentage = totalCount > 0 ? (reviewedCount / totalCount) * 100 : 0;
 
   const handleMarkAsReviewed = (employeeId: string) => {
-    console.log('Marking as reviewed:', employeeId, overtimeNotes[employeeId]);
     const overtime = overtimeNotes[employeeId];
-    updateEmployee({ id: employeeId, lastReviewedTimestamp: Date.now(), overtime });
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString(), overtime });
   };
 
   return (
