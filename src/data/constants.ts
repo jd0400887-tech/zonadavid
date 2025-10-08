@@ -7,4 +7,5 @@ export const EMPLOYEE_POSITIONS = [
   'Supervisor Housekeeper',
   'Mantenimiento',
   'Frontdesk',
+  'Diswacher',
 ];
