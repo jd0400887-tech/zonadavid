@@ -20,6 +20,29 @@ const calculatePeriodStats = (
     const recordTime = new Date(r.timestamp).getTime();
     return recordTime >= startTime && recordTime <= endTime;
   });
+
+  const payrollsReviewed = allEmployees.filter(e => 
+    e.payrollType === 'Workrecord' && 
+    e.lastReviewedTimestamp && 
+    new Date(e.lastReviewedTimestamp).getTime() >= startTime && 
+    new Date(e.lastReviewedTimestamp).getTime() <= endTime
+  ).length;
+
+  const attendanceByEmployee = periodRecords.reduce((acc, record) => {
+    const employee = allEmployees.find(e => e.id === record.employeeId);
+    if (employee) {
+      acc[employee.name] = (acc[employee.name] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const newEmployeesList = allEmployees.filter(e => {
+    const idTimestamp = parseInt(e.id.split('-')[1]);
+    return !isNaN(idTimestamp) && idTimestamp >= startTime && idTimestamp <= endTime;
+  });
+
+  const totalOvertime = allEmployees.reduce((acc, emp) => acc + (emp.overtime || 0), 0);
+
   
   // --- Basic Stats ---
   const visits = periodRecords.length;
@@ -50,9 +73,13 @@ const calculatePeriodStats = (
 
   return {
     visits,
-    newEmployees,
+    newEmployees: newEmployeesList.length,
+    newEmployeesList,
     hotelRanking,
     visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
+    payrollsReviewed,
+    attendanceByEmployee: Object.entries(attendanceByEmployee).map(([name, value]) => ({ name, value })),
+    totalOvertime,
   };
 };
 
@@ -84,8 +111,14 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     // --- Snapshot Stats (not period-dependent) ---
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
-    const blacklistedEmployees = employees.filter(e => e.isBlacklisted).length;
+    const blacklistedEmployeesList = employees.filter(e => e.isBlacklisted);
+    const blacklistedEmployees = blacklistedEmployeesList.length;
     const totalHotels = hotels.length;
+
+    const employeesByHotel = hotels.map(hotel => ({
+      name: hotel.name,
+      count: employees.filter(e => e.hotelId === hotel.id).length,
+    }));
 
     const activeEmployeesByRole = activeEmployeesList.reduce((acc, employee) => {
       const role = employee.role || 'Sin Cargo';
@@ -95,7 +128,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
 
     const payrollsToReview = employees.filter(emp => 
       emp.payrollType === 'Workrecord' && 
-      (!emp.lastReviewedTimestamp || emp.lastReviewedTimestamp < startOfWeek(new Date(), { weekStartsOn: 1 }).getTime())
+      (!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeek(new Date(), { weekStartsOn: 1 }).getTime())
     ).length;
 
     return {
@@ -103,7 +136,9 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       previousPeriod: previousPeriodStats,
       activeEmployees,
       blacklistedEmployees,
+      blacklistedEmployeesList,
       totalHotels,
+      employeesByHotel,
       activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
       payrollsToReview,
     };

@@ -46,7 +46,7 @@ function InformesPage() {
     return <Typography sx={{ p: 3 }}>No se pudieron cargar los datos para el informe.</Typography>;
   }
 
-  const { currentPeriod, previousPeriod, activeEmployees, blacklistedEmployees, totalHotels, payrollsToReview, activeEmployeesByRole } = data;
+  const { currentPeriod, previousPeriod, activeEmployees, blacklistedEmployees, blacklistedEmployeesList, totalHotels, employeesByHotel, payrollsToReview, activeEmployeesByRole } = data;
 
   const hotelChartData = [...currentPeriod.hotelRanking]
     .map(hotel => {
@@ -79,6 +79,18 @@ function InformesPage() {
       hotelData: hotelChartData.map(h => ({ 'Hotel': h.name, 'Visitas': h.Visitas, 'Visitas (Anterior)': h['Visitas (Anterior)'] })).sort((a,b) => b.Visitas - a.Visitas),
       roleData: activeEmployeesByRole.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
       cityData: cityComparisonData.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
+      employeesByHotelData: employeesByHotel.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
+      attendanceByEmployeeData: currentPeriod.attendanceByEmployee.map((att: any) => ({ 'Empleado': att.name, 'Visitas': att.value })),
+      newEmployeesData: currentPeriod.newEmployeesList.map((emp: any) => ({ 'Nombre': emp.name })),
+      blacklistedEmployeesData: blacklistedEmployeesList.map((emp: any) => ({ 'Nombre': emp.name })),
+      summaryData: [
+        { 'Métrica': 'Visitas Registradas', 'Valor': currentPeriod.visits },
+        { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
+        { 'Métrica': 'Nóminas Revisadas', 'Valor': currentPeriod.payrollsReviewed },
+        { 'Métrica': 'Total Horas Overtime', 'Valor': currentPeriod.totalOvertime },
+        { 'Métrica': 'Nóminas por Revisar', 'Valor': payrollsToReview },
+        { 'Métrica': 'En Lista Negra', 'Valor': blacklistedEmployees },
+      ],
       reportTitle: title || 'Informe_Personalizado',
     };
     exportToExcel(excelData);
@@ -113,6 +125,12 @@ function InformesPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Nuevos Empleados" currentValue={currentPeriod.newEmployees} previousValue={previousPeriod?.newEmployees || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Nóminas Revisadas" currentValue={currentPeriod.payrollsReviewed} previousValue={previousPeriod?.payrollsReviewed || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Total Horas Overtime" currentValue={currentPeriod.totalOvertime} previousValue={previousPeriod?.totalOvertime || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
@@ -176,6 +194,62 @@ function InformesPage() {
                     </TableRow>
                   );
                 })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+      </Grid>
+
+      {/* Section 4: New Tables */}
+      <Grid container spacing={3} sx={{ mt: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>Empleados por Hotel</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Hotel</TableCell><TableCell align="right">Cantidad</TableCell></TableRow></TableHead>
+              <TableBody>
+                {employeesByHotel.map((hotel: any) => (
+                  <TableRow key={hotel.name}><TableCell>{hotel.name}</TableCell><TableCell align="right">{hotel.count}</TableCell></TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>Asistencia por Empleado</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Empleado</TableCell><TableCell align="right">Visitas</TableCell></TableRow></TableHead>
+              <TableBody>
+                {currentPeriod.attendanceByEmployee.map((att: any) => (
+                  <TableRow key={att.name}><TableCell>{att.name}</TableCell><TableCell align="right">{att.value}</TableCell></TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>Nuevos Empleados</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Nombre</TableCell></TableRow></TableHead>
+              <TableBody>
+                {currentPeriod.newEmployeesList.map((emp: any) => (
+                  <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>Empleados en Lista Negra</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Nombre</TableCell></TableRow></TableHead>
+              <TableBody>
+                {blacklistedEmployeesList.map((emp: any) => (
+                  <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
