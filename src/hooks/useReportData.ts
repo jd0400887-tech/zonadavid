@@ -43,15 +43,6 @@ const calculatePeriodStats = (
 
   const totalOvertime = allEmployees.reduce((acc, emp) => acc + (emp.overtime || 0), 0);
 
-  
-  // --- Basic Stats ---
-  const visits = periodRecords.length;
-  const newEmployees = allEmployees.filter(e => {
-    const idTimestamp = parseInt(e.id.split('-')[1]);
-    return !isNaN(idTimestamp) && idTimestamp >= startTime && idTimestamp <= endTime;
-  }).length;
-
-  // --- Grouping and Ranking ---
   const hotelCityMap = new Map(allHotels.map(h => [h.id, h.city]));
 
   const visitsByHotel = periodRecords.reduce((acc, record) => {
@@ -72,7 +63,7 @@ const calculatePeriodStats = (
   }, {} as Record<string, number>);
 
   return {
-    visits,
+    visits: periodRecords.length,
     newEmployees: newEmployeesList.length,
     newEmployeesList,
     hotelRanking,
@@ -94,7 +85,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
 
   const reportData = useMemo(() => {
     if (loading || !startDate || !endDate) {
-      return { currentPeriod: null, previousPeriod: null, activeEmployees: 0, blacklistedEmployees: 0, totalHotels: 0, activeEmployeesByRole: [], payrollsToReview: 0 };
+      return { currentPeriod: null, previousPeriod: null, activeEmployees: 0, blacklistedEmployees: 0, blacklistedEmployeesList: [], totalHotels: 0, employeesByHotel: [], activeEmployeesByRole: [], payrollsToReview: 0 };
     }
 
     const currentStart = new Date(startDate);
