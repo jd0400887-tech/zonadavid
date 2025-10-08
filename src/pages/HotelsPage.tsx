@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Paper, IconButton, Stack, Toolbar, TextField, InputAdornment, Link, Card, CardMedia, CardContent, CardActions } from '@mui/material';
 import { Masonry } from '@mui/lab';
 import { Link as RouterLink } from 'react-router-dom';
@@ -71,7 +71,9 @@ export default function HotelsPage() {
 
   const modalTitle = currentHotel.id ? "Editar Hotel" : "Añadir Nuevo Hotel";
 
-  const handleHotelImport = async (parsedData: Partial<Hotel>[]) => {
+  useEffect(() => {
+    console.log(hotels);
+  }, [hotels]);
     let successCount = 0;
     let errorCount = 0;
 
