@@ -23,6 +23,7 @@ export default function EmployeesPage() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
+  const [hotelFilter, setHotelFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +41,9 @@ export default function EmployeesPage() {
     })
     .filter(employee =>
       employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter(employee => 
+      !hotelFilter || employee.hotelId === hotelFilter
     );
 
   const handleOpenAddModal = () => {
@@ -166,6 +170,9 @@ export default function EmployeesPage() {
           onSearchChange={setSearchQuery}
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          hotels={hotels}
+          hotelFilter={hotelFilter}
+          onHotelChange={setHotelFilter}
         />
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
