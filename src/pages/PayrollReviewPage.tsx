@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField, IconButton } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { Box, Typography, Button, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { useEmployees } from '../hooks/useEmployees';
 import { useHotels } from '../hooks/useHotels';
@@ -102,13 +101,13 @@ export default function PayrollReviewPage() {
                           value={overtimeNotes[employee.id] || ''}
                           onChange={(e) => handleOvertimeChange(employee.id, e.target.value)}
                         />
-                        <IconButton
-                          color="primary"
+                        <Button
+                          variant="contained"
                           onClick={() => handleMarkAsReviewed(employee.id)}
                           disabled={!employee.needsReview}
                         >
-                          <CheckCircleOutlineIcon />
-                        </IconButton>
+                          Marcar como Revisado
+                        </Button>
                       </Box>
                     }
                   >
