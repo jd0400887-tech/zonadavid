@@ -82,7 +82,7 @@ function useDashboardStats() {
     })).sort((a, b) => b.visits - a.visits);
 
     const visitsOverTime = allAttendanceRecords
-      .filter(r => r.timestamp >= thirtyDaysAgo.getTime())
+      .filter(r => new Date(r.timestamp).getTime() >= thirtyDaysAgo.getTime())
       .reduce((acc, record) => {
         const date = format(new Date(record.timestamp), 'yyyy-MM-dd');
         acc[date] = (acc[date] || 0) + 1;
@@ -106,15 +106,15 @@ function useDashboardStats() {
     return {
       totalHotels: hotels.length,
       activeEmployees: activeEmployeesList.length,
-      visitsThisWeek: allAttendanceRecords.filter(r => r.timestamp >= startOfWeek(today, { weekStartsOn: 0 }).getTime()).length,
-      visitsThisMonth: allAttendanceRecords.filter(r => r.timestamp >= startOfMonth(today).getTime()).length,
+      visitsThisWeek: allAttendanceRecords.filter(r => new Date(r.timestamp).getTime() >= startOfWeek(today, { weekStartsOn: 0 }).getTime()).length,
+      visitsThisMonth: allAttendanceRecords.filter(r => new Date(r.timestamp).getTime() >= startOfMonth(today).getTime()).length,
       activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
       visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
       hotelRankingByVisits,
       visitsOverTime: Object.entries(visitsOverTime).map(([date, visits]) => ({ date, visits })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
       newEmployeesLastMonth,
-      payrollsToReview: employees.filter(emp => emp.payrollType === 'Workrecord' && (!emp.lastReviewedTimestamp || emp.lastReviewedTimestamp < startOfWeekTime)).length,
-      payrollsReviewedInPeriod: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.lastReviewedTimestamp && emp.lastReviewedTimestamp >= startOfWeekTime).length,
+      payrollsToReview: employees.filter(emp => emp.payrollType === 'Workrecord' && (!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTime)).length,
+      payrollsReviewedInPeriod: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.lastReviewedTimestamp && new Date(emp.lastReviewedTimestamp).getTime() >= startOfWeekTime).length,
       blacklistedEmployees,
       employeesByHotel: Object.entries(employeesByHotel).map(([name, value]) => ({ name, value })),
     };

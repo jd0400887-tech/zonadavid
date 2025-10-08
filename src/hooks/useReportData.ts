@@ -16,7 +16,10 @@ const calculatePeriodStats = (
   const endTime = end.getTime();
 
   // Filter records for the given period
-  const periodRecords = allRecords.filter(r => r.timestamp >= startTime && r.timestamp <= endTime);
+  const periodRecords = allRecords.filter(r => {
+    const recordTime = new Date(r.timestamp).getTime();
+    return recordTime >= startTime && recordTime <= endTime;
+  });
   
   // --- Basic Stats ---
   const visits = periodRecords.length;
