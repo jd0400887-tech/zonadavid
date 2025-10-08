@@ -239,7 +239,7 @@ function DashboardPage() {
             <Grid item xs={12} sm={4} md={2}><StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
-            <Grid item xs={12} sm={4} md={2}><StatCard title="Nóminas Revisadas" value={stats.payrollsReviewedInPeriod} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Nóminas por Revisar" value={stats.payrollsToReview} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} /></Grid>
           </Grid>
 
