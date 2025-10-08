@@ -3,8 +3,7 @@ import { useState } from 'react';
 import { Box, Typography, Toolbar, Paper, Grid, List, ListItem, ListItemText, Chip, IconButton, Snackbar } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import useLocalStorage from '../hooks/useLocalStorage';
-import { initialEmployees } from '../data/initialData';
+import { useEmployees } from '../hooks/useEmployees';
 import type { Employee } from '../types';
 import L from 'leaflet';
 import { useHotels } from '../hooks/useHotels';
@@ -24,7 +23,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 export default function HotelDetailPage() {
   const { hotelId } = useParams<{ hotelId: string }>();
   const { hotels, loading } = useHotels();
-  const [employees] = useLocalStorage<Employee[]>('employees', initialEmployees);
+  const { employees } = useEmployees();
   const [showCopySuccess, setShowCopySuccess] = useState(false);
 
   const hotel = hotels.find(h => h.id === hotelId);
