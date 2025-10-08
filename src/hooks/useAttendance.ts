@@ -36,7 +36,11 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
       return;
     }
 
+    // The DB requires a client-generated ID, so we create one.
+    const uniqueId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
     const newRecord: Partial<AttendanceRecord> = {
+      id: uniqueId,
       hotelId: hotelId,
       employeeId: employeeId, // Use the correct employee profile ID
       timestamp: new Date().toISOString(),
