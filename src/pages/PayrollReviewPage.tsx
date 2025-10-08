@@ -45,7 +45,9 @@ export default function PayrollReviewPage() {
   const progressPercentage = totalCount > 0 ? (reviewedCount / totalCount) * 100 : 0;
 
   const handleMarkAsReviewed = (employeeId: string) => {
-    updateEmployee({ id: employeeId, lastReviewedTimestamp: Date.now() });
+    console.log('Marking as reviewed:', employeeId, overtimeNotes[employeeId]);
+    const overtime = overtimeNotes[employeeId];
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: Date.now(), overtime });
   };
 
   return (

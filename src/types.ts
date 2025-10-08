@@ -18,6 +18,7 @@ export interface Employee {
   isBlacklisted: boolean;
   payrollType: 'timesheet' | 'Workrecord';
   lastReviewedTimestamp: number | null;
+  overtime?: string;
 }
 
 export interface AttendanceRecord {
