@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import useLocalStorage from '../hooks/useLocalStorage';
-import { initialHotels, initialEmployees } from '../data/initialData';
+import { useEmployees } from '../hooks/useEmployees';
+import { useHotels } from '../hooks/useHotels';
 import type { Hotel, Employee } from '../types';
 import EmptyState from '../components/EmptyState';
 
 export default function PayrollReviewPage() {
-  const [employees, setEmployees] = useLocalStorage<Employee[]>('employees', initialEmployees);
-  const [hotels] = useLocalStorage<Hotel[]>('hotels', initialHotels);
+  const { employees, updateEmployee } = useEmployees();
+  const { hotels } = useHotels();
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
 
@@ -45,11 +45,7 @@ export default function PayrollReviewPage() {
   const progressPercentage = totalCount > 0 ? (reviewedCount / totalCount) * 100 : 0;
 
   const handleMarkAsReviewed = (employeeId: string) => {
-    setEmployees(prev => prev.map(emp => 
-      emp.id === employeeId 
-        ? { ...emp, lastReviewedTimestamp: Date.now() } 
-        : emp
-    ));
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: Date.now() });
   };
 
   return (
