@@ -22,11 +22,14 @@ export function useEmployees() {
     const newEmployee: Employee = {
       id: `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       employeeNumber: `DA-${Date.now().toString().slice(-6)}`,
+      name: employeeData.name || ' ',
+      hotelId: employeeData.hotelId || ' ',
+      role: employeeData.role || ' ',
       isActive: employeeData.isActive ?? true,
-      isBlacklisted: false,
+      isBlacklisted: employeeData.isBlacklisted ?? false,
       payrollType: employeeData.payrollType || 'timesheet',
-      ...employeeData,
-    } as Employee;
+      lastReviewedTimestamp: null,
+    };
     const { data, error } = await supabase.from('employees').insert([newEmployee]).select();
     if (error) {
       console.error('Error adding employee:', error);

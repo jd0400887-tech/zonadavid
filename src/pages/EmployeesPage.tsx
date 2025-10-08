@@ -4,9 +4,8 @@ import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import SearchIcon from '@mui/icons-material/Search';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { useEmployees } from '../hooks/useEmployees';
-import { initialHotels } from '../data/initialData';
+import { useHotels } from '../hooks/useHotels';
 import type { Employee, Hotel } from '../types';
 import FormModal from '../components/form/FormModal';
 import EmployeeForm from '../components/employees/EmployeeForm';
@@ -20,7 +19,7 @@ import BulkImportButton from '../components/common/BulkImportButton';
 
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee, toggleEmployeeBlacklist } = useEmployees();
-  const [hotels] = useLocalStorage<Hotel[]>('hotels', initialHotels);
+  const { hotels } = useHotels();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
