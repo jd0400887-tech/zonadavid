@@ -37,7 +37,6 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
     }
 
     const newRecord: Partial<AttendanceRecord> = {
-      id: `att-${Date.now()}`,
       hotelId: hotelId,
       employeeId: employeeId, // Use the correct employee profile ID
       timestamp: new Date().getTime(),
