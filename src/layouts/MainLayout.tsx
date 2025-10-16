@@ -1,7 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid } from '@mui/material';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { startOfDay, endOfDay } from 'date-fns';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import ApartmentIcon from '@mui/icons-material/Apartment';
@@ -10,8 +9,6 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../hooks/useAuth';
-import { useHotels } from '../hooks/useHotels';
-import { useAttendance } from '../hooks/useAttendance';
 
 const drawerWidth = 240;
 
@@ -28,8 +25,6 @@ export default function MainLayout() {
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { signOut } = useAuth();
-  const { hotels } = useHotels();
-  const { allRecords } = useAttendance({ start: null, end: null });
 
   const handleDrawerToggle = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -44,16 +39,6 @@ export default function MainLayout() {
     await signOut();
     navigate('/login');
   };
-
-  const hotelsVisitedToday = useMemo(() => {
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
-    const todaysRecords = allRecords.filter(r => 
-      r.timestamp >= todayStart.getTime() && r.timestamp <= todayEnd.getTime()
-    );
-    const visitedHotelIds = new Set(todaysRecords.map(r => r.hotelId));
-    return visitedHotelIds.size;
-  }, [allRecords]);
 
   const drawerContent = (
     <>
@@ -150,10 +135,6 @@ export default function MainLayout() {
               </Typography>
             </Grid>
             <Grid item sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 'auto' }}>
-               <ApartmentIcon sx={{ mr: 1 }} />
-               <Typography variant="body1">
-                {`${hotelsVisitedToday} / ${hotels.length} Hoteles Visitados Hoy`}
-               </Typography>
             </Grid>
           </Grid>
         </Toolbar>

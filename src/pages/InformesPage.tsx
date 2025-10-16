@@ -1,8 +1,9 @@
 import { useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar } from '@mui/material';
+import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
+import { useSortableData } from '../hooks/useSortableData';
 import { exportToExcel } from '../utils/exportToExcel';
 
 // A small component to display a stat with its change from the previous period
@@ -33,6 +34,14 @@ function InformesPage() {
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : 'N/A';
   const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString() : 'N/A';
 
+  // Sorting hooks for each table
+  const { items: sortedRoles, requestSort: requestSortRoles, sortConfig: sortConfigRoles } = useSortableData(data?.activeEmployeesByRole || [], { key: 'value', direction: 'desc' });
+  const { items: sortedCities, requestSort: requestSortCities, sortConfig: sortConfigCities } = useSortableData(data?.cityComparisonData || [], { key: 'currentVisits', direction: 'desc' });
+  const { items: sortedHotels, requestSort: requestSortHotels, sortConfig: sortConfigHotels } = useSortableData(data?.employeesByHotel || [], { key: 'count', direction: 'desc' });
+  const { items: sortedAttendance, requestSort: requestSortAttendance, sortConfig: sortConfigAttendance } = useSortableData(data?.currentPeriod?.attendanceByEmployee || [], { key: 'value', direction: 'desc' });
+  const { items: sortedNewEmployees, requestSort: requestSortNewEmployees, sortConfig: sortConfigNewEmployees } = useSortableData(data?.currentPeriod?.newEmployeesList || [], { key: 'name', direction: 'asc' });
+  const { items: sortedBlacklisted, requestSort: requestSortBlacklisted, sortConfig: sortConfigBlacklisted } = useSortableData(data?.blacklistedEmployeesList || [], { key: 'name', direction: 'asc' });
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -46,7 +55,7 @@ function InformesPage() {
     return <Typography sx={{ p: 3 }}>No se pudieron cargar los datos para el informe.</Typography>;
   }
 
-  const { currentPeriod, previousPeriod, activeEmployees, blacklistedEmployees, blacklistedEmployeesList, totalHotels, employeesByHotel, payrollsToReview, activeEmployeesByRole } = data;
+  const { currentPeriod, previousPeriod, blacklistedEmployees, payrollsToReview } = data;
 
   const hotelChartData = [...currentPeriod.hotelRanking]
     .map(hotel => {
@@ -59,30 +68,15 @@ function InformesPage() {
     })
     .sort((a, b) => a.Visitas - b.Visitas);
 
-  const allCities = [...new Set([
-    ...currentPeriod.visitsByCity.map((c: any) => c.name),
-    ...(previousPeriod?.visitsByCity.map((c: any) => c.name) || [])
-  ])];
-
-  const cityComparisonData = allCities.map(cityName => {
-    const current = currentPeriod.visitsByCity.find((c: any) => c.name === cityName);
-    const previous = previousPeriod?.visitsByCity.find((c: any) => c.name === cityName);
-    return {
-      name: cityName,
-      currentVisits: current?.value || 0,
-      previousVisits: previous?.value || 0,
-    };
-  });
-
   const handleExport = () => {
     const excelData = {
       hotelData: hotelChartData.map(h => ({ 'Hotel': h.name, 'Visitas': h.Visitas, 'Visitas (Anterior)': h['Visitas (Anterior)'] })).sort((a,b) => b.Visitas - a.Visitas),
-      roleData: activeEmployeesByRole.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
-      cityData: cityComparisonData.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
-      employeesByHotelData: employeesByHotel.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
-      attendanceByEmployeeData: currentPeriod.attendanceByEmployee.map((att: any) => ({ 'Empleado': att.name, 'Visitas': att.value })),
-      newEmployeesData: currentPeriod.newEmployeesList.map((emp: any) => ({ 'Nombre': emp.name })),
-      blacklistedEmployeesData: blacklistedEmployeesList.map((emp: any) => ({ 'Nombre': emp.name })),
+      roleData: sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
+      cityData: sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
+      employeesByHotelData: sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
+      attendanceByEmployeeData: sortedAttendance.map((att: any) => ({ 'Empleado': att.name, 'Visitas': att.value })),
+      newEmployeesData: sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
+      blacklistedEmployeesData: sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
       summaryData: [
         { 'Métrica': 'Visitas Registradas', 'Valor': currentPeriod.visits },
         { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
@@ -164,9 +158,18 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Personal Activo por Cargo</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Cargo</TableCell><TableCell align="right">Cantidad</TableCell></TableRow></TableHead>
+              <TableHead>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                  <TableCell>
+                    <TableSortLabel active={sortConfigRoles?.key === 'name'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('name')}>Cargo</TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel active={sortConfigRoles?.key === 'value'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('value')}>Cantidad</TableSortLabel>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {activeEmployeesByRole.map((role: any) => (
+                {sortedRoles.map((role: any) => (
                   <TableRow key={role.name}><TableCell>{role.name}</TableCell><TableCell align="right">{role.value}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -177,9 +180,16 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Visitas por Ciudad</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Ciudad</TableCell><TableCell align="right">Visitas (Actual)</TableCell><TableCell align="right">Visitas (Anterior)</TableCell><TableCell align="right">Cambio</TableCell></TableRow></TableHead>
+              <TableHead>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                  <TableCell><TableSortLabel active={sortConfigCities?.key === 'name'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('name')}>Ciudad</TableSortLabel></TableCell>
+                  <TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'currentVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('currentVisits')}>Visitas (Actual)</TableSortLabel></TableCell>
+                  <TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'previousVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('previousVisits')}>Visitas (Anterior)</TableSortLabel></TableCell>
+                  <TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'change'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('change')}>Cambio</TableSortLabel></TableCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {cityComparisonData.map((city: any) => {
+                {sortedCities.map((city: any) => {
                   const change = city.currentVisits - city.previousVisits;
                   const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
                   const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
@@ -206,9 +216,14 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Empleados por Hotel</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Hotel</TableCell><TableCell align="right">Cantidad</TableCell></TableRow></TableHead>
+              <TableHead>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                  <TableCell><TableSortLabel active={sortConfigHotels?.key === 'name'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('name')}>Hotel</TableSortLabel></TableCell>
+                  <TableCell align="right"><TableSortLabel active={sortConfigHotels?.key === 'count'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('count')}>Cantidad</TableSortLabel></TableCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {employeesByHotel.map((hotel: any) => (
+                {sortedHotels.map((hotel: any) => (
                   <TableRow key={hotel.name}><TableCell>{hotel.name}</TableCell><TableCell align="right">{hotel.count}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -219,9 +234,14 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Asistencia por Empleado</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Empleado</TableCell><TableCell align="right">Visitas</TableCell></TableRow></TableHead>
+              <TableHead>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                  <TableCell><TableSortLabel active={sortConfigAttendance?.key === 'name'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('name')}>Empleado</TableSortLabel></TableCell>
+                  <TableCell align="right"><TableSortLabel active={sortConfigAttendance?.key === 'value'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('value')}>Visitas</TableSortLabel></TableCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {currentPeriod.attendanceByEmployee.map((att: any) => (
+                {sortedAttendance.map((att: any) => (
                   <TableRow key={att.name}><TableCell>{att.name}</TableCell><TableCell align="right">{att.value}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -232,9 +252,13 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Nuevos Empleados</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Nombre</TableCell></TableRow></TableHead>
+              <TableHead>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                  <TableCell><TableSortLabel active={sortConfigNewEmployees?.key === 'name'} direction={sortConfigNewEmployees?.direction} onClick={() => requestSortNewEmployees('name')}>Nombre</TableSortLabel></TableCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {currentPeriod.newEmployeesList.map((emp: any) => (
+                {sortedNewEmployees.map((emp: any) => (
                   <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
                 ))}
               </TableBody>
@@ -245,9 +269,13 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Empleados en Lista Negra</Typography>
           <TableContainer component={Paper}>
             <Table>
-              <TableHead><TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell>Nombre</TableCell></TableRow></TableHead>
+              <TableHead>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                  <TableCell><TableSortLabel active={sortConfigBlacklisted?.key === 'name'} direction={sortConfigBlacklisted?.direction} onClick={() => requestSortBlacklisted('name')}>Nombre</TableSortLabel></TableCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {blacklistedEmployeesList.map((emp: any) => (
+                {sortedBlacklisted.map((emp: any) => (
                   <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
                 ))}
               </TableBody>
