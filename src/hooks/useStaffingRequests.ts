@@ -28,21 +28,6 @@ export const useStaffingRequests = () => {
 
   useEffect(() => {
     fetchRequests();
-
-    const channel = supabase
-      .channel('staffing_requests_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'staffing_requests' },
-        (payload) => {
-          fetchRequests();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [fetchRequests]);
 
   const addRequest = async (request: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'>) => {
@@ -52,7 +37,9 @@ export const useStaffingRequests = () => {
 
     if (error) {
       console.error('Error adding staffing request:', error);
+      throw error;
     }
+    await fetchRequests();
   };
 
   const updateRequest = async (id: number, updates: Partial<Omit<StaffingRequest, 'hotelName'>>) => {
@@ -75,7 +62,9 @@ export const useStaffingRequests = () => {
 
     if (error) {
       console.error('Error updating staffing request:', error);
+      throw error;
     }
+    await fetchRequests();
   };
 
   const deleteRequest = async (id: number) => {
@@ -86,9 +75,9 @@ export const useStaffingRequests = () => {
 
     if (error) {
       console.error('Error deleting staffing request:', error);
-    } else {
-      setRequests(prev => prev.filter(req => req.id !== id));
+      throw error;
     }
+    await fetchRequests();
   };
 
   const fetchHistory = useCallback(async (requestId: number) => {

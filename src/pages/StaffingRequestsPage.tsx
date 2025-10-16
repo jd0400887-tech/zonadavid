@@ -1,9 +1,5 @@
-
-
-
-
 import { useState, useMemo } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Toolbar, TableSortLabel, Chip, IconButton, Select, MenuItem, FormControl, Grid, TextField, InputAdornment, InputLabel } from '@mui/material';
+import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Toolbar, TableSortLabel, Chip, IconButton, Select, MenuItem, FormControl, Grid, TextField, InputAdornment, InputLabel, Snackbar, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -42,6 +38,8 @@ export default function StaffingRequestsPage() {
   const [hotelFilter, setHotelFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
+  const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'error' } | null>(null);
+
   const filteredRequests = useMemo(() => {
     return requests
       .filter(req => {
@@ -78,19 +76,30 @@ export default function StaffingRequestsPage() {
   };
 
   const handleSubmit = async (formData: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'>) => {
-    if (editingRequest) {
-      await updateRequest(editingRequest.id, formData);
-    } else {
-      await addRequest(formData);
+    try {
+      if (editingRequest) {
+        await updateRequest(editingRequest.id, formData);
+        setSnackbar({ open: true, message: 'Solicitud actualizada correctamente', severity: 'success' });
+      } else {
+        await addRequest(formData);
+        setSnackbar({ open: true, message: 'Solicitud creada correctamente', severity: 'success' });
+      }
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Error al guardar la solicitud', severity: 'error' });
     }
   };
 
   const handleStatusChange = async (id: number, newStatus: StaffingRequest['status']) => {
-    const updates: Partial<StaffingRequest> = { status: newStatus };
-    if (newStatus === 'Completada' || newStatus === 'Cancelada por Hotel' || newStatus === 'Candidato No Presentado') {
-      updates.completed_at = new Date().toISOString();
+    try {
+      const updates: Partial<StaffingRequest> = { status: newStatus };
+      if (newStatus === 'Completada' || newStatus === 'Cancelada por Hotel' || newStatus === 'Candidato No Presentado') {
+        updates.completed_at = new Date().toISOString();
+      }
+      await updateRequest(id, updates);
+      setSnackbar({ open: true, message: 'Estado actualizado correctamente', severity: 'success' });
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Error al actualizar el estado', severity: 'error' });
     }
-    await updateRequest(id, updates);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -99,8 +108,13 @@ export default function StaffingRequestsPage() {
   };
 
   const handleConfirmDelete = async () => {
-    if (requestToDelete) {
-      await deleteRequest(requestToDelete);
+    try {
+      if (requestToDelete) {
+        await deleteRequest(requestToDelete);
+        setSnackbar({ open: true, message: 'Solicitud eliminada correctamente', severity: 'success' });
+      }
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Error al eliminar la solicitud', severity: 'error' });
     }
     setIsConfirmDialogOpen(false);
     setRequestToDelete(null);
@@ -236,6 +250,11 @@ export default function StaffingRequestsPage() {
 
         <StaffingRequestDialog open={isDialogOpen} onClose={handleCloseDialog} onSubmit={handleSubmit} initialData={editingRequest} />
         <ConfirmationDialog open={isConfirmDialogOpen} onClose={() => setIsConfirmDialogOpen(false)} onConfirm={handleConfirmDelete} title="Confirmar Eliminación" message="¿Estás seguro de que quieres eliminar esta solicitud? Esta acción no se puede deshacer." />
+        <Snackbar open={snackbar?.open} autoHideDuration={6000} onClose={() => setSnackbar(null)}>
+          <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity || 'success'} sx={{ width: '100%' }}>
+            {snackbar?.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Box>
   );

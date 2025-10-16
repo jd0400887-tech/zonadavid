@@ -15,6 +15,7 @@ import { useAttendance } from '../hooks/useAttendance';
 
 // Components
 import StatCard from '../components/dashboard/StatCard';
+import RequestsCounter from '../components/dashboard/RequestsCounter';
 import VisitsOverTimeChart from '../components/dashboard/VisitsOverTimeChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
 import DashboardPieChart from '../components/dashboard/DashboardPieChart';
@@ -234,6 +235,7 @@ function DashboardPage() {
       <Box>
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
+          <RequestsCounter />
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} /></Grid>

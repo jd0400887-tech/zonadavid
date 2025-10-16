@@ -10,7 +10,7 @@ import type { StaffingRequest, StaffingRequestHistory } from '../../types';
 interface StaffingRequestDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (request: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'>) => void;
+  onSubmit: (request: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'>) => Promise<void>;
   initialData?: StaffingRequest | null;
 }
 
@@ -19,7 +19,7 @@ const defaultState: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'> = {
   request_type: 'temporal',
   num_of_people: 1,
   role: '',
-  start_date: new Date().toISOString().split('T')[0],
+  start_date: new Date().toISOString().split('T')[0], // Defaults to today
   status: 'Pendiente',
   notes: '',
 };
@@ -63,13 +63,13 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
     setTab(newValue);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const utcDate = new Date(`${formData.start_date}T00:00:00`);
     const submissionData = {
       ...formData,
       start_date: utcDate.toISOString(),
     };
-    onSubmit(submissionData);
+    await onSubmit(submissionData);
     onClose();
   };
 
