@@ -26,6 +26,35 @@ const StatComparison = ({ title, currentValue, previousValue }: { title: string,
   );
 };
 
+import { useLocation } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel } from '@mui/material';
+import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useReportData } from '../hooks/useReportData';
+import { useSortableData } from '../hooks/useSortableData';
+import { exportToExcel } from '../utils/exportToExcel';
+
+// A small component to display a stat with its change from the previous period
+const StatComparison = ({ title, currentValue, previousValue }: { title: string, currentValue: number, previousValue: number }) => {
+  const change = currentValue - previousValue;
+  const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
+  const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
+
+  return (
+    <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+      <Typography variant="h6" color="text.secondary">{title}</Typography>
+      <Typography variant="h4" component="p">{currentValue}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: changeColor }}>
+        <ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
+        <Typography variant="body2">
+          {change} vs. período anterior ({previousValue})
+        </Typography>
+      </Box>
+    </Paper>
+  );
+};
+
 function InformesPage() {
   const location = useLocation();
   const { title, startDate, endDate } = location.state || {};
@@ -34,9 +63,26 @@ function InformesPage() {
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : 'N/A';
   const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString() : 'N/A';
 
+  const cityComparisonData = useMemo(() => {
+    if (!data || !data.currentPeriod) return [];
+    const allCities = [...new Set([
+      ...data.currentPeriod.visitsByCity.map((c: any) => c.name),
+      ...(data.previousPeriod?.visitsByCity.map((c: any) => c.name) || [])
+    ])];
+    return allCities.map(cityName => {
+      const current = data.currentPeriod.visitsByCity.find((c: any) => c.name === cityName);
+      const previous = data.previousPeriod?.visitsByCity.find((c: any) => c.name === cityName);
+      return {
+        name: cityName,
+        currentVisits: current?.value || 0,
+        previousVisits: previous?.value || 0,
+      };
+    });
+  }, [data]);
+
   // Sorting hooks for each table
   const { items: sortedRoles, requestSort: requestSortRoles, sortConfig: sortConfigRoles } = useSortableData(data?.activeEmployeesByRole || [], { key: 'value', direction: 'desc' });
-  const { items: sortedCities, requestSort: requestSortCities, sortConfig: sortConfigCities } = useSortableData(data?.cityComparisonData || [], { key: 'currentVisits', direction: 'desc' });
+  const { items: sortedCities, requestSort: requestSortCities, sortConfig: sortConfigCities } = useSortableData(cityComparisonData, { key: 'currentVisits', direction: 'desc' });
   const { items: sortedHotels, requestSort: requestSortHotels, sortConfig: sortConfigHotels } = useSortableData(data?.employeesByHotel || [], { key: 'count', direction: 'desc' });
   const { items: sortedAttendance, requestSort: requestSortAttendance, sortConfig: sortConfigAttendance } = useSortableData(data?.currentPeriod?.attendanceByEmployee || [], { key: 'value', direction: 'desc' });
   const { items: sortedNewEmployees, requestSort: requestSortNewEmployees, sortConfig: sortConfigNewEmployees } = useSortableData(data?.currentPeriod?.newEmployeesList || [], { key: 'name', direction: 'asc' });
