@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField, IconButton } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
+import UndoIcon from '@mui/icons-material/Undo';
 import { useEmployees } from '../hooks/useEmployees';
 import { useHotels } from '../hooks/useHotels';
 import type { Hotel, Employee } from '../types';
@@ -12,6 +13,16 @@ export default function PayrollReviewPage() {
   const { hotels } = useHotels();
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
+
+  useEffect(() => {
+    const initialOvertime = employees.reduce((acc, emp) => {
+      if (emp.overtime) {
+        acc[emp.id] = emp.overtime;
+      }
+      return acc;
+    }, {} as {[key: string]: string});
+    setOvertimeNotes(initialOvertime);
+  }, [employees]);
 
   const handleOvertimeChange = (employeeId: string, value: string) => {
     setOvertimeNotes(prev => ({
@@ -48,6 +59,10 @@ export default function PayrollReviewPage() {
   const handleMarkAsReviewed = (employeeId: string) => {
     const overtime = overtimeNotes[employeeId];
     updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString(), overtime });
+  };
+
+  const handleUnmarkAsReviewed = (employeeId: string) => {
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: null });
   };
 
   return (
@@ -102,14 +117,23 @@ export default function PayrollReviewPage() {
                           sx={{ width: '100px' }}
                           value={overtimeNotes[employee.id] || ''}
                           onChange={(e) => handleOvertimeChange(employee.id, e.target.value)}
-                        />
-                        <IconButton
-                          color="primary"
-                          onClick={() => handleMarkAsReviewed(employee.id)}
                           disabled={!employee.needsReview}
-                        >
-                          <CheckCircleOutlineIcon />
-                        </IconButton>
+                        />
+                        {employee.needsReview ? (
+                          <IconButton
+                            color="primary"
+                            onClick={() => handleMarkAsReviewed(employee.id)}
+                          >
+                            <CheckCircleOutlineIcon />
+                          </IconButton>
+                        ) : (
+                          <IconButton
+                            color="secondary"
+                            onClick={() => handleUnmarkAsReviewed(employee.id)}
+                          >
+                            <UndoIcon />
+                          </IconButton>
+                        )}
                       </Box>
                     }
                   >

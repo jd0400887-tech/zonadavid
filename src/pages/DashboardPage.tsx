@@ -97,7 +97,7 @@ function useDashboardStats() {
 
     const blacklistedEmployees = employees.filter(e => e.isBlacklisted).length;
 
-    const employeesByHotel = employees.reduce((acc, employee) => {
+    const employeesByHotel = activeEmployeesList.reduce((acc, employee) => {
       const hotelName = hotels.find(h => h.id === employee.hotelId)?.name || 'Sin Hotel';
       acc[hotelName] = (acc[hotelName] || 0) + 1;
       return acc;

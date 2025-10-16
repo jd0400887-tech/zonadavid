@@ -41,7 +41,7 @@ const calculatePeriodStats = (
     return !isNaN(idTimestamp) && idTimestamp >= startTime && idTimestamp <= endTime;
   });
 
-  const totalOvertime = allEmployees.reduce((acc, emp) => acc + (emp.overtime || 0), 0);
+  const totalOvertime = allEmployees.reduce((acc, emp) => acc + (parseFloat(emp.overtime) || 0), 0);
 
   const hotelCityMap = new Map(allHotels.map(h => [h.id, h.city]));
 
