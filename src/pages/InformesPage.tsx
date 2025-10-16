@@ -1,5 +1,3 @@
-
-
 import { useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
 import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel } from '@mui/material';
@@ -102,6 +100,11 @@ function InformesPage() {
         { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
         { 'Métrica': 'Nóminas Revisadas', 'Valor': currentPeriod.payrollsReviewed },
         { 'Métrica': 'Total Horas Overtime', 'Valor': currentPeriod.totalOvertime },
+        { 'Métrica': 'Nuevas Solicitudes', 'Valor': currentPeriod.newRequests },
+        { 'Métrica': 'Tasa de Cumplimiento (%)', 'Valor': currentPeriod.fulfillmentRate.toFixed(1) },
+        { 'Métrica': 'Tiempo Promedio de Cobertura (días)', 'Valor': currentPeriod.avgTimeToFill.toFixed(1) },
+        { 'Métrica': 'Tasa de No Presentación (%)', 'Valor': currentPeriod.noShowRate.toFixed(1) },
+        { 'Métrica': 'Solicitudes Vencidas', 'Valor': currentPeriod.overdueRequests },
         { 'Métrica': 'Nóminas por Revisar', 'Valor': payrollsToReview },
         { 'Métrica': 'En Lista Negra', 'Valor': blacklistedEmployees },
       ],
@@ -147,6 +150,21 @@ function InformesPage() {
           <StatComparison title="Total Horas Overtime" currentValue={currentPeriod.totalOvertime} previousValue={previousPeriod?.totalOvertime || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Nuevas Solicitudes" currentValue={currentPeriod.newRequests} previousValue={previousPeriod?.newRequests || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Tasa de Cumplimiento" currentValue={currentPeriod.fulfillmentRate} previousValue={previousPeriod?.fulfillmentRate || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Tiempo Promedio de Cobertura" currentValue={currentPeriod.avgTimeToFill} previousValue={previousPeriod?.avgTimeToFill || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Tasa de No Presentación" currentValue={currentPeriod.noShowRate} previousValue={previousPeriod?.noShowRate || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Solicitudes Vencidas" currentValue={currentPeriod.overdueRequests} previousValue={previousPeriod?.overdueRequests || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -179,14 +197,7 @@ function InformesPage() {
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
-                  <TableCell>
-                    <TableSortLabel active={sortConfigRoles?.key === 'name'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('name')}>Cargo</TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right">
-                    <TableSortLabel active={sortConfigRoles?.key === 'value'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('value')}>Cantidad</TableSortLabel>
-                  </TableCell>
-                </TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigRoles?.key === 'name'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('name')}>Cargo</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigRoles?.key === 'value'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('value')}>Cantidad</TableSortLabel></TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {sortedRoles.map((role: any) => (
@@ -201,12 +212,7 @@ function InformesPage() {
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
-                  <TableCell><TableSortLabel active={sortConfigCities?.key === 'name'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('name')}>Ciudad</TableSortLabel></TableCell>
-                  <TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'currentVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('currentVisits')}>Visitas (Actual)</TableSortLabel></TableCell>
-                  <TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'previousVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('previousVisits')}>Visitas (Anterior)</TableSortLabel></TableCell>
-                  <TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'change'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('change')}>Cambio</TableSortLabel></TableCell>
-                </TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigCities?.key === 'name'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('name')}>Ciudad</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'currentVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('currentVisits')}>Visitas (Actual)</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'previousVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('previousVisits')}>Visitas (Anterior)</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'change'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('change')}>Cambio</TableSortLabel></TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {sortedCities.map((city: any) => {
@@ -218,9 +224,7 @@ function InformesPage() {
                       <TableCell>{city.name}</TableCell>
                       <TableCell align="right">{city.currentVisits}</TableCell>
                       <TableCell align="right">{city.previousVisits}</TableCell>
-                      <TableCell align="right" sx={{ color: changeColor, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} /> {change}
-                      </TableCell>
+                      <TableCell align="right" sx={{ color: changeColor, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}><ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} /> {change}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -237,10 +241,7 @@ function InformesPage() {
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
-                  <TableCell><TableSortLabel active={sortConfigHotels?.key === 'name'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('name')}>Hotel</TableSortLabel></TableCell>
-                  <TableCell align="right"><TableSortLabel active={sortConfigHotels?.key === 'count'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('count')}>Cantidad</TableSortLabel></TableCell>
-                </TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigHotels?.key === 'name'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('name')}>Hotel</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigHotels?.key === 'count'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('count')}>Cantidad</TableSortLabel></TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {sortedHotels.map((hotel: any) => (
@@ -255,10 +256,7 @@ function InformesPage() {
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
-                  <TableCell><TableSortLabel active={sortConfigAttendance?.key === 'name'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('name')}>Empleado</TableSortLabel></TableCell>
-                  <TableCell align="right"><TableSortLabel active={sortConfigAttendance?.key === 'value'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('value')}>Visitas</TableSortLabel></TableCell>
-                </TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigAttendance?.key === 'name'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('name')}>Empleado</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigAttendance?.key === 'value'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('value')}>Visitas</TableSortLabel></TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {sortedAttendance.map((att: any) => (
@@ -273,9 +271,7 @@ function InformesPage() {
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
-                  <TableCell><TableSortLabel active={sortConfigNewEmployees?.key === 'name'} direction={sortConfigNewEmployees?.direction} onClick={() => requestSortNewEmployees('name')}>Nombre</TableSortLabel></TableCell>
-                </TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigNewEmployees?.key === 'name'} direction={sortConfigNewEmployees?.direction} onClick={() => requestSortNewEmployees('name')}>Nombre</TableSortLabel></TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {sortedNewEmployees.map((emp: any) => (
@@ -290,9 +286,7 @@ function InformesPage() {
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
-                  <TableCell><TableSortLabel active={sortConfigBlacklisted?.key === 'name'} direction={sortConfigBlacklisted?.direction} onClick={() => requestSortBlacklisted('name')}>Nombre</TableSortLabel></TableCell>
-                </TableRow>
+                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigBlacklisted?.key === 'name'} direction={sortConfigBlacklisted?.direction} onClick={() => requestSortBlacklisted('name')}>Nombre</TableSortLabel></TableCell></TableRow>
               </TableHead>
               <TableBody>
                 {sortedBlacklisted.map((emp: any) => (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
 import type { Employee } from '../types';
 
@@ -74,8 +74,14 @@ export function useEmployees() {
     await updateEmployee(updatedEmployee);
   };
 
+  const roles = useMemo(() => {
+    const allRoles = employees.map(emp => emp.role).filter(Boolean);
+    return [...new Set(allRoles)];
+  }, [employees]);
+
   return {
     employees,
+    roles,
     addEmployee,
     updateEmployee,
     deleteEmployee,

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useEmployees } from './useEmployees';
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
+import { useStaffingRequests } from './useStaffingRequests';
 import { differenceInDays, subDays, startOfWeek } from 'date-fns';
 
 // A function to calculate stats for a given period
@@ -9,6 +10,7 @@ const calculatePeriodStats = (
   allRecords: any[], 
   allEmployees: any[], 
   allHotels: any[], 
+  allRequests: any[],
   start: Date, 
   end: Date
 ) => {
@@ -62,6 +64,30 @@ const calculatePeriodStats = (
     return acc;
   }, {} as Record<string, number>);
 
+  // New calculations for staffing requests
+  const periodRequests = allRequests.filter(r => {
+    const reqDate = new Date(r.created_at);
+    return reqDate >= start && reqDate <= end;
+  });
+
+  const newRequests = periodRequests.length;
+
+  const completedInPeriod = periodRequests.filter(r => r.status === 'Completada' && r.completed_at && new Date(r.completed_at) >= start && new Date(r.completed_at) <= end);
+  const fulfillmentRate = newRequests > 0 ? (completedInPeriod.length / newRequests) * 100 : 0;
+
+  const timeToFillSum = completedInPeriod.reduce((acc, r) => {
+    return acc + differenceInDays(new Date(r.completed_at), new Date(r.created_at));
+  }, 0);
+  const avgTimeToFill = completedInPeriod.length > 0 ? timeToFillSum / completedInPeriod.length : 0;
+
+  const noShowInPeriod = periodRequests.filter(r => r.status === 'Candidato No Presentado').length;
+  const noShowRate = newRequests > 0 ? (noShowInPeriod.length / newRequests) * 100 : 0;
+
+  const overdueRequests = periodRequests.filter(r => 
+    !['Completada', 'Cancelada por Hotel', 'Candidato No Presentado'].includes(r.status) && 
+    new Date(r.start_date) < end
+  ).length;
+
   return {
     visits: periodRecords.length,
     newEmployees: newEmployeesList.length,
@@ -71,6 +97,11 @@ const calculatePeriodStats = (
     payrollsReviewed,
     attendanceByEmployee: Object.entries(attendanceByEmployee).map(([name, value]) => ({ name, value })),
     totalOvertime,
+    newRequests,
+    fulfillmentRate,
+    avgTimeToFill,
+    noShowRate,
+    overdueRequests,
   };
 };
 
@@ -78,10 +109,10 @@ const calculatePeriodStats = (
 export const useReportData = (startDate: string | null, endDate: string | null) => {
   const { employees, loading: employeesLoading } = useEmployees();
   const { hotels, loading: hotelsLoading } = useHotels();
-  // Fetch all records to be filtered locally
   const { allRecords, loading: attendanceLoading } = useAttendance({ start: null, end: null });
+  const { requests, loading: requestsLoading } = useStaffingRequests();
 
-  const loading = employeesLoading || hotelsLoading || attendanceLoading;
+  const loading = employeesLoading || hotelsLoading || attendanceLoading || requestsLoading;
 
   const reportData = useMemo(() => {
     if (loading || !startDate || !endDate) {
@@ -91,15 +122,13 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     const currentStart = new Date(startDate);
     const currentEnd = new Date(endDate);
     
-    // Calculate previous period
     const periodDuration = differenceInDays(currentEnd, currentStart);
     const previousStart = subDays(currentStart, periodDuration + 1);
     const previousEnd = subDays(currentEnd, periodDuration + 1);
 
-    const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, currentStart, currentEnd);
-    const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, previousStart, previousEnd);
+    const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, requests, currentStart, currentEnd);
+    const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, requests, previousStart, previousEnd);
 
-    // --- Snapshot Stats (not period-dependent) ---
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
     const blacklistedEmployeesList = employees.filter(e => e.isBlacklisted);
@@ -134,7 +163,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       payrollsToReview,
     };
 
-  }, [loading, startDate, endDate, employees, hotels, allRecords]);
+  }, [loading, startDate, endDate, employees, hotels, allRecords, requests]);
 
   return {
     data: reportData,

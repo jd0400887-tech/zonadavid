@@ -1,36 +1,26 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 
 interface ConfirmationDialogProps {
   open: boolean;
-  title: string;
-  content: string;
   onClose: () => void;
   onConfirm: () => void;
+  title: string;
+  message: string;
 }
 
-export default function ConfirmationDialog({
-  open,
-  title,
-  content,
-  onClose,
-  onConfirm,
-}: ConfirmationDialogProps) {
+export default function ConfirmationDialog({ open, onClose, onConfirm, title, message }: ConfirmationDialogProps) {
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          {content}
-        </DialogContentText>
+        <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
-        <Button onClick={onConfirm} color="primary" autoFocus>
+        <Button onClick={onConfirm} color="error" autoFocus>
           Confirmar
         </Button>
       </DialogActions>

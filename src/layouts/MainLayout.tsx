@@ -7,6 +7,7 @@ import ApartmentIcon from '@mui/icons-material/Apartment';
 import MenuIcon from '@mui/icons-material/Menu';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../hooks/useAuth';
 
@@ -16,6 +17,7 @@ const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Empleados', icon: <PeopleIcon />, path: '/empleados' },
   { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles' },
+  { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes' },
   { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia' },
   { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina' },
 ];

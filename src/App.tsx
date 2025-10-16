@@ -7,6 +7,7 @@ import AttendanceReportPage from './pages/AttendanceReportPage';
 import PayrollReviewPage from './pages/PayrollReviewPage';
 import HotelDetailPage from './pages/HotelDetailPage';
 import InformesPage from './pages/InformesPage'; // Import the new page
+import StaffingRequestsPage from './pages/StaffingRequestsPage';
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './hooks/useAuth';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="reporte-asistencia" element={<AttendanceReportPage />} />
           <Route path="revision-nomina" element={<PayrollReviewPage />} />
           <Route path="informes" element={<InformesPage />} /> {/* Add the new route */}
+          <Route path="solicitudes" element={<StaffingRequestsPage />} />
         </Route>
       )}
     </Routes>
