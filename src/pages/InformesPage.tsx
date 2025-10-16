@@ -1,30 +1,4 @@
-import { useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel } from '@mui/material';
-import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useReportData } from '../hooks/useReportData';
-import { useSortableData } from '../hooks/useSortableData';
-import { exportToExcel } from '../utils/exportToExcel';
 
-// A small component to display a stat with its change from the previous period
-const StatComparison = ({ title, currentValue, previousValue }: { title: string, currentValue: number, previousValue: number }) => {
-  const change = currentValue - previousValue;
-  const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
-  const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
-
-  return (
-    <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
-      <Typography variant="h6" color="text.secondary">{title}</Typography>
-      <Typography variant="h4" component="p">{currentValue}</Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: changeColor }}>
-        <ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
-        <Typography variant="body2">
-          {change} vs. período anterior ({previousValue})
-        </Typography>
-      </Box>
-    </Paper>
-  );
-};
 
 import { useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
