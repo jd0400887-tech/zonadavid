@@ -76,7 +76,12 @@ const calculatePeriodStats = (
   const fulfillmentRate = newRequests > 0 ? (completedInPeriod.length / newRequests) * 100 : 0;
 
   const timeToFillSum = completedInPeriod.reduce((acc, r) => {
-    return acc + differenceInDays(new Date(r.completed_at), new Date(r.created_at));
+    const completedDate = new Date(r.completed_at);
+    const createdDate = new Date(r.created_at);
+    if (!isNaN(completedDate.getTime()) && !isNaN(createdDate.getTime())) {
+      return acc + differenceInDays(completedDate, createdDate);
+    }
+    return acc;
   }, 0);
   const avgTimeToFill = completedInPeriod.length > 0 ? timeToFillSum / completedInPeriod.length : 0;
 

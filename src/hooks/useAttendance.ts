@@ -54,47 +54,71 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
   };
 
   const filteredRecords = useMemo(() => {
-    return attendanceRecords.filter(record => {
-      const recordDate = new Date(record.timestamp);
-      let inDateRange = true;
-      if (dateRange.start) {
-        inDateRange = recordDate >= startOfDay(dateRange.start);
-      }
-      if (dateRange.end) {
-        inDateRange = inDateRange && recordDate <= endOfDay(dateRange.end);
-      }
+    try {
+      return attendanceRecords.filter(record => {
+        if (!record.timestamp) return false; // Guard against null/undefined timestamps
+        const recordDate = new Date(record.timestamp);
+        let inDateRange = true;
+        if (dateRange.start) {
+          inDateRange = recordDate >= startOfDay(dateRange.start);
+        }
+        if (dateRange.end) {
+          inDateRange = inDateRange && recordDate <= endOfDay(dateRange.end);
+        }
 
-      const inHotel = selectedHotelId ? record.hotelId === selectedHotelId : true;
+        const inHotel = selectedHotelId ? record.hotelId === selectedHotelId : true;
 
-      return inDateRange && inHotel;
-    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        return inDateRange && inHotel;
+      }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (error) {
+      console.error("Error in filteredRecords memo:", error);
+      return [];
+    }
   }, [attendanceRecords, dateRange, selectedHotelId]);
 
   const visitsByHotel = useMemo(() => {
-    const counts: { [key: string]: number } = {};
-    filteredRecords.forEach(record => {
-      counts[record.hotelId] = (counts[record.hotelId] || 0) + 1;
-    });
+    try {
+      const counts: { [key: string]: number } = {};
+      filteredRecords.forEach(record => {
+        counts[record.hotelId] = (counts[record.hotelId] || 0) + 1;
+      });
 
-    return Object.entries(counts).map(([hotelId, count]) => ({
-      hotel: hotels.find(h => h.id === hotelId),
-      count,
-    })).filter(item => item.hotel).sort((a, b) => b.count - a.count);
-
+      return Object.entries(counts).map(([hotelId, count]) => ({
+        hotel: hotels.find(h => h.id === hotelId),
+        count,
+      })).filter(item => item.hotel).sort((a, b) => b.count - a.count);
+    } catch (error) {
+      console.error("Error in visitsByHotel memo:", error);
+      return [];
+    }
   }, [filteredRecords, hotels]);
 
   const visitsByDay = useMemo(() => {
-    const groups: { [key: string]: AttendanceRecord[] } = {};
-    filteredRecords.forEach(record => {
-      const day = new Date(record.timestamp).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-      if (!groups[day]) {
-        groups[day] = [];
-      }
-      groups[day].push(record);
-    });
-    return groups;
+    try {
+      const groups: { [key: string]: AttendanceRecord[] } = {};
+      filteredRecords.forEach(record => {
+        const day = new Date(record.timestamp).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (!groups[day]) {
+          groups[day] = [];
+        }
+        groups[day].push(record);
+      });
+      return groups;
+    } catch (error) {
+      console.error("Error in visitsByDay memo:", error);
+      return {};
+    }
   }, [filteredRecords]);
 
+
+  const deleteRecord = async (id: string) => {
+    const { error } = await supabase.from('attendance_records').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting attendance record:', error);
+    } else {
+      setAttendanceRecords(prev => prev.filter(record => record.id !== id));
+    }
+  };
 
   return {
     allRecords: attendanceRecords,
@@ -102,6 +126,7 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
     visitsByHotel,
     visitsByDay,
     addRecord,
+    deleteRecord,
     hotels,
     hotelsLoading,
   };

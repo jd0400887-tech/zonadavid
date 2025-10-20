@@ -21,7 +21,7 @@ export default function AttendanceReportPage() {
   const [dateRange, setDateRange] = useState<DateRange>({ start: subDays(new Date(), 30), end: new Date() });
   const [selectedHotelId, setSelectedHotelId] = useState<string | undefined>();
 
-  const { filteredRecords, visitsByHotel, hotels, hotelsLoading } = useAttendance(dateRange, selectedHotelId);
+  const { filteredRecords, visitsByHotel, hotels, hotelsLoading, deleteRecord } = useAttendance(dateRange, selectedHotelId);
 
   const handleViewChange = (_event: React.MouseEvent<HTMLElement>, nextView: string | null) => {
     if (nextView !== null) {
@@ -71,7 +71,7 @@ export default function AttendanceReportPage() {
           viewMode === 'report' ? (
             <Box>
               <AttendanceChart data={visitsByHotel} />
-              <AttendanceGroupedList groupedData={visitsByHotel} allRecords={filteredRecords} />
+              <AttendanceGroupedList groupedData={visitsByHotel} allRecords={filteredRecords} deleteRecord={deleteRecord} />
             </Box>
           ) : (
             <AttendanceCalendar records={filteredRecords} hotels={hotels} />
