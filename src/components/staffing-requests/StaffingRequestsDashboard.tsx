@@ -45,10 +45,7 @@ export default function StaffingRequestsDashboard({ requests, onFilterChange }: 
     }, 0);
     const avgTimeToFill = completedRequests.length > 0 ? timeToFillSum / completedRequests.length : 0;
 
-    const overdueRequests = requests.filter(r => 
-      !['Completada', 'Cancelada por Hotel', 'Candidato No Presentado'].includes(r.status) && 
-      new Date(r.start_date) < new Date()
-    ).length;
+    const overdueRequests = requests.filter(r => r.status === 'Vencida').length;
 
     const noShowRequests = requests.filter(r => r.status === 'Candidato No Presentado').length;
     const noShowRate = (noShowRequests / totalRequests) * 100;
