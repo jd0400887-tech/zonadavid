@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover } from '@mui/material'; // Added Badge, Popover
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
@@ -9,7 +9,9 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout';
+import NotificationsIcon from '@mui/icons-material/Notifications'; // Added NotificationsIcon
 import { useAuth } from '../hooks/useAuth';
+import { useDashboardStats } from '../hooks/useDashboardStats'; // Added useDashboardStats
 
 const drawerWidth = 240;
 
@@ -26,7 +28,9 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null); // State for Popover
   const { signOut } = useAuth();
+  const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats(); // Get stats
 
   const handleDrawerToggle = () => {
     setIsDrawerOpen(!isDrawerOpen);
@@ -41,6 +45,17 @@ export default function MainLayout() {
     await signOut();
     navigate('/login');
   };
+
+  const handleNotificationClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleNotificationClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? 'notification-popover' : undefined;
 
   const drawerContent = (
     <>
@@ -136,7 +151,53 @@ export default function MainLayout() {
                 {currentDate}
               </Typography>
             </Grid>
-            <Grid item sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 'auto' }}>
+            {/* Notification Bell */}
+            <Grid item sx={{ ml: 'auto' }}> {/* ml: 'auto' pushes it to the right */}
+              <IconButton
+                color="inherit"
+                aria-label="show notifications"
+                onClick={handleNotificationClick}
+                aria-describedby={id}
+              >
+                <Badge badgeContent={unfulfilledRequestsCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+              <Popover
+                id={id}
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleNotificationClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                <Box sx={{ p: 2, maxWidth: 300 }}>
+                  <Typography variant="h6" gutterBottom>Solicitudes Pendientes</Typography>
+                  {unfulfilledRequests.length > 0 ? (
+                    <List dense>
+                      {unfulfilledRequests.map((req) => (
+                        <ListItemButton key={req.id} onClick={() => {
+                          handleNotificationClose();
+                          navigate(`/solicitudes?requestId=${req.id}`); // Navigate to requests page, maybe highlight the request
+                        }}>
+                          <ListItemText
+                            primary={`Hotel: ${req.hotelName || 'N/A'} - ${req.position}`}
+                            secondary={`Inicio: ${new Date(req.start_date).toLocaleDateString()}`}
+                          />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  ) : (
+                    <Typography>No hay solicitudes pendientes.</Typography>
+                  )}
+                </Box>
+              </Popover>
             </Grid>
           </Grid>
         </Toolbar>

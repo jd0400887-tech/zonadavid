@@ -40,7 +40,13 @@ export function useEmployees() {
 
   const updateEmployee = async (updatedEmployee: Partial<Employee>) => {
     if (!updatedEmployee.id) return;
+
+    const oldEmployee = employees.find(emp => emp.id === updatedEmployee.id);
+    const oldIsActive = oldEmployee?.isActive ?? true; // Default to true if not found or null
+
+    // Perform the update on the employees table
     const { data, error } = await supabase.from('employees').update(updatedEmployee).eq('id', updatedEmployee.id).select();
+
     if (error) {
       console.error('Error updating employee:', error);
     } else if (data) {
@@ -49,6 +55,21 @@ export function useEmployees() {
           emp.id === updatedEmployee.id ? { ...emp, ...updatedEmployee } as Employee : emp
         )
       );
+
+      // Check if isActive status has changed and log it
+      const newIsActive = updatedEmployee.isActive ?? oldIsActive; // Use updated value, or old if not provided
+      if (oldIsActive !== newIsActive) {
+        const { error: historyError } = await supabase.from('employee_status_history').insert({
+          employee_id: updatedEmployee.id,
+          old_is_active: oldIsActive,
+          new_is_active: newIsActive,
+          reason: newIsActive ? 'Reactivated' : 'Deactivated', // Default reason, can be improved later
+        });
+
+        if (historyError) {
+          console.error('Error logging employee status change:', historyError);
+        }
+      }
     }
   };
 

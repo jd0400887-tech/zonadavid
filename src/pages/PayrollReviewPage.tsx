@@ -11,29 +11,14 @@ import { useHotels } from '../hooks/useHotels';
 import type { Employee } from '../types';
 import EmptyState from '../components/EmptyState';
 import StatCard from '../components/dashboard/StatCard';
+import { usePayrollHistory } from '../hooks/usePayrollHistory';
+import { supabase } from '../utils/supabase';
 
 export default function PayrollReviewPage() {
   const { employees, updateEmployee } = useEmployees();
   const { hotels } = useHotels();
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
-
-  useEffect(() => {
-    const initialOvertime = employees.reduce((acc, emp) => {
-      if (emp.overtime) {
-        acc[emp.id] = String(emp.overtime);
-      }
-      return acc;
-    }, {} as {[key: string]: string});
-    setOvertimeNotes(initialOvertime);
-  }, [employees]);
-
-  const handleOvertimeChange = (employeeId: string, value: string) => {
-    setOvertimeNotes(prev => ({
-      ...prev,
-      [employeeId]: value,
-    }));
-  };
 
   const today = new Date();
   const dayOfWeek = today.getDay();
@@ -43,7 +28,33 @@ export default function PayrollReviewPage() {
   startOfThisWeek.setHours(0, 0, 0, 0);
   const startOfWeekTimestamp = startOfThisWeek.getTime();
 
-  const allWorkrecordEmployees = employees.filter(emp => emp.payrollType === 'Workrecord');
+  const endOfThisWeek = new Date(startOfThisWeek);
+  endOfThisWeek.setDate(startOfThisWeek.getDate() + 7);
+
+  const { history: payrollHistory } = usePayrollHistory(startOfThisWeek, endOfThisWeek);
+
+  useEffect(() => {
+    const initialOvertime = employees.reduce((acc, emp) => {
+      const needsReview = !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp;
+      if (!needsReview) {
+        const review = payrollHistory.find(h => h.employee_id === emp.id);
+        if (review && review.overtime_hours) {
+          acc[emp.id] = String(review.overtime_hours);
+        }
+      }
+      return acc;
+    }, {} as {[key: string]: string});
+    setOvertimeNotes(initialOvertime);
+  }, [employees, payrollHistory, startOfWeekTimestamp]);
+
+  const handleOvertimeChange = (employeeId: string, value: string) => {
+    setOvertimeNotes(prev => ({
+      ...prev,
+      [employeeId]: value,
+    }));
+  };
+
+  const allWorkrecordEmployees = employees.filter(emp => emp.payrollType === 'Workrecord' && emp.isActive);
   const employeesNeedingReview = allWorkrecordEmployees.filter(emp => !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp);
   const pendingPayrollsCount = employeesNeedingReview.length;
   const pendingHotelsCount = new Set(employeesNeedingReview.map(emp => emp.hotelId)).size;
@@ -65,13 +76,36 @@ export default function PayrollReviewPage() {
     .map(emp => ({ ...emp, needsReview: !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp }))
     .sort((a, b) => (a.needsReview === b.needsReview ? a.name.localeCompare(b.name) : b.needsReview ? 1 : -1));
 
-  const handleMarkAsReviewed = (employeeId: string) => {
+  const handleMarkAsReviewed = async (employeeId: string) => {
     const overtimeValue = overtimeNotes[employeeId];
     const overtime = overtimeValue && !isNaN(parseFloat(overtimeValue)) ? parseFloat(overtimeValue) : null;
-    updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString(), overtime });
+
+    const { error: historyError } = await supabase.from('payroll_review_history').insert({
+      employee_id: employeeId,
+      review_date: new Date().toISOString(),
+      overtime_hours: overtime,
+    });
+
+    if (historyError) {
+      console.error('Error saving payroll history:', historyError);
+      return;
+    }
+
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString(), overtime: null });
   };
 
-  const handleUnmarkAsReviewed = (employeeId: string) => {
+  const handleUnmarkAsReviewed = async (employeeId: string) => {
+    const { error: deleteError } = await supabase
+      .from('payroll_review_history')
+      .delete()
+      .eq('employee_id', employeeId)
+      .gte('review_date', startOfThisWeek.toISOString());
+
+    if (deleteError) {
+      console.error('Error deleting payroll history:', deleteError);
+      return;
+    }
+
     updateEmployee({ id: employeeId, lastReviewedTimestamp: null, overtime: null });
   };
 

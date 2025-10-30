@@ -98,6 +98,7 @@ function InformesPage() {
       summaryData: [
         { 'Métrica': 'Visitas Registradas', 'Valor': currentPeriod.visits },
         { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
+        { 'Métrica': 'Empleados Inactivos', 'Valor': currentPeriod.activeToInactive }, // New export data
         { 'Métrica': 'Nóminas Revisadas', 'Valor': currentPeriod.payrollsReviewed },
         { 'Métrica': 'Total Horas Overtime', 'Valor': currentPeriod.totalOvertime },
         { 'Métrica': 'Nuevas Solicitudes', 'Valor': currentPeriod.newRequests },
@@ -137,17 +138,45 @@ function InformesPage() {
 
       {/* Section 1: Summary Stats */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* General Activity / Visits */}
+        <Grid item xs={12}>
+          <Typography variant="h5" gutterBottom>Actividad General</Typography>
+        </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Visitas Registradas" currentValue={currentPeriod.visits} previousValue={previousPeriod?.visits || 0} />
         </Grid>
+
+        {/* Employee Movement / Status */}
+        <Grid item xs={12} sx={{ mt: 2 }}>
+          <Typography variant="h5" gutterBottom>Movimiento de Empleados</Typography>
+        </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Nuevos Empleados" currentValue={currentPeriod.newEmployees} previousValue={previousPeriod?.newEmployees || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Empleados Inactivos" currentValue={currentPeriod.activeToInactive} previousValue={previousPeriod?.activeToInactive || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
+        </Grid>
+
+        {/* Payroll Review */}
+        <Grid item xs={12} sx={{ mt: 2 }}>
+          <Typography variant="h5" gutterBottom>Revisión de Nómina</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Nóminas Revisadas" currentValue={currentPeriod.payrollsReviewed} previousValue={previousPeriod?.payrollsReviewed || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Total Horas Overtime" currentValue={currentPeriod.totalOvertime} previousValue={previousPeriod?.totalOvertime || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
+        </Grid>
+
+        {/* Staffing Requests */}
+        <Grid item xs={12} sx={{ mt: 2 }}>
+          <Typography variant="h5" gutterBottom>Solicitudes de Personal</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Nuevas Solicitudes" currentValue={currentPeriod.newRequests} previousValue={previousPeriod?.newRequests || 0} />
@@ -163,12 +192,6 @@ function InformesPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Solicitudes Vencidas" currentValue={currentPeriod.overdueRequests} previousValue={previousPeriod?.overdueRequests || 0} />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
         </Grid>
       </Grid>
 

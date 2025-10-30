@@ -1,9 +1,21 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useEmployees } from './useEmployees';
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
 import { useStaffingRequests } from './useStaffingRequests';
 import { differenceInDays, subDays, startOfWeek } from 'date-fns';
+import { supabase } from '../utils/supabase';
+import { PayrollReview } from './usePayrollHistory';
+
+// New interface for employee status history
+export interface EmployeeStatusChange {
+  id: string;
+  employee_id: string;
+  change_date: string;
+  old_is_active: boolean;
+  new_is_active: boolean;
+  reason: string | null;
+}
 
 // A function to calculate stats for a given period
 const calculatePeriodStats = (
@@ -11,6 +23,8 @@ const calculatePeriodStats = (
   allEmployees: any[], 
   allHotels: any[], 
   allRequests: any[],
+  periodPayrollHistory: PayrollReview[],
+  periodEmployeeStatusHistory: EmployeeStatusChange[], // New parameter
   start: Date, 
   end: Date
 ) => {
@@ -43,7 +57,7 @@ const calculatePeriodStats = (
     return !isNaN(idTimestamp) && idTimestamp >= startTime && idTimestamp <= endTime;
   });
 
-  const totalOvertime = allEmployees.reduce((acc, emp) => acc + (parseFloat(emp.overtime) || 0), 0);
+  const totalOvertime = periodPayrollHistory.reduce((acc, review) => acc + (review.overtime_hours || 0), 0);
 
   const hotelCityMap = new Map(allHotels.map(h => [h.id, h.city]));
 
@@ -93,6 +107,11 @@ const calculatePeriodStats = (
     new Date(r.start_date) < end
   ).length;
 
+  // New calculation: employees moved from active to inactive
+  const activeToInactive = periodEmployeeStatusHistory.filter(change =>
+    change.old_is_active === true && change.new_is_active === false
+  ).length;
+
   return {
     visits: periodRecords.length,
     newEmployees: newEmployeesList.length,
@@ -107,6 +126,7 @@ const calculatePeriodStats = (
     avgTimeToFill,
     noShowRate,
     overdueRequests,
+    activeToInactive, // New stat
   };
 };
 
@@ -117,7 +137,101 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
   const { allRecords, loading: attendanceLoading } = useAttendance({ start: null, end: null });
   const { requests, loading: requestsLoading } = useStaffingRequests();
 
-  const loading = employeesLoading || hotelsLoading || attendanceLoading || requestsLoading;
+  const [currentPeriodPayrollHistory, setCurrentPeriodPayrollHistory] = useState<PayrollReview[]>([]);
+  const [previousPeriodPayrollHistory, setPreviousPeriodPayrollHistory] = useState<PayrollReview[]>([]);
+  const [currentPeriodEmployeeStatusHistory, setCurrentPeriodEmployeeStatusHistory] = useState<EmployeeStatusChange[]>([]); // New state
+  const [previousPeriodEmployeeStatusHistory, setPreviousPeriodEmployeeStatusHistory] = useState<EmployeeStatusChange[]>([]); // New state
+  const [payrollHistoryLoading, setPayrollHistoryLoading] = useState(true);
+  const [employeeStatusHistoryLoading, setEmployeeStatusHistoryLoading] = useState(true); // New loading state
+
+
+  const loading = employeesLoading || hotelsLoading || attendanceLoading || requestsLoading || payrollHistoryLoading || employeeStatusHistoryLoading; // Update loading
+
+  useEffect(() => {
+    const fetchHistoryData = async () => { // Renamed function
+      setPayrollHistoryLoading(true);
+      setEmployeeStatusHistoryLoading(true); // Set new loading state
+
+      if (!startDate || !endDate) {
+        setCurrentPeriodPayrollHistory([]);
+        setPreviousPeriodPayrollHistory([]);
+        setCurrentPeriodEmployeeStatusHistory([]); // Clear new state
+        setPreviousPeriodEmployeeStatusHistory([]); // Clear new state
+        setPayrollHistoryLoading(false);
+        setEmployeeStatusHistoryLoading(false); // Clear new loading state
+        return;
+      }
+
+      const currentStart = new Date(startDate);
+      const currentEnd = new Date(endDate);
+
+      const periodDuration = differenceInDays(currentEnd, currentStart);
+      const previousStart = subDays(currentStart, periodDuration + 1);
+      const previousEnd = subDays(currentEnd, periodDuration + 1);
+
+      // Fetch payroll history for current period (existing code)
+      const { data: currentPayrollHistoryData, error: currentPayrollHistoryError } = await supabase
+        .from('payroll_review_history')
+        .select('*')
+        .gte('review_date', currentStart.toISOString())
+        .lte('review_date', currentEnd.toISOString());
+
+      if (currentPayrollHistoryError) {
+        console.error('Error fetching current payroll history:', currentPayrollHistoryError);
+        setCurrentPeriodPayrollHistory([]);
+      } else {
+        setCurrentPeriodPayrollHistory(currentPayrollHistoryData as PayrollReview[]);
+      }
+
+      // Fetch payroll history for previous period (existing code)
+      const { data: previousPayrollHistoryData, error: previousPayrollHistoryError } = await supabase
+        .from('payroll_review_history')
+        .select('*')
+        .gte('review_date', previousStart.toISOString())
+        .lte('review_date', previousEnd.toISOString());
+
+      if (previousPayrollHistoryError) {
+        console.error('Error fetching previous payroll history:', previousPayrollHistoryError);
+        setPreviousPeriodPayrollHistory([]);
+      } else {
+        setPreviousPeriodPayrollHistory(previousPayrollHistoryData as PayrollReview[]);
+      }
+      setPayrollHistoryLoading(false);
+
+
+      // NEW: Fetch employee status history for current period
+      const { data: currentStatusHistoryData, error: currentStatusHistoryError } = await supabase
+        .from('employee_status_history')
+        .select('*')
+        .gte('change_date', currentStart.toISOString())
+        .lte('change_date', currentEnd.toISOString());
+
+      if (currentStatusHistoryError) {
+        console.error('Error fetching current employee status history:', currentStatusHistoryError);
+        setCurrentPeriodEmployeeStatusHistory([]);
+      } else {
+        setCurrentPeriodEmployeeStatusHistory(currentStatusHistoryData as EmployeeStatusChange[]);
+      }
+
+      // NEW: Fetch employee status history for previous period
+      const { data: previousStatusHistoryData, error: previousStatusHistoryError } = await supabase
+        .from('employee_status_history')
+        .select('*')
+        .gte('change_date', previousStart.toISOString())
+        .lte('change_date', previousEnd.toISOString());
+
+      if (previousStatusHistoryError) {
+        console.error('Error fetching previous employee status history:', previousStatusHistoryError);
+        setPreviousPeriodEmployeeStatusHistory([]);
+      } else {
+        setPreviousPeriodEmployeeStatusHistory(previousStatusHistoryData as EmployeeStatusChange[]);
+      }
+      setEmployeeStatusHistoryLoading(false);
+    };
+
+    fetchHistoryData();
+  }, [startDate, endDate]); // Dependencies for useEffect
+
 
   const reportData = useMemo(() => {
     if (loading || !startDate || !endDate) {
@@ -126,13 +240,13 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
 
     const currentStart = new Date(startDate);
     const currentEnd = new Date(endDate);
-    
+
     const periodDuration = differenceInDays(currentEnd, currentStart);
     const previousStart = subDays(currentStart, periodDuration + 1);
     const previousEnd = subDays(currentEnd, periodDuration + 1);
 
-    const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, requests, currentStart, currentEnd);
-    const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, requests, previousStart, previousEnd);
+    const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, requests, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
+    const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, requests, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
 
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
@@ -168,7 +282,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       payrollsToReview,
     };
 
-  }, [loading, startDate, endDate, employees, hotels, allRecords, requests]);
+  }, [loading, startDate, endDate, employees, hotels, allRecords, requests, currentPeriodPayrollHistory, previousPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, previousPeriodEmployeeStatusHistory]); // Add new dependencies
 
   return {
     data: reportData,
