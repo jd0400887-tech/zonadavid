@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField, IconButton, Grid, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Button, ListSubheader } from '@mui/material';
+import { Box, Typography, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField, IconButton, Grid, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Button, ListSubheader, CircularProgress } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import UndoIcon from '@mui/icons-material/Undo';
@@ -12,10 +12,12 @@ import type { Employee } from '../types';
 import EmptyState from '../components/EmptyState';
 import StatCard from '../components/dashboard/StatCard';
 import { usePayrollHistory } from '../hooks/usePayrollHistory';
+import { useTrendData } from '../hooks/useTrendData';
 import { supabase } from '../utils/supabase';
 
 export default function PayrollReviewPage() {
   const { employees, updateEmployee } = useEmployees();
+  const { hotelTrend, payrollTrend } = useTrendData();
   const { hotels } = useHotels();
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
@@ -61,6 +63,8 @@ export default function PayrollReviewPage() {
   const totalToReviewGlobal = allWorkrecordEmployees.length;
   const reviewedGlobalCount = totalToReviewGlobal - pendingPayrollsCount;
   const globalProgressPercentage = totalToReviewGlobal > 0 ? (reviewedGlobalCount / totalToReviewGlobal) * 100 : 0;
+
+
 
   const hotelStats = hotels.map(hotel => {
     const hotelEmployees = allWorkrecordEmployees.filter(emp => emp.hotelId === hotel.id);
@@ -111,6 +115,41 @@ export default function PayrollReviewPage() {
 
   const firstReviewedIndex = workrecordEmployeesFiltered.findIndex(emp => !emp.needsReview);
 
+  useEffect(() => {
+    const saveDailyStats = async () => {
+      if (totalToReviewGlobal === 0) return;
+
+      const today = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD
+
+      const { data, error } = await supabase
+        .from('daily_stats')
+        .select('id')
+        .eq('date', today)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+        console.error('Error checking daily stats:', error);
+        return;
+      }
+
+      if (!data) {
+        const { error: insertError } = await supabase
+          .from('daily_stats')
+          .insert({
+            date: today,
+            pending_hotels: pendingHotelsCount,
+            pending_payrolls: pendingPayrollsCount,
+          });
+
+        if (insertError) {
+          console.error('Error inserting daily stats:', insertError);
+        }
+      }
+    };
+
+    saveDailyStats();
+  }, [pendingHotelsCount, pendingPayrollsCount, totalToReviewGlobal]);
+
   return (
     <Box>
       <Toolbar />
@@ -118,12 +157,31 @@ export default function PayrollReviewPage() {
         <Typography variant="h4" sx={{ mb: 2 }}>Revisión de Nómina (Workrecord)</Typography>
 
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={4}><StatCard title="Hoteles Pendientes" value={pendingHotelsCount} icon={<ApartmentIcon />} /></Grid>
-          <Grid item xs={12} md={4}><StatCard title="Nóminas Pendientes" value={pendingPayrollsCount} icon={<PeopleIcon />} /></Grid>
+          <Grid item xs={12} md={4}><StatCard title="Hoteles Pendientes" value={pendingHotelsCount} icon={<ApartmentIcon />} trendData={hotelTrend} /></Grid>
+          <Grid item xs={12} md={4}><StatCard title="Nóminas Pendientes" value={pendingPayrollsCount} icon={<PeopleIcon />} trendData={payrollTrend} /></Grid>
           <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}><Typography variant="h6">Progreso General</Typography><Typography variant="h6">{`${reviewedGlobalCount} / ${totalToReviewGlobal}`}</Typography></Box>
-              <LinearProgress variant="determinate" value={globalProgressPercentage} sx={{ height: 10, borderRadius: 5 }} />
+            <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <Typography variant="h6" gutterBottom>Progreso General</Typography>
+              <Box sx={{ position: 'relative', display: 'inline-flex', mb: 1 }}>
+                <CircularProgress variant="determinate" value={globalProgressPercentage} size={80} thickness={4} color="primary" />
+                <Box
+                  sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography variant="h6" component="div" color="text.secondary">
+                    {`${Math.round(globalProgressPercentage)}%`}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="body1" color="text.secondary">{`${reviewedGlobalCount} / ${totalToReviewGlobal} revisados`}</Typography>
             </Paper>
           </Grid>
         </Grid>
@@ -132,12 +190,32 @@ export default function PayrollReviewPage() {
           <Typography variant="h6" sx={{ mb: 2 }}>Desglose por Hotel</Typography>
           <TableContainer sx={{ maxHeight: 300 }}>
             <Table stickyHeader>
-              <TableHead><TableRow><TableCell>Hotel</TableCell><TableCell>Progreso</TableCell><TableCell align="right">Estado</TableCell><TableCell align="center">Acción</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell>Hotel</TableCell><TableCell align="center">Progreso</TableCell><TableCell align="right">Estado</TableCell><TableCell align="center">Acción</TableCell></TableRow></TableHead>
               <TableBody>
                 {hotelStats.map(stat => (
                   stat && <TableRow key={stat.id} hover>
                     <TableCell>{stat.name}</TableCell>
-                    <TableCell><LinearProgress variant="determinate" value={stat.progress} /></TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                        <CircularProgress variant="determinate" value={stat.progress} size={40} thickness={4} />
+                        <Box
+                          sx={{
+                            top: 0,
+                            left: 0,
+                            bottom: 0,
+                            right: 0,
+                            position: 'absolute',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Typography variant="caption" component="div" color="text.secondary">
+                            {`${Math.round(stat.progress)}%`}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
                     <TableCell align="right">{`${stat.reviewed} / ${stat.total}`}</TableCell>
                     <TableCell align="center"><IconButton size="small" onClick={() => setSelectedHotel(stat.id)}><FilterListIcon /></IconButton></TableCell>
                   </TableRow>

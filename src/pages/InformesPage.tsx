@@ -13,14 +13,32 @@ const StatComparison = ({ title, currentValue, previousValue }: { title: string,
   const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
   const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
 
+  // Format value based on title
+  const formatDisplayValue = (value: number) => {
+    if (title.includes('Tasa')) {
+      return `${value.toFixed(1)}%`;
+    }
+    if (title.includes('Tiempo Promedio')) {
+      return `${value.toFixed(1)} días`;
+    }
+    return value.toFixed(0);
+  };
+
+  const formatChangeValue = (value: number) => {
+    if (title.includes('Tasa')) {
+      return value.toFixed(1);
+    }
+    return value.toFixed(0);
+  }
+
   return (
     <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
       <Typography variant="h6" color="text.secondary">{title}</Typography>
-      <Typography variant="h4" component="p">{currentValue}</Typography>
+      <Typography variant="h4" component="p">{formatDisplayValue(currentValue)}</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: changeColor }}>
         <ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
         <Typography variant="body2">
-          {change} vs. período anterior ({previousValue})
+          {formatChangeValue(change)} vs. período anterior ({formatDisplayValue(previousValue)})
         </Typography>
       </Box>
     </Paper>

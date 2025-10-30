@@ -70,8 +70,7 @@ export function useDashboardStats() {
 
     // NEW: Calculate unfulfilled requests
     const unfulfilledRequests = staffingRequests.filter(req =>
-      ['Pendiente', 'Enviada a Reclutamiento', 'En Proceso'].includes(req.status) &&
-      new Date(req.start_date) <= today // Start date is today or in the past
+      ['Pendiente', 'Enviada a Reclutamiento', 'En Proceso'].includes(req.status)
     );
     const unfulfilledRequestsCount = unfulfilledRequests.length;
 
