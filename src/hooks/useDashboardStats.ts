@@ -3,13 +3,11 @@ import { format } from 'date-fns';
 import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
 
 import { useHotels } from './useHotels';
-import { useEmployees } from './useEmployees';
 import { useAttendance } from './useAttendance';
 import { useStaffingRequests } from './useStaffingRequests';
 
 export function useDashboardStats() {
-  const { employees } = useEmployees();
-  const { hotels } = useHotels();
+  const { hotels, employees } = useHotels();
   const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
   const { requests: staffingRequests } = useStaffingRequests();
 

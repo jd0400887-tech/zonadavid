@@ -1,14 +1,16 @@
 import { useLocation } from 'react-router-dom';
-import { useMemo } from 'react';
-import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel } from '@mui/material';
-import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon } from '@mui/icons-material';
+import { useMemo, useState } from 'react';
+import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
 import { useSortableData } from '../hooks/useSortableData';
 import { exportToExcel } from '../utils/exportToExcel';
+import DetailsModal from '../components/informes/DetailsModal';
+import { differenceInDays } from 'date-fns';
 
 // A small component to display a stat with its change from the previous period
-const StatComparison = ({ title, currentValue, previousValue }: { title: string, currentValue: number, previousValue: number }) => {
+const StatComparison = ({ title, currentValue, previousValue, onClick }: { title: string, currentValue: number, previousValue: number, onClick?: () => void }) => {
   const change = currentValue - previousValue;
   const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
   const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
@@ -32,7 +34,7 @@ const StatComparison = ({ title, currentValue, previousValue }: { title: string,
   }
 
   return (
-    <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+    <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: onClick ? 'pointer' : 'default' }} onClick={onClick}>
       <Typography variant="h6" color="text.secondary">{title}</Typography>
       <Typography variant="h4" component="p">{formatDisplayValue(currentValue)}</Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: changeColor }}>
@@ -48,7 +50,16 @@ const StatComparison = ({ title, currentValue, previousValue }: { title: string,
 function InformesPage() {
   const location = useLocation();
   const { title, startDate, endDate } = location.state || {};
-  const { data, loading } = useReportData(startDate, endDate);
+  const { data, loading, employees, hotels } = useReportData(startDate, endDate);
+  const [modalData, setModalData] = useState<{ open: boolean; title: string; items: any[]; renderItem: (item: any) => React.ReactNode }>({ open: false, title: '', items: [], renderItem: () => null });
+
+  const handleOpenModal = (title: string, items: any[], renderItem: (item: any) => React.ReactNode) => {
+    setModalData({ open: true, title, items, renderItem });
+  };
+
+  const handleCloseModal = () => {
+    setModalData(prev => ({ ...prev, open: false }));
+  };
 
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : 'N/A';
   const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString() : 'N/A';
@@ -74,9 +85,11 @@ function InformesPage() {
   const { items: sortedRoles, requestSort: requestSortRoles, sortConfig: sortConfigRoles } = useSortableData(data?.activeEmployeesByRole || [], { key: 'value', direction: 'desc' });
   const { items: sortedCities, requestSort: requestSortCities, sortConfig: sortConfigCities } = useSortableData(cityComparisonData, { key: 'currentVisits', direction: 'desc' });
   const { items: sortedHotels, requestSort: requestSortHotels, sortConfig: sortConfigHotels } = useSortableData(data?.employeesByHotel || [], { key: 'count', direction: 'desc' });
-  const { items: sortedAttendance, requestSort: requestSortAttendance, sortConfig: sortConfigAttendance } = useSortableData(data?.currentPeriod?.attendanceByEmployee || [], { key: 'value', direction: 'desc' });
+
   const { items: sortedNewEmployees, requestSort: requestSortNewEmployees, sortConfig: sortConfigNewEmployees } = useSortableData(data?.currentPeriod?.newEmployeesList || [], { key: 'name', direction: 'asc' });
   const { items: sortedBlacklisted, requestSort: requestSortBlacklisted, sortConfig: sortConfigBlacklisted } = useSortableData(data?.blacklistedEmployeesList || [], { key: 'name', direction: 'asc' });
+  const { items: sortedHotelTurnover, requestSort: requestSortHotelTurnover, sortConfig: sortConfigHotelTurnover } = useSortableData(data?.hotelTurnover || [], { key: 'turnoverRate', direction: 'desc' });
+  const { items: sortedRequests, requestSort: requestSortRequests, sortConfig: sortConfigRequests } = useSortableData(data?.currentPeriod?.newRequestsList || [], { key: 'created_at', direction: 'desc' });
 
   if (loading) {
     return (
@@ -161,7 +174,20 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Actividad General</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Visitas Registradas" currentValue={currentPeriod.visits} previousValue={previousPeriod?.visits || 0} />
+          <StatComparison 
+            title="Visitas Registradas" 
+            currentValue={currentPeriod.visits} 
+            previousValue={previousPeriod?.visits || 0} 
+            onClick={() => handleOpenModal(
+              "Visitas Registradas", 
+              currentPeriod.visitsList, 
+              (item: any) => {
+                const employee = employees.find(e => e.id === item.employeeId);
+                const hotel = hotels.find(h => h.id === item.hotelId);
+                return <ListItemText primary={`${employee?.name || 'Empleado desconocido'} en ${hotel?.name || 'Hotel desconocido'}`} secondary={new Date(item.timestamp).toLocaleString()} />
+              }
+            )}
+          />
         </Grid>
 
         {/* Employee Movement / Status */}
@@ -169,13 +195,42 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Movimiento de Empleados</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Nuevos Empleados" currentValue={currentPeriod.newEmployees} previousValue={previousPeriod?.newEmployees || 0} />
+          <StatComparison 
+            title="Nuevos Empleados" 
+            currentValue={currentPeriod.newEmployees} 
+            previousValue={previousPeriod?.newEmployees || 0} 
+            onClick={() => handleOpenModal(
+              "Nuevos Empleados", 
+              currentPeriod.newEmployeesList, 
+              (item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotelId);
+                return <ListItemText primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
+              }
+            )}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Empleados Inactivos" currentValue={currentPeriod.activeToInactive} previousValue={previousPeriod?.activeToInactive || 0} />
+          <StatComparison 
+            title="Empleados Inactivos" 
+            currentValue={currentPeriod.activeToInactive} 
+            previousValue={previousPeriod?.activeToInactive || 0} 
+            onClick={() => handleOpenModal(
+              "Empleados Inactivos", 
+              currentPeriod.activeToInactiveList, 
+              (item: any) => {
+                const employee = employees.find(e => e.id === item.employee_id);
+                const hotel = hotels.find(h => h.id === employee?.hotelId);
+                return <ListItemText primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
+              }
+            )}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }} onClick={() => handleOpenModal(
+            "Empleados en Lista Negra", 
+            data.blacklistedEmployeesList, 
+            (item: any) => <ListItemText primary={item.name} />
+          )}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
         </Grid>
 
         {/* Payroll Review */}
@@ -183,13 +238,29 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Revisión de Nómina</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Nóminas Revisadas" currentValue={currentPeriod.payrollsReviewed} previousValue={previousPeriod?.payrollsReviewed || 0} />
+          <StatComparison 
+            title="Nóminas Revisadas" 
+            currentValue={currentPeriod.payrollsReviewed} 
+            previousValue={previousPeriod?.payrollsReviewed || 0} 
+            onClick={() => handleOpenModal(
+              "Nóminas Revisadas", 
+              currentPeriod.payrollsReviewedList, 
+              (item: any) => {
+                const employee = employees.find(e => e.id === item.employee_id);
+                return <ListItemText primary={employee?.name || 'Empleado desconocido'} secondary={`Fecha: ${new Date(item.review_date).toLocaleDateString()}`} />
+              }
+            )}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Total Horas Overtime" currentValue={currentPeriod.totalOvertime} previousValue={previousPeriod?.totalOvertime || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }} onClick={() => handleOpenModal(
+            "Nóminas por Revisar", 
+            data.payrollsToReviewList, 
+            (item: any) => <ListItemText primary={item.name} />
+          )}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
         </Grid>
 
         {/* Staffing Requests */}
@@ -197,7 +268,19 @@ function InformesPage() {
           <Typography variant="h5" gutterBottom>Solicitudes de Personal</Typography>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Nuevas Solicitudes" currentValue={currentPeriod.newRequests} previousValue={previousPeriod?.newRequests || 0} />
+          <StatComparison 
+            title="Nuevas Solicitudes" 
+            currentValue={currentPeriod.newRequests} 
+            previousValue={previousPeriod?.newRequests || 0} 
+            onClick={() => handleOpenModal(
+              "Nuevas Solicitudes", 
+              currentPeriod.newRequestsList, 
+              (item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotel_id);
+                return <ListItemText primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+              }
+            )}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Tasa de Cumplimiento" currentValue={currentPeriod.fulfillmentRate} previousValue={previousPeriod?.fulfillmentRate || 0} />
@@ -209,7 +292,19 @@ function InformesPage() {
           <StatComparison title="Tasa de No Presentación" currentValue={currentPeriod.noShowRate} previousValue={previousPeriod?.noShowRate || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Solicitudes Vencidas" currentValue={currentPeriod.overdueRequests} previousValue={previousPeriod?.overdueRequests || 0} />
+          <StatComparison 
+            title="Solicitudes Vencidas" 
+            currentValue={currentPeriod.overdueRequests} 
+            previousValue={previousPeriod?.overdueRequests || 0} 
+            onClick={() => handleOpenModal(
+              "Solicitudes Vencidas", 
+              currentPeriod.overdueRequestsList, 
+              (item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotel_id);
+                return <ListItemText primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha de inicio: ${new Date(item.start_date).toLocaleDateString()}`} />
+              }
+            )}
+          />
         </Grid>
       </Grid>
 
@@ -234,111 +329,246 @@ function InformesPage() {
       {/* Section 3: Personnel and City Analysis */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>Personal Activo por Cargo</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigRoles?.key === 'name'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('name')}>Cargo</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigRoles?.key === 'value'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('value')}>Cantidad</TableSortLabel></TableCell></TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedRoles.map((role: any) => (
-                  <TableRow key={role.name}><TableCell>{role.name}</TableCell><TableCell align="right">{role.value}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Personal Activo por Cargo</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigRoles?.key === 'name'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('name')}>Cargo</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigRoles?.key === 'value'} direction={sortConfigRoles?.direction} onClick={() => requestSortRoles('value')}>Cantidad</TableSortLabel></TableCell></TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedRoles.map((role: any) => (
+                      <TableRow key={role.name}><TableCell>{role.name}</TableCell><TableCell align="right">{role.value}</TableCell></TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>Visitas por Ciudad</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigCities?.key === 'name'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('name')}>Ciudad</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'currentVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('currentVisits')}>Visitas (Actual)</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'previousVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('previousVisits')}>Visitas (Anterior)</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'change'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('change')}>Cambio</TableSortLabel></TableCell></TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedCities.map((city: any) => {
-                  const change = city.currentVisits - city.previousVisits;
-                  const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
-                  const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
-                  return (
-                    <TableRow key={city.name}>
-                      <TableCell>{city.name}</TableCell>
-                      <TableCell align="right">{city.currentVisits}</TableCell>
-                      <TableCell align="right">{city.previousVisits}</TableCell>
-                      <TableCell align="right" sx={{ color: changeColor, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}><ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} /> {change}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Visitas por Ciudad</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigCities?.key === 'name'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('name')}>Ciudad</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'currentVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('currentVisits')}>Visitas (Actual)</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'previousVisits'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('previousVisits')}>Visitas (Anterior)</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigCities?.key === 'change'} direction={sortConfigCities?.direction} onClick={() => requestSortCities('change')}>Cambio</TableSortLabel></TableCell></TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedCities.map((city: any) => {
+                      const change = city.currentVisits - city.previousVisits;
+                      const ChangeIcon = change > 0 ? ArrowUpward : change < 0 ? ArrowDownward : Remove;
+                      const changeColor = change > 0 ? 'success.main' : change < 0 ? 'error.main' : 'text.secondary';
+                      return (
+                        <TableRow key={city.name}>
+                          <TableCell>{city.name}</TableCell>
+                          <TableCell align="right">{city.currentVisits}</TableCell>
+                          <TableCell align="right">{city.previousVisits}</TableCell>
+                          <TableCell align="right" sx={{ color: changeColor, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}><ChangeIcon sx={{ fontSize: '1rem', mr: 0.5 }} /> {change}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
       </Grid>
 
       {/* Section 4: New Tables */}
       <Grid container spacing={3} sx={{ mt: 3 }}>
         <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>Empleados por Hotel</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigHotels?.key === 'name'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('name')}>Hotel</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigHotels?.key === 'count'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('count')}>Cantidad</TableSortLabel></TableCell></TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedHotels.map((hotel: any) => (
-                  <TableRow key={hotel.name}><TableCell>{hotel.name}</TableCell><TableCell align="right">{hotel.count}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Empleados por Hotel</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigHotels?.key === 'name'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('name')}>Hotel</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigHotels?.key === 'count'} direction={sortConfigHotels?.direction} onClick={() => requestSortHotels('count')}>Cantidad</TableSortLabel></TableCell></TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedHotels.map((hotel: any) => (
+                      <TableRow key={hotel.name}><TableCell>{hotel.name}</TableCell><TableCell align="right">{hotel.count}</TableCell></TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Nuevos Empleados</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigNewEmployees?.key === 'name'} direction={sortConfigNewEmployees?.direction} onClick={() => requestSortNewEmployees('name')}>Nombre</TableSortLabel></TableCell></TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedNewEmployees.map((emp: any) => (
+                      <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>Asistencia por Empleado</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigAttendance?.key === 'name'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('name')}>Empleado</TableSortLabel></TableCell><TableCell align="right"><TableSortLabel active={sortConfigAttendance?.key === 'value'} direction={sortConfigAttendance?.direction} onClick={() => requestSortAttendance('value')}>Visitas</TableSortLabel></TableCell></TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedAttendance.map((att: any) => (
-                  <TableRow key={att.name}><TableCell>{att.name}</TableCell><TableCell align="right">{att.value}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Empleados en Lista Negra</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigBlacklisted?.key === 'name'} direction={sortConfigBlacklisted?.direction} onClick={() => requestSortBlacklisted('name')}>Nombre</TableSortLabel></TableCell></TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedBlacklisted.map((emp: any) => (
+                      <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>Nuevos Empleados</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigNewEmployees?.key === 'name'} direction={sortConfigNewEmployees?.direction} onClick={() => requestSortNewEmployees('name')}>Nombre</TableSortLabel></TableCell></TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedNewEmployees.map((emp: any) => (
-                  <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h5" gutterBottom>Empleados en Lista Negra</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}><TableCell><TableSortLabel active={sortConfigBlacklisted?.key === 'name'} direction={sortConfigBlacklisted?.direction} onClick={() => requestSortBlacklisted('name')}>Nombre</TableSortLabel></TableCell></TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedBlacklisted.map((emp: any) => (
-                  <TableRow key={emp.id}><TableCell>{emp.name}</TableCell></TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Hoteles con Mayor Rotación</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                        <TableCell>
+                            <TableSortLabel active={sortConfigHotelTurnover?.key === 'hotelName'} direction={sortConfigHotelTurnover?.direction} onClick={() => requestSortHotelTurnover('hotelName')}>
+                                Hotel
+                            </TableSortLabel>
+                        </TableCell>
+                        <TableCell align="right">
+                            <TableSortLabel active={sortConfigHotelTurnover?.key === 'turnoverRate'} direction={sortConfigHotelTurnover?.direction} onClick={() => requestSortHotelTurnover('turnoverRate')}>
+                                Tasa de Rotación (%)
+                            </TableSortLabel>
+                        </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedHotelTurnover.map((hotel: any) => (
+                      <TableRow key={hotel.hotelId} hover sx={{ cursor: 'pointer' }} onClick={() => handleOpenModal(
+                        `Detalles de Rotación - ${hotel.hotelName}`,
+                        [hotel], // Pass the single hotel object as an array
+                        (item: any) => (
+                            <Box sx={{p:2}}>
+                                <Typography variant="h6">{item.hotelName}</Typography>
+                                <Typography>Tasa de rotación: {item.turnoverRate.toFixed(1)}%</Typography>
+                                <Typography>Separaciones: {item.separations}</Typography>
+                                <Typography>Promedio de empleados: {item.avgEmployees.toFixed(1)}</Typography>
+                            </Box>
+                        )
+                      )}>
+                        <TableCell>{hotel.hotelName}</TableCell>
+                        <TableCell align="right">{hotel.turnoverRate.toFixed(1)}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
         </Grid>
       </Grid>
 
+      <Grid container spacing={3} sx={{ mt: 3 }}>
+        <Grid item xs={12}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h5">Detalle de Solicitudes de Personal</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { backgroundColor: 'secondary.main', color: 'common.white' } }}>
+                      <TableCell>
+                        <TableSortLabel active={sortConfigRequests?.key === 'hotel'} direction={sortConfigRequests?.direction} onClick={() => requestSortRequests('hotel')}>
+                          Hotel
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel active={sortConfigRequests?.key === 'role'} direction={sortConfigRequests?.direction} onClick={() => requestSortRequests('role')}>
+                          Cargo
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel active={sortConfigRequests?.key === 'created_at'} direction={sortConfigRequests?.direction} onClick={() => requestSortRequests('created_at')}>
+                          Fecha de Solicitud
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel active={sortConfigRequests?.key === 'completed_at'} direction={sortConfigRequests?.direction} onClick={() => requestSortRequests('completed_at')}>
+                          Fecha de Cobertura
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel active={sortConfigRequests?.key === 'timeToFill'} direction={sortConfigRequests?.direction} onClick={() => requestSortRequests('timeToFill')}>
+                          Tiempo para Cubrir (días)
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell>
+                        <TableSortLabel active={sortConfigRequests?.key === 'status'} direction={sortConfigRequests?.direction} onClick={() => requestSortRequests('status')}>
+                          Estado
+                        </TableSortLabel>
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sortedRequests.map((req: any) => {
+                      const hotel = hotels.find(h => h.id === req.hotel_id);
+                      const timeToFill = req.completed_at ? differenceInDays(new Date(req.completed_at), new Date(req.created_at)) : null;
+                      return (
+                        <TableRow key={req.id}>
+                          <TableCell>{hotel?.name || 'N/A'}</TableCell>
+                          <TableCell>{req.role}</TableCell>
+                          <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>{req.completed_at ? new Date(req.completed_at).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell>{timeToFill !== null ? timeToFill : 'N/A'}</TableCell>
+                          <TableCell>{req.status}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+      </Grid>
+
+      <DetailsModal 
+        open={modalData.open} 
+        onClose={handleCloseModal} 
+        title={modalData.title} 
+        items={modalData.items} 
+        renderItem={modalData.renderItem} 
+      />
     </Box>
   );
 }

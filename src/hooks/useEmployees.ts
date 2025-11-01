@@ -1,104 +1,59 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useHotels } from './useHotels';
 import { supabase } from '../utils/supabase';
 import type { Employee } from '../types';
+import { useCallback, useMemo } from 'react';
 
 export function useEmployees() {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const { employees, refreshHotels } = useHotels();
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      const { data, error } = await supabase.from('employees').select('*');
-      if (error) {
-        console.error('Error fetching employees:', error);
-      } else {
-        setEmployees(data as Employee[]);
-      }
-    };
+  const roles = useMemo(() => {
+    if (!employees) return [];
+    const allRoles = employees.map(e => e.role);
+    return [...new Set(allRoles)];
+  }, [employees]);
 
-    fetchEmployees();
-  }, []);
-
-  const addEmployee = async (employeeData: Partial<Employee>) => {
+  const addEmployee = useCallback(async (employeeData: Partial<Employee>) => {
     const newEmployee: Employee = {
-      id: `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      employeeNumber: `DA-${Date.now().toString().slice(-6)}`,
-      name: employeeData.name || ' ',
-      hotelId: employeeData.hotelId || ' ',
-      role: employeeData.role || ' ',
-      isActive: employeeData.isActive ?? true,
-      isBlacklisted: employeeData.isBlacklisted ?? false,
-      payrollType: employeeData.payrollType || 'timesheet',
-      lastReviewedTimestamp: null,
-    };
-    const { data, error } = await supabase.from('employees').insert([newEmployee]).select();
+      id: `emp-${Date.now()}`,
+      ...employeeData,
+    } as Employee;
+    const { error } = await supabase.from('employees').insert([newEmployee]);
     if (error) {
       console.error('Error adding employee:', error);
-    } else if (data) {
-      setEmployees(prev => [...prev, ...data as Employee[]]);
+    } else {
+      refreshHotels();
     }
-  };
+  }, [refreshHotels]);
 
-  const updateEmployee = async (updatedEmployee: Partial<Employee>) => {
+  const updateEmployee = useCallback(async (updatedEmployee: Partial<Employee>) => {
     if (!updatedEmployee.id) return;
-
-    const oldEmployee = employees.find(emp => emp.id === updatedEmployee.id);
-    const oldIsActive = oldEmployee?.isActive ?? true; // Default to true if not found or null
-
-    // Perform the update on the employees table
-    const { data, error } = await supabase.from('employees').update(updatedEmployee).eq('id', updatedEmployee.id).select();
-
+    const { error } = await supabase.from('employees').update(updatedEmployee).eq('id', updatedEmployee.id);
     if (error) {
       console.error('Error updating employee:', error);
-    } else if (data) {
-      setEmployees(prev =>
-        prev.map(emp =>
-          emp.id === updatedEmployee.id ? { ...emp, ...updatedEmployee } as Employee : emp
-        )
-      );
-
-      // Check if isActive status has changed and log it
-      const newIsActive = updatedEmployee.isActive ?? oldIsActive; // Use updated value, or old if not provided
-      if (oldIsActive !== newIsActive) {
-        const { error: historyError } = await supabase.from('employee_status_history').insert({
-          employee_id: updatedEmployee.id,
-          old_is_active: oldIsActive,
-          new_is_active: newIsActive,
-          reason: newIsActive ? 'Reactivated' : 'Deactivated', // Default reason, can be improved later
-        });
-
-        if (historyError) {
-          console.error('Error logging employee status change:', historyError);
-        }
-      }
+    } else {
+      refreshHotels();
     }
-  };
+  }, [refreshHotels]);
 
-  const deleteEmployee = async (id: string) => {
+  const deleteEmployee = useCallback(async (id: string) => {
     const { error } = await supabase.from('employees').delete().eq('id', id);
     if (error) {
       console.error('Error deleting employee:', error);
     } else {
-      setEmployees(prev => prev.filter(emp => emp.id !== id));
+      refreshHotels();
     }
-  };
+  }, [refreshHotels]);
 
-  const toggleEmployeeBlacklist = async (id: string) => {
-    const employee = employees.find(emp => emp.id === id);
+  const toggleEmployeeBlacklist = useCallback(async (id: string) => {
+    const employee = employees.find(e => e.id === id);
     if (!employee) return;
-
-    const updatedEmployee = {
-      ...employee,
-      isBlacklisted: !employee.isBlacklisted,
-      isActive: employee.isBlacklisted, // If un-blacklisted, go back to active
-    };
-
-    await updateEmployee(updatedEmployee);
-  };
-
-  const roles = useMemo(() => {
-    const allRoles = employees.map(emp => emp.role).filter(Boolean);
-    return [...new Set(allRoles)];
-  }, [employees]);
+    const { error } = await supabase.from('employees').update({ isBlacklisted: !employee.isBlacklisted }).eq('id', id);
+    if (error) {
+      console.error('Error toggling blacklist:', error);
+    } else {
+      refreshHotels();
+    }
+  }, [employees, refreshHotels]);
 
   return {
     employees,

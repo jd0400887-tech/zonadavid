@@ -7,6 +7,7 @@ import { useEmployees } from '../hooks/useEmployees';
 import type { Employee } from '../types';
 import L from 'leaflet';
 import { useHotels } from '../hooks/useHotels';
+import TurnoverAnalysis from '../components/hotel/TurnoverAnalysis';
 
 // Leaflet icon fix
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -36,6 +37,9 @@ export default function HotelDetailPage() {
     }
   };
   const assignedEmployees = employees.filter(emp => emp.hotelId === hotelId);
+  const activeEmployees = assignedEmployees.filter(emp => emp.isActive && !emp.isBlacklisted).length;
+  const inactiveEmployees = assignedEmployees.filter(emp => !emp.isActive && !emp.isBlacklisted).length;
+  const blacklistedEmployees = assignedEmployees.filter(emp => emp.isBlacklisted).length;
 
   if (loading) {
     return (
@@ -114,8 +118,17 @@ export default function HotelDetailPage() {
           </Grid>
         </Grid>
 
+        <Box sx={{ my: 3 }}>
+          <TurnoverAnalysis hotelId={hotel.id} />
+        </Box>
+
         <Paper>
-          <Typography variant="h6" sx={{ p: 2 }}>Empleados en este Hotel ({assignedEmployees.length})</Typography>
+                              <Typography variant="h6" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            Empleados en este Hotel ({assignedEmployees.length})
+            <Chip label={`Activos: ${activeEmployees}`} color="success" />
+            <Chip label={`Inactivos: ${inactiveEmployees}`} color="default" />
+            <Chip label={`En Lista Negra: ${blacklistedEmployees}`} sx={{ bgcolor: 'black', color: 'white' }} />
+          </Typography>
           <List>
             {assignedEmployees.map(employee => (
               <ListItem key={employee.id} divider>

@@ -32,18 +32,14 @@ export default function StatCard({ title, value, icon, color = 'primary.main', o
   const domain = chartData ? [Math.min(...chartData.map(d => d.value)) - 1, Math.max(...chartData.map(d => d.value)) + 1] : [];
 
   const cardContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, height: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-        <Avatar sx={{ bgcolor: color, width: 48, height: 48, mr: 2 }}>
-          {icon}
-        </Avatar>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{value}</Typography>
-          <Typography variant="subtitle1" color="text.secondary">{title}</Typography>
-        </Box>
-      </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2, height: '100%', textAlign: 'center' }}>
+      <Avatar sx={{ bgcolor: color, width: 48, height: 48, mb: 1.5 }}>
+        {icon}
+      </Avatar>
+      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{value}</Typography>
+      <Typography variant="subtitle1" color="text.secondary">{title}</Typography>
       {chartData && (
-        <Box sx={{ width: '100%', height: 60 }}>
+        <Box sx={{ width: '100%', height: 40, mt: 1 }}>
           <ResponsiveContainer>
             <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <YAxis hide domain={domain} />

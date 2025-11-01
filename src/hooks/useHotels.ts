@@ -1,25 +1,50 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../utils/supabase';
-import type { Hotel } from '../types';
+import type { Hotel, Employee } from '../types';
 
 export function useHotels() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchHotels = useCallback(async () => {
+  const fetchHotelsAndEmployees = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('hotels').select('*');
-    if (error) {
-      console.error('Error fetching hotels:', error);
-    } else {
-      setHotels(data as Hotel[]);
+    const [{ data: hotelsData, error: hotelsError }, { data: employeesData, error: employeesError }] = await Promise.all([
+        supabase.from('hotels').select('*'),
+        supabase.from('employees').select('*')
+    ]);
+
+    if (hotelsError) {
+      console.error('Error fetching hotels:', hotelsError);
     }
+    if (employeesError) {
+        console.error('Error fetching employees:', employeesError);
+    }
+
+    if (employeesData) {
+      setEmployees(employeesData as Employee[]);
+    }
+
+    if (hotelsData && employeesData) {
+      const hotelsWithCounts = hotelsData.map(hotel => {
+        const hotelEmployees = employeesData.filter(emp => emp.hotelId === hotel.id);
+        return {
+          ...hotel,
+          totalEmployees: hotelEmployees.length,
+          activeEmployees: hotelEmployees.filter(emp => emp.isActive).length,
+        };
+      });
+      setHotels(hotelsWithCounts as Hotel[]);
+    } else {
+        setHotels(hotelsData as Hotel[] || []);
+    }
+
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchHotels();
-  }, [fetchHotels]);
+    fetchHotelsAndEmployees();
+  }, [fetchHotelsAndEmployees]);
 
   const addHotel = async (hotelData: Partial<Hotel>) => {
     const processedData = { ...hotelData };
@@ -89,11 +114,12 @@ export function useHotels() {
 
   return {
     hotels,
+    employees,
     loading,
     addHotel,
     updateHotel,
     deleteHotel,
     uploadHotelImage,
-    refreshHotels: fetchHotels,
+    refreshHotels: fetchHotelsAndEmployees,
   };
 }

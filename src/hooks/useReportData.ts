@@ -37,12 +37,13 @@ const calculatePeriodStats = (
     return recordTime >= startTime && recordTime <= endTime;
   });
 
-  const payrollsReviewed = allEmployees.filter(e => 
+  const payrollsReviewedList = allEmployees.filter(e => 
     e.payrollType === 'Workrecord' && 
     e.lastReviewedTimestamp && 
     new Date(e.lastReviewedTimestamp).getTime() >= startTime && 
     new Date(e.lastReviewedTimestamp).getTime() <= endTime
-  ).length;
+  );
+  const payrollsReviewed = payrollsReviewedList.length;
 
   const attendanceByEmployee = periodRecords.reduce((acc, record) => {
     const employee = allEmployees.find(e => e.id === record.employeeId);
@@ -79,14 +80,13 @@ const calculatePeriodStats = (
   }, {} as Record<string, number>);
 
   // New calculations for staffing requests
-  const periodRequests = allRequests.filter(r => {
+  const newRequestsList = allRequests.filter(r => {
     const reqDate = new Date(r.created_at);
     return reqDate >= start && reqDate <= end;
   });
+  const newRequests = newRequestsList.length;
 
-  const newRequests = periodRequests.length;
-
-  const completedInPeriod = periodRequests.filter(r => r.status === 'Completada' && r.completed_at && new Date(r.completed_at) >= start && new Date(r.completed_at) <= end);
+  const completedInPeriod = newRequestsList.filter(r => r.status === 'Completada' && r.completed_at && new Date(r.completed_at) >= start && new Date(r.completed_at) <= end);
   const fulfillmentRate = newRequests > 0 ? (completedInPeriod.length / newRequests) * 100 : 0;
 
   const timeToFillSum = completedInPeriod.reduce((acc, r) => {
@@ -99,34 +99,41 @@ const calculatePeriodStats = (
   }, 0);
   const avgTimeToFill = completedInPeriod.length > 0 ? timeToFillSum / completedInPeriod.length : 0;
 
-  const noShowInPeriod = periodRequests.filter(r => r.status === 'Candidato No Presentado').length;
+  const noShowInPeriod = newRequestsList.filter(r => r.status === 'Candidato No Presentado').length;
   const noShowRate = newRequests > 0 ? (noShowInPeriod.length / newRequests) * 100 : 0;
 
-  const overdueRequests = periodRequests.filter(r => 
+  const overdueRequestsList = newRequestsList.filter(r => 
     !['Completada', 'Cancelada por Hotel', 'Candidato No Presentado'].includes(r.status) && 
     new Date(r.start_date) < end
-  ).length;
+  );
+  const overdueRequests = overdueRequestsList.length;
 
   // New calculation: employees moved from active to inactive
-  const activeToInactive = periodEmployeeStatusHistory.filter(change =>
+  const activeToInactiveList = periodEmployeeStatusHistory.filter(change =>
     change.old_is_active === true && change.new_is_active === false
-  ).length;
+  );
+  const activeToInactive = activeToInactiveList.length;
 
   return {
     visits: periodRecords.length,
+    visitsList: periodRecords,
     newEmployees: newEmployeesList.length,
     newEmployeesList,
     hotelRanking,
     visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
     payrollsReviewed,
+    payrollsReviewedList,
     attendanceByEmployee: Object.entries(attendanceByEmployee).map(([name, value]) => ({ name, value })),
     totalOvertime,
     newRequests,
+    newRequestsList,
     fulfillmentRate,
     avgTimeToFill,
     noShowRate,
     overdueRequests,
+    overdueRequestsList,
     activeToInactive, // New stat
+    activeToInactiveList,
   };
 };
 
@@ -265,10 +272,39 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       return acc;
     }, {} as Record<string, number>);
 
-    const payrollsToReview = employees.filter(emp => 
+    const payrollsToReviewList = employees.filter(emp => 
       emp.payrollType === 'Workrecord' && 
       (!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeek(new Date(), { weekStartsOn: 1 }).getTime())
-    ).length;
+    );
+    const payrollsToReview = payrollsToReviewList.length;
+
+    const hotelTurnover = hotels.map(hotel => {
+      const hotelEmployees = employees.filter(e => e.hotelId === hotel.id);
+      const hotelEmployeeIds = hotelEmployees.map(e => e.id);
+
+      const separations = currentPeriodEmployeeStatusHistory.filter(change =>
+        hotelEmployeeIds.includes(change.employee_id) &&
+        change.old_is_active === true &&
+        change.new_is_active === false
+      ).length;
+
+      const employeesAtStart = hotelEmployees.filter(e => {
+        const idTimestamp = parseInt(e.id.split('-')[1]);
+        return !isNaN(idTimestamp) && idTimestamp <= currentStart.getTime();
+      }).length;
+      const employeesAtEnd = hotelEmployees.length;
+      const avgEmployees = (employeesAtStart + employeesAtEnd) / 2;
+
+      const rate = avgEmployees > 0 ? (separations / avgEmployees) * 100 : 0;
+
+      return {
+        hotelId: hotel.id,
+        hotelName: hotel.name,
+        turnoverRate: rate,
+        separations,
+        avgEmployees,
+      };
+    }).sort((a, b) => b.turnoverRate - a.turnoverRate);
 
     return {
       currentPeriod: currentPeriodStats,
@@ -280,6 +316,8 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       employeesByHotel,
       activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
       payrollsToReview,
+      payrollsToReviewList,
+      hotelTurnover,
     };
 
   }, [loading, startDate, endDate, employees, hotels, allRecords, requests, currentPeriodPayrollHistory, previousPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, previousPeriodEmployeeStatusHistory]); // Add new dependencies
@@ -287,5 +325,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
   return {
     data: reportData,
     loading,
+    employees,
+    hotels,
   };
 };

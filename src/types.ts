@@ -6,6 +6,8 @@ export interface Hotel {
   latitude: number | null;
   longitude: number | null;
   imageUrl: string | null;
+  activeEmployees?: number;
+  totalEmployees?: number;
 }
 
 export interface Employee {

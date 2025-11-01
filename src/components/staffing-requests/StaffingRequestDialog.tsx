@@ -106,7 +106,7 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
               <FormControl fullWidth>
                 <InputLabel id="role-select-label">Cargo Requerido</InputLabel>
                 <Select labelId="role-select-label" name="role" value={formData.role} onChange={handleChange} label="Cargo Requerido">
-                  {roles.map(role => (<MenuItem key={role} value={role}>{role}</MenuItem>))}
+                  {roles && roles.map(role => (<MenuItem key={role} value={role}>{role}</MenuItem>))}
                 </Select>
               </FormControl>
             </Grid>

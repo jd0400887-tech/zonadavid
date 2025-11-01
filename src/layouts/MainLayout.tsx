@@ -181,13 +181,15 @@ export default function MainLayout() {
                   <Typography variant="h6" gutterBottom>Solicitudes Pendientes</Typography>
                   {unfulfilledRequests.length > 0 ? (
                     <List dense>
-                      {unfulfilledRequests.map((req) => (
+                      {unfulfilledRequests
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .map((req) => (
                         <ListItemButton key={req.id} onClick={() => {
                           handleNotificationClose();
                           navigate(`/solicitudes?requestId=${req.id}`); // Navigate to requests page, maybe highlight the request
                         }}>
                           <ListItemText
-                            primary={`Hotel: ${req.hotelName || 'N/A'} - ${req.position}`}
+                            primary={`Hotel: ${req.hotelName || 'N/A'} - ${req.role}`}
                             secondary={`Inicio: ${new Date(req.start_date).toLocaleDateString()}`}
                           />
                         </ListItemButton>

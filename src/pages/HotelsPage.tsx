@@ -165,6 +165,9 @@ export default function HotelsPage() {
                   <Typography variant="body2" color="text.secondary">
                     {hotel.city} - {hotel.address}
                   </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Personal: {hotel.activeEmployees} activos / {hotel.totalEmployees} en total
+                  </Typography>
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'flex-end' }}>
                   <IconButton aria-label="edit" onClick={() => handleOpenEditModal(hotel)}>
