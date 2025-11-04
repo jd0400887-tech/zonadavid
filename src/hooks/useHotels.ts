@@ -70,6 +70,10 @@ export function useHotels() {
     if ((processedData.latitude as any) === '') processedData.latitude = null;
     if ((processedData.longitude as any) === '') processedData.longitude = null;
 
+    // Remove frontend-only properties before sending to DB
+    delete (processedData as any).totalEmployees;
+    delete (processedData as any).activeEmployees;
+
     const { data, error } = await supabase.from('hotels').update(processedData).eq('id', updatedHotel.id).select();
     if (error) {
       console.error('Error updating hotel:', error);
