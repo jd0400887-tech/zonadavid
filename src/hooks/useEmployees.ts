@@ -27,6 +27,28 @@ export function useEmployees() {
 
   const updateEmployee = useCallback(async (updatedEmployee: Partial<Employee>) => {
     if (!updatedEmployee.id) return;
+
+    const { data: currentEmployee, error: fetchError } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('id', updatedEmployee.id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching current employee:', fetchError);
+      return;
+    }
+
+    if (currentEmployee && currentEmployee.isActive !== updatedEmployee.isActive) {
+      await supabase.from('employee_status_history').insert({
+        employee_id: updatedEmployee.id,
+        change_date: new Date().toISOString(),
+        old_is_active: currentEmployee.isActive,
+        new_is_active: updatedEmployee.isActive,
+        reason: updatedEmployee.isActive ? 'Activated' : 'Deactivated',
+      });
+    }
+
     const { error } = await supabase.from('employees').update(updatedEmployee).eq('id', updatedEmployee.id);
     if (error) {
       console.error('Error updating employee:', error);
@@ -47,13 +69,21 @@ export function useEmployees() {
   const toggleEmployeeBlacklist = useCallback(async (id: string) => {
     const employee = employees.find(e => e.id === id);
     if (!employee) return;
-    const { error } = await supabase.from('employees').update({ isBlacklisted: !employee.isBlacklisted }).eq('id', id);
-    if (error) {
-      console.error('Error toggling blacklist:', error);
+
+    const isBlacklisting = !employee.isBlacklisted;
+    const updateData: Partial<Employee> = { id, isBlacklisted: isBlacklisting };
+
+    if (isBlacklisting) {
+      if (employee.isActive) {
+        updateData.isActive = false;
+      }
     } else {
-      refreshHotels();
+      // When removing from blacklist, keep the current isActive status
+      updateData.isActive = employee.isActive;
     }
-  }, [employees, refreshHotels]);
+
+    updateEmployee(updateData);
+  }, [employees, updateEmployee]);
 
   return {
     employees,

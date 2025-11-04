@@ -1,11 +1,12 @@
 export const EMPLOYEE_POSITIONS = [
+  'Bartender',
+  'Breakfast',
+  'Diswacher',
+  'Frontdesk',
   'Housekeeper',
   'Houseman',
   'Laundry',
-  'Bartender',
-  'Breakfast',
-  'Supervisor Housekeeper',
   'Mantenimiento',
-  'Frontdesk',
-  'Diswacher',
+  'Supervisor Housekeeper',
+  'Ventas',
 ];

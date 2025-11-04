@@ -18,9 +18,9 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
       setLoading(true);
 
       // 1. Fetch all employees for the hotel
-      const { data: employees, error: employeesError } = await supabase
+      const { data: allEmployees, error: employeesError } = await supabase
         .from('employees')
-        .select('id')
+        .select('*')
         .eq('hotelId', hotelId);
 
       if (employeesError) {
@@ -28,6 +28,8 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
         setLoading(false);
         return;
       }
+
+      const employees = allEmployees.filter(e => e.employeeType === 'permanente');
 
       // 2. Fetch status history for the hotel's employees
       const employeeIds = employees.map(e => e.id);
@@ -75,6 +77,7 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
       };
       
       const { rate: turnover30, separations: separations30, avgEmployees: avgEmployees30 } = calculateRate(30, true) as { rate: number, separations: number, avgEmployees: number };
+      const { rate: turnover365, separations: separations365, avgEmployees: avgEmployees365 } = calculateRate(365, true) as { rate: number, separations: number, avgEmployees: number };
 
       // 4. Calculate monthly trend for the last 12 months
       const monthlyTrend = Array.from({ length: 12 }).map((_, i) => {
@@ -110,6 +113,9 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
         turnover30,
         separations30,
         avgEmployees30,
+        turnover365,
+        separations365,
+        avgEmployees365,
         monthlyTrend,
       });
 
@@ -123,7 +129,7 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
     return <CircularProgress />;
   }
 
-  const tooltipText = `Tasa de rotación calculada con la fórmula: (Separaciones / Promedio de empleados) * 100.\n- Separaciones (últimos 30 días): ${turnoverData.separations30}\n- Promedio de empleados: ${turnoverData.avgEmployees30.toFixed(1)}`;
+  const tooltipText = `Tasa de rotación calculada con la fórmula: (Separaciones / Promedio de empleados) * 100.\n- Tasa (30 días): ${turnoverData.turnover30.toFixed(1)}% (Separaciones: ${turnoverData.separations30}, Promedio Empleados: ${turnoverData.avgEmployees30.toFixed(1)})\n- Tasa (365 días): ${turnoverData.turnover365.toFixed(1)}% (Separaciones: ${turnoverData.separations365}, Promedio Empleados: ${turnoverData.avgEmployees365.toFixed(1)})`;
 
   return (
     <Paper sx={{ p: 2 }}>
@@ -133,8 +139,8 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
           <Tooltip title={tooltipText}>
             <div>
               <StatCard
-                title="Rotación (Últimos 30 días)"
-                value={`${turnoverData.turnover30.toFixed(1)}%`}
+                title="Rotación (Últimos 365 días)"
+                value={`${turnoverData.turnover365.toFixed(1)}%`}
                 icon={<TrendingDownIcon />}
               />
             </div>
@@ -156,3 +162,4 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
     </Paper>
   );
 }
+// refresh

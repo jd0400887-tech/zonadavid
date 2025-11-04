@@ -17,6 +17,7 @@ export interface Employee {
   hotelId: string;
   isActive: boolean;
   role: string;
+  employeeType: 'permanente' | 'temporal';
   isBlacklisted: boolean;
   payrollType: 'timesheet' | 'Workrecord';
   lastReviewedTimestamp: string | null;

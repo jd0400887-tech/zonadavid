@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useMemo } from 'react';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField, IconButton, Grid, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Button, ListSubheader, CircularProgress } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
@@ -22,18 +22,22 @@ export default function PayrollReviewPage() {
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
 
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const daysSinceMonday = (dayOfWeek + 6) % 7;
-  const startOfThisWeek = new Date(today);
-  startOfThisWeek.setDate(today.getDate() - daysSinceMonday);
-  startOfThisWeek.setHours(0, 0, 0, 0);
-  const startOfWeekTimestamp = startOfThisWeek.getTime();
+  const { startOfThisWeek, endOfThisWeek, startOfWeekTimestamp } = useMemo(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysSinceMonday = (dayOfWeek + 6) % 7;
+    const startOfThisWeek = new Date(today);
+    startOfThisWeek.setDate(today.getDate() - daysSinceMonday);
+    startOfThisWeek.setHours(0, 0, 0, 0);
+    const startOfWeekTimestamp = startOfThisWeek.getTime();
 
-  const endOfThisWeek = new Date(startOfThisWeek);
-  endOfThisWeek.setDate(startOfThisWeek.getDate() + 7);
+    const endOfThisWeek = new Date(startOfThisWeek);
+    endOfThisWeek.setDate(startOfThisWeek.getDate() + 7);
 
-  const { history: payrollHistory } = usePayrollHistory(startOfThisWeek, endOfThisWeek);
+    return { startOfThisWeek, endOfThisWeek, startOfWeekTimestamp };
+  }, []);
+
+  const { history: payrollHistory, refreshHistory } = usePayrollHistory(startOfThisWeek, endOfThisWeek);
 
   useEffect(() => {
     const initialOvertime = employees.reduce((acc, emp) => {
@@ -56,29 +60,54 @@ export default function PayrollReviewPage() {
     }));
   };
 
-  const allWorkrecordEmployees = employees.filter(emp => emp.payrollType === 'Workrecord' && emp.isActive);
-  const employeesNeedingReview = allWorkrecordEmployees.filter(emp => !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp);
+  const allWorkrecordEmployees = useMemo(() => 
+    employees.filter(emp => emp.payrollType === 'Workrecord' && emp.isActive), 
+    [employees]
+  );
+
+  const employeesNeedingReview = useMemo(() => 
+    allWorkrecordEmployees.filter(emp => !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp),
+    [allWorkrecordEmployees, startOfWeekTimestamp]
+  );
+
   const pendingPayrollsCount = employeesNeedingReview.length;
-  const pendingHotelsCount = new Set(employeesNeedingReview.map(emp => emp.hotelId)).size;
+  const pendingHotelsCount = useMemo(() => new Set(employeesNeedingReview.map(emp => emp.hotelId)).size, [employeesNeedingReview]);
   const totalToReviewGlobal = allWorkrecordEmployees.length;
   const reviewedGlobalCount = totalToReviewGlobal - pendingPayrollsCount;
   const globalProgressPercentage = totalToReviewGlobal > 0 ? (reviewedGlobalCount / totalToReviewGlobal) * 100 : 0;
 
+  const hotelStats = useMemo(() => 
+    hotels.map(hotel => {
+      const hotelEmployees = allWorkrecordEmployees.filter(emp => emp.hotelId === hotel.id);
+      const total = hotelEmployees.length;
+      if (total === 0) return null;
+      const reviewed = hotelEmployees.filter(emp => !(!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp)).length;
+      const progress = total > 0 ? (reviewed / total) * 100 : 0;
+      return { id: hotel.id, name: hotel.name, total, reviewed, progress };
+    }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name)),
+    [hotels, allWorkrecordEmployees, startOfWeekTimestamp]
+  );
 
-
-  const hotelStats = hotels.map(hotel => {
-    const hotelEmployees = allWorkrecordEmployees.filter(emp => emp.hotelId === hotel.id);
-    const total = hotelEmployees.length;
-    if (total === 0) return null;
-    const reviewed = hotelEmployees.filter(emp => !(!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp)).length;
-    const progress = total > 0 ? (reviewed / total) * 100 : 0;
-    return { id: hotel.id, name: hotel.name, total, reviewed, progress };
-  }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
-
-  const workrecordEmployeesFiltered = allWorkrecordEmployees
-    .filter(emp => selectedHotel === 'all' || emp.hotelId === selectedHotel)
-    .map(emp => ({ ...emp, needsReview: !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp }))
-    .sort((a, b) => (a.needsReview === b.needsReview ? a.name.localeCompare(b.name) : b.needsReview ? 1 : -1));
+  const workrecordEmployeesFiltered = useMemo(() => {
+    return allWorkrecordEmployees
+      .filter(emp => selectedHotel === 'all' || emp.hotelId === selectedHotel)
+      .map(emp => ({ ...emp, needsReview: !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp }))
+      .sort((a, b) => {
+        if (a.needsReview !== b.needsReview) {
+          return a.needsReview ? -1 : 1;
+        }
+        if (a.role === 'Housekeeper' && b.role !== 'Housekeeper') {
+          return -1;
+        }
+        if (a.role !== 'Housekeeper' && b.role === 'Housekeeper') {
+          return 1;
+        }
+        if (a.role.localeCompare(b.role) !== 0) {
+          return a.role.localeCompare(b.role);
+        }
+        return a.name.localeCompare(b.name);
+      });
+  }, [allWorkrecordEmployees, selectedHotel, startOfWeekTimestamp]);
 
   const handleMarkAsReviewed = async (employeeId: string) => {
     const overtimeValue = overtimeNotes[employeeId];
@@ -95,7 +124,8 @@ export default function PayrollReviewPage() {
       return;
     }
 
-    updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString(), overtime: null });
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString() });
+    refreshHistory();
   };
 
   const handleUnmarkAsReviewed = async (employeeId: string) => {
@@ -111,6 +141,7 @@ export default function PayrollReviewPage() {
     }
 
     updateEmployee({ id: employeeId, lastReviewedTimestamp: null, overtime: null });
+    refreshHistory();
   };
 
   const firstReviewedIndex = workrecordEmployeesFiltered.findIndex(emp => !emp.needsReview);

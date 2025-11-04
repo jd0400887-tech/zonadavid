@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../utils/supabase';
 
 export interface PayrollReview {
@@ -12,28 +12,28 @@ export function usePayrollHistory(from: Date, to: Date) {
   const [history, setHistory] = useState<PayrollReview[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('payroll_review_history')
+      .select('*')
+      .gte('review_date', from.toISOString())
+      .lte('review_date', to.toISOString());
+
+    if (error) {
+      console.error('Error fetching payroll history:', error);
+      setHistory([]);
+    } else {
+      setHistory(data as PayrollReview[]);
+    }
+    setLoading(false);
+  }, [from, to]);
+
   useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('payroll_review_history')
-        .select('*')
-        .gte('review_date', from.toISOString())
-        .lte('review_date', to.toISOString());
-
-      if (error) {
-        console.error('Error fetching payroll history:', error);
-        setHistory([]);
-      } else {
-        setHistory(data as PayrollReview[]);
-      }
-      setLoading(false);
-    };
-
     if (from && to) {
       fetchHistory();
     }
-  }, [from, to]);
+  }, [from, to, fetchHistory]);
 
-  return { history, loading };
+  return { history, loading, refreshHistory: fetchHistory };
 }

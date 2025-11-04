@@ -76,6 +76,19 @@ export default function EmployeeForm({ employeeData, onFormChange, hotels, onTog
           ))}
         </Select>
       </FormControl>
+      <FormControl fullWidth margin="dense" required disabled={isBlacklisted}>
+        <InputLabel id="employee-type-select-label">Tipo de Empleado</InputLabel>
+        <Select
+          labelId="employee-type-select-label"
+          id="employeeType"
+          value={employeeData.employeeType || 'permanente'}
+          label="Tipo de Empleado"
+          onChange={(e) => onFormChange('employeeType', e.target.value)}
+        >
+          <MenuItem value="permanente">Permanente</MenuItem>
+          <MenuItem value="temporal">Temporal</MenuItem>
+        </Select>
+      </FormControl>
       <FormControlLabel
         control={
           <Switch

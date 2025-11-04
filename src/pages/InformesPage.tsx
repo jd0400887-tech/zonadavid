@@ -1,12 +1,13 @@
 import { useLocation } from 'react-router-dom';
 import { useMemo, useState } from 'react';
-import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel, ListItemText, Accordion, AccordionSummary, AccordionDetails, List } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
 import { useSortableData } from '../hooks/useSortableData';
 import { exportToExcel } from '../utils/exportToExcel';
 import DetailsModal from '../components/informes/DetailsModal';
+import OvertimeDetailsTable from '../components/informes/OvertimeDetailsTable';
 import { differenceInDays } from 'date-fns';
 
 // A small component to display a stat with its change from the previous period
@@ -51,14 +52,14 @@ function InformesPage() {
   const location = useLocation();
   const { title, startDate, endDate } = location.state || {};
   const { data, loading, employees, hotels } = useReportData(startDate, endDate);
-  const [modalData, setModalData] = useState<{ open: boolean; title: string; items: any[]; renderItem: (item: any) => React.ReactNode }>({ open: false, title: '', items: [], renderItem: () => null });
+  const [modalData, setModalData] = useState<{ open: boolean; title: string; content: React.ReactNode }>({ open: false, title: '', content: null });
 
-  const handleOpenModal = (title: string, items: any[], renderItem: (item: any) => React.ReactNode) => {
-    setModalData({ open: true, title, items, renderItem });
+  const handleOpenModal = (title: string, content: React.ReactNode) => {
+    setModalData({ open: true, title, content });
   };
 
   const handleCloseModal = () => {
-    setModalData(prev => ({ ...prev, open: false }));
+    setModalData({ open: false, title: '', content: null });
   };
 
   const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString() : 'N/A';
@@ -180,12 +181,11 @@ function InformesPage() {
             previousValue={previousPeriod?.visits || 0} 
             onClick={() => handleOpenModal(
               "Visitas Registradas", 
-              currentPeriod.visitsList, 
-              (item: any) => {
+              <List>{currentPeriod.visitsList.map((item: any) => {
                 const employee = employees.find(e => e.id === item.employeeId);
                 const hotel = hotels.find(h => h.id === item.hotelId);
-                return <ListItemText primary={`${employee?.name || 'Empleado desconocido'} en ${hotel?.name || 'Hotel desconocido'}`} secondary={new Date(item.timestamp).toLocaleString()} />
-              }
+                return <ListItemText key={item.id} primary={`${employee?.name || 'Empleado desconocido'} en ${hotel?.name || 'Hotel desconocido'}`} secondary={new Date(item.timestamp).toLocaleString()} />
+              })}</List>
             )}
           />
         </Grid>
@@ -201,11 +201,10 @@ function InformesPage() {
             previousValue={previousPeriod?.newEmployees || 0} 
             onClick={() => handleOpenModal(
               "Nuevos Empleados", 
-              currentPeriod.newEmployeesList, 
-              (item: any) => {
+              <List>{currentPeriod.newEmployeesList.map((item: any) => {
                 const hotel = hotels.find(h => h.id === item.hotelId);
-                return <ListItemText primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
-              }
+                return <ListItemText key={item.id} primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
+              })}</List>
             )}
           />
         </Grid>
@@ -216,20 +215,18 @@ function InformesPage() {
             previousValue={previousPeriod?.activeToInactive || 0} 
             onClick={() => handleOpenModal(
               "Empleados Inactivos", 
-              currentPeriod.activeToInactiveList, 
-              (item: any) => {
+              <List>{currentPeriod.activeToInactiveList.map((item: any) => {
                 const employee = employees.find(e => e.id === item.employee_id);
                 const hotel = hotels.find(h => h.id === employee?.hotelId);
-                return <ListItemText primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
-              }
+                return <ListItemText key={item.id} primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
+              })}</List>
             )}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }} onClick={() => handleOpenModal(
             "Empleados en Lista Negra", 
-            data.blacklistedEmployeesList, 
-            (item: any) => <ListItemText primary={item.name} />
+            <List>{data.blacklistedEmployeesList.map((item: any) => <ListItemText key={item.id} primary={item.name} />)}</List>
           )}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
         </Grid>
 
@@ -244,22 +241,32 @@ function InformesPage() {
             previousValue={previousPeriod?.payrollsReviewed || 0} 
             onClick={() => handleOpenModal(
               "Nóminas Revisadas", 
-              currentPeriod.payrollsReviewedList, 
-              (item: any) => {
-                const employee = employees.find(e => e.id === item.employee_id);
-                return <ListItemText primary={employee?.name || 'Empleado desconocido'} secondary={`Fecha: ${new Date(item.review_date).toLocaleDateString()}`} />
-              }
+              <List>{currentPeriod.payrollsReviewedList.map((item: any) => {
+                return <ListItemText key={item.id} primary={item.name} secondary={`Fecha: ${new Date(item.lastReviewedTimestamp).toLocaleDateString()}`} />
+              })}</List>
             )}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Total Horas Overtime" currentValue={currentPeriod.totalOvertime} previousValue={previousPeriod?.totalOvertime || 0} />
+          <StatComparison 
+            title="Total Horas Overtime" 
+            currentValue={currentPeriod.totalOvertime} 
+            previousValue={previousPeriod?.totalOvertime || 0} 
+            onClick={() => {
+              const details = currentPeriod.overtimeDetails
+                .filter((item: any) => item.overtime_hours > 0)
+                .sort((a: any, b: any) => b.overtime_hours - a.overtime_hours);
+              handleOpenModal(
+                "Detalle de Horas Overtime", 
+                <OvertimeDetailsTable details={details} employees={employees} hotels={hotels} />
+              );
+            }}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }} onClick={() => handleOpenModal(
             "Nóminas por Revisar", 
-            data.payrollsToReviewList, 
-            (item: any) => <ListItemText primary={item.name} />
+            <List>{data.payrollsToReviewList.map((item: any) => <ListItemText key={item.id} primary={item.name} />)}</List>
           )}><Typography variant="h6" color="text.secondary">Nóminas por Revisar</Typography><Typography variant="h4">{payrollsToReview}</Typography></Paper>
         </Grid>
 
@@ -274,11 +281,10 @@ function InformesPage() {
             previousValue={previousPeriod?.newRequests || 0} 
             onClick={() => handleOpenModal(
               "Nuevas Solicitudes", 
-              currentPeriod.newRequestsList, 
-              (item: any) => {
+              <List>{currentPeriod.newRequestsList.map((item: any) => {
                 const hotel = hotels.find(h => h.id === item.hotel_id);
-                return <ListItemText primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
-              }
+                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+              })}</List>
             )}
           />
         </Grid>
@@ -298,11 +304,10 @@ function InformesPage() {
             previousValue={previousPeriod?.overdueRequests || 0} 
             onClick={() => handleOpenModal(
               "Solicitudes Vencidas", 
-              currentPeriod.overdueRequestsList, 
-              (item: any) => {
+              <List>{currentPeriod.overdueRequestsList.map((item: any) => {
                 const hotel = hotels.find(h => h.id === item.hotel_id);
-                return <ListItemText primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha de inicio: ${new Date(item.start_date).toLocaleDateString()}`} />
-              }
+                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha de inicio: ${new Date(item.start_date).toLocaleDateString()}`} />
+              })}</List>
             )}
           />
         </Grid>
@@ -565,12 +570,13 @@ function InformesPage() {
       <DetailsModal 
         open={modalData.open} 
         onClose={handleCloseModal} 
-        title={modalData.title} 
-        items={modalData.items} 
-        renderItem={modalData.renderItem} 
-      />
+        title={modalData.title}
+      >
+        {modalData.content}
+      </DetailsModal>
     </Box>
   );
 }
 
 export default InformesPage;
+// refresh

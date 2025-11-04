@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover } from '@mui/material'; // Added Badge, Popover
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip } from '@mui/material'; // Added Badge, Popover, Chip
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
+import { isToday, isTomorrow, isPast } from 'date-fns';
+
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import ApartmentIcon from '@mui/icons-material/Apartment';
@@ -124,6 +126,13 @@ export default function MainLayout() {
     return "Buenas noches, David";
   };
 
+  const getRequestStatus = (startDate: string) => {
+    const date = new Date(startDate);
+    if (isPast(date) && !isToday(date)) return { label: 'Vencida', color: 'error' };
+    if (isToday(date) || isTomorrow(date)) return { label: 'Vence pronto', color: 'warning' };
+    return null;
+  };
+
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
@@ -182,18 +191,23 @@ export default function MainLayout() {
                   {unfulfilledRequests.length > 0 ? (
                     <List dense>
                       {unfulfilledRequests
-                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                        .map((req) => (
-                        <ListItemButton key={req.id} onClick={() => {
-                          handleNotificationClose();
-                          navigate(`/solicitudes?requestId=${req.id}`); // Navigate to requests page, maybe highlight the request
-                        }}>
-                          <ListItemText
-                            primary={`Hotel: ${req.hotelName || 'N/A'} - ${req.role}`}
-                            secondary={`Inicio: ${new Date(req.start_date).toLocaleDateString()}`}
-                          />
-                        </ListItemButton>
-                      ))}
+                        .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+                        .map((req) => {
+                          const status = getRequestStatus(req.start_date);
+                          return (
+                            <ListItemButton key={req.id} onClick={() => {
+                              handleNotificationClose();
+                              navigate(`/solicitudes?requestId=${req.id}`);
+                            }}>
+                              <ListItemText
+                                primary={`Hotel: ${req.hotelName || 'N/A'} - ${req.role}`}
+                                secondary={`Inicio: ${new Date(req.start_date).toLocaleDateString()}`}
+                                primaryTypographyProps={{ color: status ? `${status.color}.main` : 'text.primary' }}
+                              />
+                              {status && <Chip label={status.label} color={status.color} size="small" />}
+                            </ListItemButton>
+                          );
+                        })}
                     </List>
                   ) : (
                     <Typography>No hay solicitudes pendientes.</Typography>
