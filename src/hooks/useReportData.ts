@@ -112,7 +112,8 @@ const calculatePeriodStats = (
   const activeToInactiveList = periodEmployeeStatusHistory.filter(change =>
     change.old_is_active === true && change.new_is_active === false
   );
-  const activeToInactive = activeToInactiveList.length;
+  const uniqueActiveToInactiveIds = new Set(activeToInactiveList.map(item => item.employee_id));
+  const activeToInactive = uniqueActiveToInactiveIds.size;
 
   return {
     visits: periodRecords.length,
@@ -286,11 +287,13 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       const hotelEmployees = permanentEmployees.filter(e => e.hotelId === hotel.id);
       const hotelEmployeeIds = hotelEmployees.map(e => e.id);
 
-      const separations = currentPeriodEmployeeStatusHistory.filter(change =>
+      const separationEvents = currentPeriodEmployeeStatusHistory.filter(change =>
         hotelEmployeeIds.includes(change.employee_id) &&
         change.old_is_active === true &&
         change.new_is_active === false
-      ).length;
+      );
+      const uniqueSeparatedEmployeeIds = new Set(separationEvents.map(event => event.employee_id));
+      const separations = uniqueSeparatedEmployeeIds.size;
 
       const employeesAtStart = hotelEmployees.filter(e => {
         const idTimestamp = parseInt(e.id.split('-')[1]);

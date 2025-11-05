@@ -51,10 +51,12 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
         const periodStart = new Date();
         periodStart.setDate(periodEnd.getDate() - days);
 
-        const separations = history.filter(h => {
+        const separationEvents = history.filter(h => {
           const changeDate = new Date(h.change_date);
           return changeDate >= periodStart && changeDate <= periodEnd;
-        }).length;
+        });
+        const uniqueSeparatedIds = new Set(separationEvents.map(e => e.employee_id));
+        const separations = uniqueSeparatedIds.size;
 
         // Simplified average employee count for the period
         const employeesAtStart = employees.filter(e => {
@@ -85,10 +87,12 @@ export default function TurnoverAnalysis({ hotelId }: TurnoverAnalysisProps) {
         monthEnd.setMonth(monthEnd.getMonth() - i);
         const monthStart = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), 1);
 
-        const separations = history.filter(h => {
+        const monthlySeparationEvents = history.filter(h => {
           const changeDate = new Date(h.change_date);
           return changeDate >= monthStart && changeDate <= monthEnd;
-        }).length;
+        });
+        const uniqueMonthlySeparatedIds = new Set(monthlySeparationEvents.map(e => e.employee_id));
+        const separations = uniqueMonthlySeparatedIds.size;
         
         const employeesAtStart = employees.filter(e => {
             const idTimestamp = parseInt(e.id.split('-')[1]);
