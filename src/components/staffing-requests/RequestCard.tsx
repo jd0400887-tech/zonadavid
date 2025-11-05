@@ -4,7 +4,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, Typography, Box, Chip, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import type { StaffingRequest } from '../../types';
 
 interface RequestCardProps {
@@ -26,6 +25,7 @@ export default function RequestCard({ request, onEdit, onArchive }: RequestCardP
     transition,
     opacity: isDragging ? 0.9 : 1,
     boxShadow: isDragging ? '0 0 15px #FF5722, 0 0 25px #FF5722' : '0 0 2px #FF5722',
+    cursor: 'grab',
   };
 
   return (
@@ -33,6 +33,7 @@ export default function RequestCard({ request, onEdit, onArchive }: RequestCardP
       ref={setNodeRef} 
       style={style} 
       {...attributes} 
+      {...listeners} 
       sx={{
         mb: 2,
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -62,9 +63,6 @@ export default function RequestCard({ request, onEdit, onArchive }: RequestCardP
             )}
             <IconButton onClick={onEdit} size="small" sx={{ color: '#FFFFFF' }}>
               <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton {...listeners} size="small" sx={{ color: '#FFFFFF', cursor: 'grab' }}>
-              <DragIndicatorIcon fontSize="small" />
             </IconButton>
           </Box>
         </Box>

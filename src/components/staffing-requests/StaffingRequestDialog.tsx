@@ -124,6 +124,16 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
             <Grid item xs={12} sm={6}>
               <TextField fullWidth type="date" label="Fecha Requerida" name="start_date" value={formData.start_date} onChange={handleChange} InputLabelProps={{ shrink: true }} />
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel id="status-select-label">Estado</InputLabel>
+                <Select labelId="status-select-label" name="status" value={formData.status} onChange={handleChange} label="Estado">
+                  {['Pendiente', 'Enviada a Reclutamiento', 'En Proceso', 'Completada', 'Completada Parcialmente', 'Candidato No Presentado', 'Cancelada por Hotel', 'Vencida'].map(status => (
+                    <MenuItem key={status} value={status}>{status}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
             <Grid item xs={12}>
               <TextField fullWidth multiline rows={3} label="Notas Adicionales" name="notes" value={formData.notes || ''} onChange={handleChange} />
             </Grid>
