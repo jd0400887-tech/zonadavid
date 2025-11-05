@@ -48,6 +48,7 @@ const ApplicationCard = ({ application, onStatusChange, onAddEmployee, getHotelN
         variant={application.status === 'pendiente' ? 'contained' : 'outlined'} 
         onClick={() => onStatusChange(application.id, 'pendiente')}
         size="small"
+        disabled={application.status === 'empleado_creado'}
       >
         Pendiente
       </Button>
@@ -55,6 +56,7 @@ const ApplicationCard = ({ application, onStatusChange, onAddEmployee, getHotelN
         variant={application.status === 'completada' ? 'contained' : 'outlined'} 
         onClick={() => onStatusChange(application.id, 'completada')}
         size="small"
+        disabled={application.status === 'empleado_creado'}
       >
         Completada
       </Button>
