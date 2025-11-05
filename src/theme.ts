@@ -11,7 +11,7 @@ const theme = createTheme({
       main: '#f50057', // Un color de acento
     },
     background: {
-      default: '#212121', // Fondo principal oscuro
+      default: '#000000', // Fondo principal negro puro
       paper: '#303030',   // Fondo de 'papel' como tarjetas y menús
     },
     text: {

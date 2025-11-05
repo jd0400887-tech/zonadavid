@@ -9,7 +9,7 @@ import { useStaffingRequests } from './useStaffingRequests';
 export function useDashboardStats() {
   const { hotels, employees } = useHotels();
   const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
-  const { requests: staffingRequests } = useStaffingRequests();
+  const { allRequests: staffingRequests } = useStaffingRequests();
 
   return useMemo(() => {
     const today = new Date();

@@ -144,7 +144,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
   const { employees, loading: employeesLoading } = useEmployees();
   const { hotels, loading: hotelsLoading } = useHotels();
   const { allRecords, loading: attendanceLoading } = useAttendance({ start: null, end: null });
-  const { requests, loading: requestsLoading } = useStaffingRequests();
+  const { allRequests, loading: requestsLoading } = useStaffingRequests();
 
   const [currentPeriodPayrollHistory, setCurrentPeriodPayrollHistory] = useState<PayrollReview[]>([]);
   const [previousPeriodPayrollHistory, setPreviousPeriodPayrollHistory] = useState<PayrollReview[]>([]);
@@ -256,8 +256,8 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
 
     const permanentEmployees = employees.filter(e => e.employeeType === 'permanente');
 
-    const currentPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, requests, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
-    const previousPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, requests, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
+    const currentPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
+    const previousPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
 
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
@@ -327,7 +327,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       hotelTurnover,
     };
 
-  }, [loading, startDate, endDate, employees, hotels, allRecords, requests, currentPeriodPayrollHistory, previousPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, previousPeriodEmployeeStatusHistory]); // Add new dependencies
+  }, [loading, startDate, endDate, employees, hotels, allRecords, allRequests, currentPeriodPayrollHistory, previousPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, previousPeriodEmployeeStatusHistory]); // Add new dependencies
 
   return {
     data: reportData,

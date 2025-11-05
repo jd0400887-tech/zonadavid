@@ -53,4 +53,12 @@ export interface StaffingRequestHistory {
   change_description: string;
 }
 
+export interface RequestCandidate {
+  id: number;
+  request_id: number;
+  candidate_name: string | null;
+  existing_employee_id: string | null;
+  status: 'Asignado' | 'Llegó' | 'No llegó' | 'Confirmado';
+}
+
 // Force cache invalidation 2025-10-03

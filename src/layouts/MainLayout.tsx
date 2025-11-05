@@ -10,8 +10,10 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import ArchiveIcon from '@mui/icons-material/Archive';
 import LogoutIcon from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications'; // Added NotificationsIcon
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardStats } from '../hooks/useDashboardStats'; // Added useDashboardStats
 
@@ -22,6 +24,7 @@ const menuItems = [
   { text: 'Empleados', icon: <PeopleIcon />, path: '/empleados' },
   { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles' },
   { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes' },
+  { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones' },
   { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia' },
   { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina' },
 ];
@@ -134,7 +137,7 @@ export default function MainLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <IconButton

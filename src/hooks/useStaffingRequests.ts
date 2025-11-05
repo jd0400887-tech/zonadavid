@@ -1,27 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from './useAuth';
 import type { StaffingRequest } from '../types';
 
 export const useStaffingRequests = () => {
   const { session } = useAuth();
-  const [requests, setRequests] = useState<StaffingRequest[]>([]);
+  const [allRequests, setAllRequests] = useState<StaffingRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('staffing_requests')
-      .select('*, hotel:hotels(name)');
+      .select('*, hotel:hotels(name)')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching staffing requests:', error);
+      setAllRequests([]);
     } else if (data) {
       const formattedData = data.map(req => ({
         ...req,
         hotelName: req.hotel?.name || 'N/A',
       }));
-      setRequests(formattedData);
+      setAllRequests(formattedData);
     }
     setLoading(false);
   }, []);
@@ -30,10 +32,13 @@ export const useStaffingRequests = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const addRequest = async (request: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'>) => {
+  const activeRequests = useMemo(() => allRequests.filter(r => !r.is_archived), [allRequests]);
+  const archivedRequests = useMemo(() => allRequests.filter(r => r.is_archived), [allRequests]);
+
+  const addRequest = async (request: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName' | 'is_archived'>) => {
     const { error } = await supabase
       .from('staffing_requests')
-      .insert([request]);
+      .insert([{ ...request, is_archived: false }]);
 
     if (error) {
       console.error('Error adding staffing request:', error);
@@ -43,9 +48,8 @@ export const useStaffingRequests = () => {
   };
 
   const updateRequest = async (id: number, updates: Partial<Omit<StaffingRequest, 'hotelName'>>) => {
-    const originalRequest = requests.find(r => r.id === id);
+    const originalRequest = allRequests.find(r => r.id === id);
 
-    // Log history if status changed before updating the request
     if (originalRequest && updates.status && originalRequest.status !== updates.status) {
       const historyEntry = {
         request_id: id,
@@ -55,9 +59,11 @@ export const useStaffingRequests = () => {
       await supabase.from('staffing_request_history').insert([historyEntry]);
     }
 
+    const { hotelName, hotel, ...dbUpdates } = updates as any;
+
     const { error } = await supabase
       .from('staffing_requests')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id);
 
     if (error) {
@@ -80,6 +86,34 @@ export const useStaffingRequests = () => {
     await fetchRequests();
   };
 
+  const archiveRequest = async (id: number) => {
+    setAllRequests(prev => prev.map(r => r.id === id ? { ...r, is_archived: true } : r));
+    const { error } = await supabase
+      .from('staffing_requests')
+      .update({ is_archived: true })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error archiving staffing request:', error);
+      await fetchRequests(); // Revert optimistic update on error
+      throw error;
+    }
+  };
+
+  const unarchiveRequest = async (id: number) => {
+    setAllRequests(prev => prev.map(r => r.id === id ? { ...r, is_archived: false } : r));
+    const { error } = await supabase
+      .from('staffing_requests')
+      .update({ is_archived: false })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error unarchiving staffing request:', error);
+      await fetchRequests(); // Revert optimistic update on error
+      throw error;
+    }
+  };
+
   const fetchHistory = useCallback(async (requestId: number) => {
     const { data, error } = await supabase
       .from('staffing_request_history')
@@ -94,5 +128,16 @@ export const useStaffingRequests = () => {
     return data || [];
   }, []);
 
-  return { requests, loading, addRequest, updateRequest, deleteRequest, fetchHistory };
+  return { 
+    allRequests, 
+    activeRequests, 
+    archivedRequests, 
+    loading, 
+    addRequest, 
+    updateRequest, 
+    deleteRequest, 
+    archiveRequest, 
+    unarchiveRequest, 
+    fetchHistory 
+  };
 };

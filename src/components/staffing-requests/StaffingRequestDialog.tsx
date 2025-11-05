@@ -5,6 +5,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, S
 import { useHotels } from '../../hooks/useHotels';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStaffingRequests } from '../../hooks/useStaffingRequests';
+import { useRequestCandidates } from '../../hooks/useRequestCandidates';
 import type { StaffingRequest, StaffingRequestHistory } from '../../types';
 
 interface StaffingRequestDialogProps {
@@ -30,8 +31,14 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   const [history, setHistory] = useState<StaffingRequestHistory[]>([]);
   
   const { hotels } = useHotels();
-  const { roles } = useEmployees();
+  const { employees, roles } = useEmployees(); // Get all employees for existing employee assignment
   const { fetchHistory } = useStaffingRequests();
+  // Candidates Hook
+  const { candidates, loading: candidatesLoading, addCandidate, updateCandidateStatus, deleteCandidate } = useRequestCandidates(initialData?.id || null);
+
+  // State for new candidate inputs
+  const [newCandidateName, setNewCandidateName] = useState('');
+  const [selectedExistingEmployeeId, setSelectedExistingEmployeeId] = useState('');
 
   useEffect(() => {
     if (initialData && open) {
@@ -80,6 +87,7 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
         <Tabs value={tab} onChange={handleTabChange} aria-label="request details tabs">
           <Tab label="Detalles" />
           <Tab label="Historial" disabled={!initialData} />
+          <Tab label="Candidatos" disabled={!initialData} />
         </Tabs>
       </Box>
       <DialogContent>
@@ -134,6 +142,94 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
               <Typography sx={{ p: 2 }}>No hay historial de cambios para esta solicitud.</Typography>
             )}
           </List>
+        )}
+        {tab === 2 && (
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="h6" gutterBottom>Candidatos Asignados ({candidates.length})</Typography>
+            <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Nombre Nuevo Candidato"
+                  value={newCandidateName}
+                  onChange={(e) => setNewCandidateName(e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={async () => {
+                    if (newCandidateName && initialData?.id) {
+                      await addCandidate({ request_id: initialData.id, candidate_name: newCandidateName, existing_employee_id: null });
+                      setNewCandidateName('');
+                    }
+                  }}
+                  disabled={!newCandidateName || !initialData?.id}
+                >
+                  Asignar Nuevo Candidato
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Empleado Existente</InputLabel>
+                  <Select
+                    value={selectedExistingEmployeeId}
+                    label="Empleado Existente"
+                    onChange={(e) => setSelectedExistingEmployeeId(e.target.value)}
+                  >
+                    {employees.map(emp => (
+                      <MenuItem key={emp.id} value={emp.id}>{emp.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={async () => {
+                    if (selectedExistingEmployeeId && initialData?.id) {
+                      await addCandidate({ request_id: initialData.id, candidate_name: null, existing_employee_id: selectedExistingEmployeeId });
+                      setSelectedExistingEmployeeId('');
+                    }
+                  }}
+                  disabled={!selectedExistingEmployeeId || !initialData?.id}
+                >
+                  Asignar Empleado Existente
+                </Button>
+              </Grid>
+            </Grid>
+
+            {candidatesLoading ? (
+              <Typography>Cargando candidatos...</Typography>
+            ) : candidates.length > 0 ? (
+              <List>
+                {candidates.map(candidate => (
+                  <ListItem key={candidate.id} divider>
+                    <ListItemText
+                      primary={candidate.candidate_name || employees.find(emp => emp.id === candidate.existing_employee_id)?.name || 'Empleado Desconocido'}
+                      secondary={`Estado: ${candidate.status}`}
+                    />
+                    <FormControl sx={{ minWidth: 120, mr: 1 }} size="small">
+                      <Select
+                        value={candidate.status}
+                        onChange={(e) => updateCandidateStatus(candidate.id, e.target.value as RequestCandidate['status'])}
+                      >
+                        <MenuItem value="Asignado">Asignado</MenuItem>
+                        <MenuItem value="Llegó">Llegó</MenuItem>
+                        <MenuItem value="No llegó">No llegó</MenuItem>
+                        <MenuItem value="Confirmado">Confirmado</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <Button color="error" onClick={() => deleteCandidate(candidate.id)}>Eliminar</Button>
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography sx={{ p: 2 }}>No hay candidatos asignados a esta solicitud.</Typography>
+            )}
+          </Box>
         )}
       </DialogContent>
       <DialogActions>
