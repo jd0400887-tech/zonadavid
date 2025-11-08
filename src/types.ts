@@ -43,6 +43,7 @@ export interface StaffingRequest {
   status: 'Pendiente' | 'Enviada a Reclutamiento' | 'En Proceso' | 'Completada' | 'Completada Parcialmente' | 'Cancelada por Hotel' | 'Candidato No Presentado' | 'Vencida';
   completed_at?: string | null;
   notes?: string | null;
+  candidate_count?: number;
 }
 
 export interface StaffingRequestHistory {

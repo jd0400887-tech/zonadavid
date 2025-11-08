@@ -3,6 +3,7 @@ import { useEmployees } from './useEmployees';
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
 import { useStaffingRequests } from './useStaffingRequests';
+import { useApplications } from './useApplications'; // Import useApplications
 import { differenceInDays, subDays, startOfWeek } from 'date-fns';
 import { supabase } from '../utils/supabase';
 import { PayrollReview } from './usePayrollHistory';
@@ -23,6 +24,7 @@ const calculatePeriodStats = (
   permanentEmployees: any[], 
   allHotels: any[], 
   allRequests: any[],
+  allApplications: any[], // Add this
   periodPayrollHistory: PayrollReview[],
   periodEmployeeStatusHistory: EmployeeStatusChange[], // New parameter
   start: Date, 
@@ -86,7 +88,15 @@ const calculatePeriodStats = (
   });
   const newRequests = newRequestsList.length;
 
-  const completedInPeriod = newRequestsList.filter(r => r.status === 'Completada' && r.completed_at && new Date(r.completed_at) >= start && new Date(r.completed_at) <= end);
+  const temporalRequests = newRequestsList.filter(r => r.request_type === 'temporal').length;
+  const permanentRequests = newRequestsList.filter(r => r.request_type === 'permanente').length;
+
+  const completedInPeriod = newRequestsList.filter(r => 
+    (r.status === 'Completada' || r.status === 'Completada Parcialmente') && 
+    r.completed_at && 
+    new Date(r.completed_at) >= start && 
+    new Date(r.completed_at) <= end
+  );
   const fulfillmentRate = newRequests > 0 ? (completedInPeriod.length / newRequests) * 100 : 0;
 
   const timeToFillSum = completedInPeriod.reduce((acc, r) => {
@@ -103,7 +113,7 @@ const calculatePeriodStats = (
   const noShowRate = newRequests > 0 ? (noShowInPeriod / newRequests) * 100 : 0;
 
   const overdueRequestsList = newRequestsList.filter(r => 
-    !['Completada', 'Cancelada por Hotel', 'Candidato No Presentado'].includes(r.status) && 
+    !['En Proceso', 'Completada', 'Completada Parcialmente', 'Cancelada por Hotel', 'Candidato No Presentado'].includes(r.status) && 
     new Date(r.start_date) < end
   );
   const overdueRequests = overdueRequestsList.length;
@@ -114,6 +124,12 @@ const calculatePeriodStats = (
   );
   const uniqueActiveToInactiveIds = new Set(activeToInactiveList.map(item => item.employee_id));
   const activeToInactive = uniqueActiveToInactiveIds.size;
+
+  const newApplicationsList = allApplications.filter(app => {
+    const appDate = new Date(app.created_at);
+    return appDate >= start && appDate <= end;
+  });
+  const newApplications = newApplicationsList.length;
 
   return {
     visits: periodRecords.length,
@@ -136,6 +152,10 @@ const calculatePeriodStats = (
     activeToInactive, // New stat
     activeToInactiveList,
     overtimeDetails: periodPayrollHistory, // Add this line
+    temporalRequests,
+    permanentRequests,
+    newApplications,
+    newApplicationsList,
   };
 };
 
@@ -145,6 +165,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
   const { hotels, loading: hotelsLoading } = useHotels();
   const { allRecords, loading: attendanceLoading } = useAttendance({ start: null, end: null });
   const { allRequests, loading: requestsLoading } = useStaffingRequests();
+  const { applications: allApplications, loading: applicationsLoading } = useApplications(); // Use the hook
 
   const [currentPeriodPayrollHistory, setCurrentPeriodPayrollHistory] = useState<PayrollReview[]>([]);
   const [previousPeriodPayrollHistory, setPreviousPeriodPayrollHistory] = useState<PayrollReview[]>([]);
@@ -154,7 +175,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
   const [employeeStatusHistoryLoading, setEmployeeStatusHistoryLoading] = useState(true); // New loading state
 
 
-  const loading = employeesLoading || hotelsLoading || attendanceLoading || requestsLoading || payrollHistoryLoading || employeeStatusHistoryLoading; // Update loading
+  const loading = employeesLoading || hotelsLoading || attendanceLoading || requestsLoading || applicationsLoading || payrollHistoryLoading || employeeStatusHistoryLoading; // Update loading
 
   useEffect(() => {
     const fetchHistoryData = async () => { // Renamed function
@@ -256,8 +277,8 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
 
     const permanentEmployees = employees.filter(e => e.employeeType === 'permanente');
 
-    const currentPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
-    const previousPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
+    const currentPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, allApplications, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
+    const previousPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, allApplications, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
 
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
@@ -327,7 +348,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       hotelTurnover,
     };
 
-  }, [loading, startDate, endDate, employees, hotels, allRecords, allRequests, currentPeriodPayrollHistory, previousPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, previousPeriodEmployeeStatusHistory]); // Add new dependencies
+  }, [loading, startDate, endDate, employees, hotels, allRecords, allRequests, allApplications, currentPeriodPayrollHistory, previousPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, previousPeriodEmployeeStatusHistory]); // Add new dependencies
 
   return {
     data: reportData,

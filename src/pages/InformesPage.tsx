@@ -189,6 +189,20 @@ function InformesPage() {
             )}
           />
         </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison 
+            title="Nuevas Aplicaciones" 
+            currentValue={currentPeriod.newApplications} 
+            previousValue={previousPeriod?.newApplications || 0} 
+            onClick={() => handleOpenModal(
+              "Nuevas Aplicaciones", 
+              <List>{currentPeriod.newApplicationsList.map((item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotel_id);
+                return <ListItemText key={item.id} primary={`${item.candidate_name} para ${item.role}`} secondary={`Hotel: ${hotel?.name || 'N/A'} - Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+              })}</List>
+            )}
+          />
+        </Grid>
 
         {/* Employee Movement / Status */}
         <Grid item xs={12} sx={{ mt: 2 }}>
@@ -287,6 +301,21 @@ function InformesPage() {
               })}</List>
             )}
           />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>Desglose por Tipo</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', mt: 2 }}>
+              <Box>
+                <Typography variant="h4">{currentPeriod.temporalRequests}</Typography>
+                <Typography variant="body2">Temporales</Typography>
+              </Box>
+              <Box>
+                <Typography variant="h4">{currentPeriod.permanentRequests}</Typography>
+                <Typography variant="body2">Permanentes</Typography>
+              </Box>
+            </Box>
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Tasa de Cumplimiento" currentValue={currentPeriod.fulfillmentRate} previousValue={previousPeriod?.fulfillmentRate || 0} />

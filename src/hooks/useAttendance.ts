@@ -32,8 +32,28 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
     const employeeId = profile?.id;
     if (!employeeId) {
       console.error("User profile not loaded. Cannot add attendance record.");
-      // Optionally, show an error to the user here.
-      return;
+      throw new Error("No se pudo identificar al usuario.");
+    }
+
+    // Check for existing record for the same day
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+
+    const { data: existingRecords, error: checkError } = await supabase
+      .from('attendance_records')
+      .select('id')
+      .eq('employeeId', employeeId)
+      .eq('hotelId', hotelId)
+      .gte('timestamp', todayStart.toISOString())
+      .lte('timestamp', todayEnd.toISOString());
+
+    if (checkError) {
+      console.error('Error checking for existing attendance records:', checkError);
+      throw new Error('Error al verificar los registros de asistencia.');
+    }
+
+    if (existingRecords && existingRecords.length > 0) {
+      throw new Error('Ya marcaste ingreso hoy en este hotel');
     }
 
     // The DB requires a client-generated ID, so we create one.
@@ -48,6 +68,7 @@ export function useAttendance(dateRange: DateRange, selectedHotelId?: string) {
     const { data, error } = await supabase.from('attendance_records').insert([newRecord]).select();
     if (error) {
       console.error('Error adding attendance record:', error);
+      throw new Error('No se pudo registrar la asistencia.');
     } else if (data) {
       setAttendanceRecords(prev => [...prev, ...data as AttendanceRecord[]]);
     }

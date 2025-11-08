@@ -5,11 +5,13 @@ import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
 import { useStaffingRequests } from './useStaffingRequests';
+import { useApplications } from './useApplications';
 
 export function useDashboardStats() {
   const { hotels, employees } = useHotels();
   const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
   const { allRequests: staffingRequests } = useStaffingRequests();
+  const { applications } = useApplications();
 
   return useMemo(() => {
     const today = new Date();
@@ -72,11 +74,13 @@ export function useDashboardStats() {
     );
     const unfulfilledRequestsCount = unfulfilledRequests.length;
 
+    const pendingApplications = applications.filter(app => app.status === 'pendiente').length;
+
     return {
       totalHotels: hotels.length,
       activeEmployees: activeEmployeesList.length,
       visitsThisWeek: allAttendanceRecords.filter(r => new Date(r.timestamp).getTime() >= startOfWeek(today, { weekStartsOn: 0 }).getTime()).length,
-      visitsThisMonth: allAttendanceRecords.filter(r => new Date(r.timestamp).getTime() >= startOfMonth(today).getTime()).length,
+      pendingApplications,
       activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
       visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
       hotelRankingByVisits,
@@ -90,5 +94,5 @@ export function useDashboardStats() {
       unfulfilledRequestsCount, // NEW stat
       unfulfilledRequests, // NEW stat
     };
-  }, [employees, hotels, allAttendanceRecords, staffingRequests]);
+  }, [employees, hotels, allAttendanceRecords, staffingRequests, applications]);
 }

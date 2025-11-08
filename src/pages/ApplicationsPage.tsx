@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Toolbar, Button, Snackbar, Alert, Grid, TextField, InputAdornment, Select, MenuItem, FormControl, InputLabel, Chip } from '@mui/material';
+import { Box, Typography, Paper, Toolbar, Button, Snackbar, Alert, Grid, TextField, InputAdornment, Select, MenuItem, FormControl, InputLabel, Chip, FormControlLabel, Switch } from '@mui/material';
 import { useApplications, Application } from '../hooks/useApplications';
 import { useHotels } from '../hooks/useHotels';
 import EmployeeForm from '../components/employees/EmployeeForm';
@@ -90,6 +90,7 @@ export default function ApplicationsPage() {
   // State for Filters
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreated, setShowCreated] = useState(false); // State for the new toggle
 
   const handleStatusChange = async (id: number, newStatus: Application['status']) => {
     try {
@@ -154,9 +155,17 @@ export default function ApplicationsPage() {
 
   const filteredApplications = useMemo(() => {
     return applications
-      .filter(app => statusFilter === 'all' || app.status === statusFilter)
+      .filter(app => {
+        // First, filter by status and the toggle
+        if (statusFilter === 'all') {
+          // If 'all' is selected, show everything EXCEPT 'empleado_creado' unless the switch is on
+          return app.status !== 'empleado_creado' || showCreated;
+        }
+        // Otherwise, just match the selected status
+        return app.status === statusFilter;
+      })
       .filter(app => app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [applications, statusFilter, searchTerm]);
+  }, [applications, statusFilter, searchTerm, showCreated]);
 
   const pendingApplications = filteredApplications.filter(app => app.status === 'pendiente');
   const completedApplications = filteredApplications.filter(app => app.status === 'completada' || app.status === 'empleado_creado');
@@ -170,7 +179,7 @@ export default function ApplicationsPage() {
         {/* Filter Controls */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
                 label="Buscar por Nombre de Candidato"
@@ -183,7 +192,7 @@ export default function ApplicationsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth size="small">
                 <InputLabel>Estado</InputLabel>
                 <Select
@@ -191,12 +200,18 @@ export default function ApplicationsPage() {
                   label="Estado"
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  <MenuItem value="all">Todos</MenuItem>
+                  <MenuItem value="all">Todos (sin creados)</MenuItem>
                   <MenuItem value="pendiente">Pendiente</MenuItem>
                   <MenuItem value="completada">Completada</MenuItem>
-                  <MenuItem value="empleado_creado">Empleado Creado</MenuItem>
+                  <MenuItem value="empleado_creado">Solo Empleados Creados</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControlLabel
+                control={<Switch checked={showCreated} onChange={(e) => setShowCreated(e.target.checked)} />}
+                label="Incluir Empleados Creados en 'Todos'"
+              />
             </Grid>
           </Grid>
         </Paper>

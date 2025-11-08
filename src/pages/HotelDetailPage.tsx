@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
-import { Box, Typography, Toolbar, Paper, Grid, List, ListItem, ListItemText, Chip, IconButton, Snackbar } from '@mui/material';
+import { useState, useMemo } from 'react';
+import { Box, Typography, Toolbar, Paper, Grid, List, ListItem, ListItemText, Chip, IconButton, Snackbar, FormControlLabel, Switch } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useEmployees } from '../hooks/useEmployees';
@@ -26,6 +26,7 @@ export default function HotelDetailPage() {
   const { hotels, loading } = useHotels();
   const { employees } = useEmployees();
   const [showCopySuccess, setShowCopySuccess] = useState(false);
+  const [showOnlyPermanent, setShowOnlyPermanent] = useState(false);
 
   const hotel = hotels.find(h => h.id === hotelId);
 
@@ -37,9 +38,19 @@ export default function HotelDetailPage() {
     }
   };
   const assignedEmployees = employees.filter(emp => emp.hotelId === hotelId);
-  const activeEmployees = assignedEmployees.filter(emp => emp.isActive && !emp.isBlacklisted).length;
-  const inactiveEmployees = assignedEmployees.filter(emp => !emp.isActive && !emp.isBlacklisted).length;
-  const blacklistedEmployees = assignedEmployees.filter(emp => emp.isBlacklisted).length;
+  
+  const displayedEmployees = useMemo(() => {
+    return assignedEmployees.filter(employee => {
+      if (showOnlyPermanent) {
+        return employee.employeeType === 'permanente';
+      }
+      return true; // If switch is off, show all
+    });
+  }, [assignedEmployees, showOnlyPermanent]);
+
+  const activeEmployees = displayedEmployees.filter(emp => emp.isActive && !emp.isBlacklisted).length;
+  const inactiveEmployees = displayedEmployees.filter(emp => !emp.isActive && !emp.isBlacklisted).length;
+  const blacklistedEmployees = displayedEmployees.filter(emp => emp.isBlacklisted).length;
 
   if (loading) {
     return (
@@ -123,14 +134,22 @@ export default function HotelDetailPage() {
         </Box>
 
         <Paper>
-                              <Typography variant="h6" sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            Empleados en este Hotel ({assignedEmployees.length})
+          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant="h6">
+              Empleados en este Hotel ({displayedEmployees.length})
+            </Typography>
+            <FormControlLabel
+              control={<Switch checked={showOnlyPermanent} onChange={(e) => setShowOnlyPermanent(e.target.checked)} />}
+              label="Mostrar solo permanentes"
+            />
+          </Box>
+          <Box sx={{ px: 2, pb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip label={`Activos: ${activeEmployees}`} color="success" />
             <Chip label={`Inactivos: ${inactiveEmployees}`} color="default" />
             <Chip label={`En Lista Negra: ${blacklistedEmployees}`} sx={{ bgcolor: 'black', color: 'white' }} />
-          </Typography>
+          </Box>
           <List>
-            {assignedEmployees.map(employee => (
+            {displayedEmployees.map(employee => (
               <ListItem key={employee.id} divider>
                 <ListItemText
                   primary={
@@ -152,13 +171,13 @@ export default function HotelDetailPage() {
                       )}
                     </Box>
                   }
-                  secondary={`Nº: ${employee.employeeNumber} | Cargo: ${employee.role} | Nómina: ${employee.payrollType}`}
+                  secondary={`Nº: ${employee.employeeNumber} | Cargo: ${employee.role} | Nómina: ${employee.payrollType} | Tipo: ${employee.employeeType}`}
                 />
               </ListItem>
             ))}
-            {assignedEmployees.length === 0 && (
+            {displayedEmployees.length === 0 && (
                <ListItem>
-                <ListItemText primary="No hay empleados asignados a este hotel." />
+                <ListItemText primary="No hay empleados que coincidan con el filtro." />
               </ListItem>
             )}
           </List>

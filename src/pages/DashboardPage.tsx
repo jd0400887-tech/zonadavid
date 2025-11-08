@@ -32,6 +32,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import BlockIcon from '@mui/icons-material/Block';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
 
 // Fix for default marker icon issue with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -118,7 +119,7 @@ function DashboardPage() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         let closestHotel: (typeof hotels)[0] | null = null;
         let minDistance = Infinity;
@@ -134,8 +135,12 @@ function DashboardPage() {
         });
 
         if (closestHotel && minDistance <= CHECK_IN_RADIUS_METERS) {
-          addRecord(closestHotel.id);
-          setSnackbarInfo({ open: true, message: `Check-in exitoso en: ${closestHotel.name}`, severity: 'success' });
+          try {
+            await addRecord(closestHotel.id);
+            setSnackbarInfo({ open: true, message: `Check-in exitoso en: ${closestHotel.name}`, severity: 'success' });
+          } catch (error: any) {
+            setSnackbarInfo({ open: true, message: error.message, severity: 'error' });
+          }
         } else {
           setSnackbarInfo({ open: true, message: 'No se encontró ningún hotel cercano. Acércate más para registrar la asistencia.', severity: 'error' });
         }
@@ -165,7 +170,7 @@ function DashboardPage() {
             <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
-            <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Mes)" value={stats.visitsThisMonth} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Aplicaciones Pendientes" value={stats.pendingApplications} icon={<PendingActionsIcon />} onClick={() => navigate('/aplicaciones')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Nóminas por Revisar" value={stats.payrollsToReview} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} /></Grid>
           </Grid>
