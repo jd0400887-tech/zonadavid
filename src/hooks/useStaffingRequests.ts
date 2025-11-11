@@ -12,7 +12,7 @@ export const useStaffingRequests = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('staffing_requests')
-      .select('*, hotel:hotels(name)')
+      .select('id, created_at, role, start_date, end_date, hotel_id, status, request_type, notes, is_archived, completed_at, hotel:hotels(name)')
       .order('created_at', { ascending: false });
 
     if (error) {

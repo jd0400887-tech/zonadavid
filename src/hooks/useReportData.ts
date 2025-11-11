@@ -21,7 +21,7 @@ export interface EmployeeStatusChange {
 // A function to calculate stats for a given period
 const calculatePeriodStats = (
   allRecords: any[], 
-  permanentEmployees: any[], 
+  allEmployees: any[], 
   allHotels: any[], 
   allRequests: any[],
   allApplications: any[], // Add this
@@ -32,6 +32,9 @@ const calculatePeriodStats = (
 ) => {
   const startTime = start.getTime();
   const endTime = end.getTime();
+
+  const permanentEmployees = allEmployees.filter(e => e.employeeType === 'permanente');
+  const temporaryEmployees = allEmployees.filter(e => e.employeeType === 'temporal');
 
   // Filter records for the given period
   const periodRecords = allRecords.filter(r => {
@@ -59,6 +62,12 @@ const calculatePeriodStats = (
     const idTimestamp = parseInt(e.id.split('-')[1]);
     return !isNaN(idTimestamp) && idTimestamp >= startTime && idTimestamp <= endTime;
   });
+
+  const newTemporaryEmployeesList = temporaryEmployees.filter(e => {
+    const idTimestamp = parseInt(e.id.split('-')[1]);
+    return !isNaN(idTimestamp) && idTimestamp >= startTime && idTimestamp <= endTime;
+  });
+  const newTemporaryEmployees = newTemporaryEmployeesList.length;
 
   const totalOvertime = periodPayrollHistory.reduce((acc, review) => acc + (review.overtime_hours || 0), 0);
 
@@ -103,22 +112,37 @@ const calculatePeriodStats = (
     const completedDate = new Date(r.completed_at);
     const createdDate = new Date(r.created_at);
     if (!isNaN(completedDate.getTime()) && !isNaN(createdDate.getTime())) {
-      return acc + differenceInDays(completedDate, createdDate);
+      // Create dates at the start of the day in UTC to avoid timezone issues
+      const completedStartOfDay = new Date(Date.UTC(completedDate.getUTCFullYear(), completedDate.getUTCMonth(), completedDate.getUTCDate()));
+      const createdStartOfDay = new Date(Date.UTC(createdDate.getUTCFullYear(), createdDate.getUTCMonth(), createdDate.getUTCDate()));
+      
+      return acc + differenceInDays(completedStartOfDay, createdStartOfDay);
     }
     return acc;
   }, 0);
   const avgTimeToFill = completedInPeriod.length > 0 ? timeToFillSum / completedInPeriod.length : 0;
 
-  const noShowInPeriod = newRequestsList.filter(r => r.status === 'Candidato No Presentado').length;
-  const noShowRate = newRequests > 0 ? (noShowInPeriod / newRequests) * 100 : 0;
+  // --- New No-Show Rate Logic ---
+  // Filter for requests that were supposed to start in the current period.
+  const requestsStartingInPeriod = allRequests.filter(r => {
+    const reqStartDate = new Date(r.start_date);
+    return reqStartDate >= start && reqStartDate <= end;
+  });
 
-  const overdueRequestsList = newRequestsList.filter(r => 
-    !['En Proceso', 'Completada', 'Completada Parcialmente', 'Cancelada por Hotel', 'Candidato No Presentado'].includes(r.status) && 
-    new Date(r.start_date) < end
-  );
+  const noShowInPeriod = requestsStartingInPeriod.filter(r => r.status === 'Candidato No Presentado').length;
+  // The denominator is now the total number of requests starting in the period.
+  const noShowRate = requestsStartingInPeriod.length > 0 ? (noShowInPeriod / requestsStartingInPeriod.length) * 100 : 0;
+
+  const overdueRequestsList = allRequests.filter(r => {
+    const reqStartDate = new Date(r.start_date);
+    return r.status === 'Vencida' && reqStartDate >= start && reqStartDate <= end;
+  });
   const overdueRequests = overdueRequestsList.length;
 
-  const canceledByHotelList = newRequestsList.filter(r => r.status === 'Cancelada por Hotel');
+  const canceledByHotelList = allRequests.filter(r => {
+    const reqStartDate = new Date(r.start_date);
+    return r.status === 'Cancelada por Hotel' && reqStartDate >= start && reqStartDate <= end;
+  });
   const canceledByHotel = canceledByHotelList.length;
 
   // New calculation: employees moved from active to inactive
@@ -134,7 +158,10 @@ const calculatePeriodStats = (
   });
   const newApplications = newApplicationsList.length;
 
-  const candidateNoShowList = newRequestsList.filter(r => r.status === 'Candidato No Presentado');
+  const candidateNoShowList = allRequests.filter(r => {
+    const reqStartDate = new Date(r.start_date);
+    return r.status === 'Candidato No Presentado' && reqStartDate >= start && reqStartDate <= end;
+  });
   const candidateNoShow = candidateNoShowList.length;
 
   return {
@@ -142,6 +169,8 @@ const calculatePeriodStats = (
     visitsList: periodRecords,
     newEmployees: newEmployeesList.length,
     newEmployeesList,
+    newTemporaryEmployees,
+    newTemporaryEmployeesList,
     hotelRanking,
     visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
     payrollsReviewed,
@@ -285,10 +314,8 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     const previousStart = subDays(currentStart, periodDuration + 1);
     const previousEnd = subDays(currentEnd, periodDuration + 1);
 
-    const permanentEmployees = employees.filter(e => e.employeeType === 'permanente');
-
-    const currentPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, allApplications, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
-    const previousPeriodStats = calculatePeriodStats(allRecords, permanentEmployees, hotels, allRequests, allApplications, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
+    const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, allRequests, allApplications, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
+    const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, allRequests, allApplications, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
 
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
@@ -315,7 +342,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     const payrollsToReview = payrollsToReviewList.length;
 
     const hotelTurnover = hotels.map(hotel => {
-      const hotelEmployees = permanentEmployees.filter(e => e.hotelId === hotel.id);
+      const hotelEmployees = employees.filter(e => e.hotelId === hotel.id && e.employeeType === 'permanente');
       const hotelEmployeeIds = hotelEmployees.map(e => e.id);
 
       const separationEvents = currentPeriodEmployeeStatusHistory.filter(change =>

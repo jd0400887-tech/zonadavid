@@ -182,13 +182,16 @@ function InformesPage() {
             title="Nuevas Aplicaciones" 
             currentValue={currentPeriod.newApplications} 
             previousValue={previousPeriod?.newApplications || 0} 
-            onClick={() => handleOpenModal(
-              "Nuevas Aplicaciones", 
-              <List>{currentPeriod.newApplicationsList.map((item: any) => {
-                const hotel = hotels.find(h => h.id === item.hotel_id);
-                return <ListItemText key={item.id} primary={`${item.candidate_name} para ${item.role}`} secondary={`Hotel: ${hotel?.name || 'N/A'} - Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
-              })}</List>
-            )}
+            onClick={() => {
+              const uniqueApplications = Array.from(new Map(currentPeriod.newApplicationsList.map((item: any) => [item.id, item])).values());
+              handleOpenModal(
+                "Nuevas Aplicaciones", 
+                <List>{uniqueApplications.map((item: any) => {
+                  const hotel = hotels.find(h => h.id === item.hotel_id);
+                  return <ListItemText key={item.id} primary={`${item.candidate_name} para ${item.role}`} secondary={`Hotel: ${hotel?.name || 'N/A'} - Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+                })}</List>
+              );
+            }}
           />
         </Grid>
 
@@ -198,12 +201,26 @@ function InformesPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison 
-            title="Nuevos Empleados" 
+            title="Nuevos Empleados (Permanentes)" 
             currentValue={currentPeriod.newEmployees} 
             previousValue={previousPeriod?.newEmployees || 0} 
             onClick={() => handleOpenModal(
-              "Nuevos Empleados", 
+              "Nuevos Empleados (Permanentes)", 
               <List>{currentPeriod.newEmployeesList.map((item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotelId);
+                return <ListItemText key={item.id} primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
+              })}</List>
+            )}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison 
+            title="Nuevos Empleados (Temporales)" 
+            currentValue={currentPeriod.newTemporaryEmployees} 
+            previousValue={previousPeriod?.newTemporaryEmployees || 0} 
+            onClick={() => handleOpenModal(
+              "Nuevos Empleados (Temporales)", 
+              <List>{currentPeriod.newTemporaryEmployeesList.map((item: any) => {
                 const hotel = hotels.find(h => h.id === item.hotelId);
                 return <ListItemText key={item.id} primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
               })}</List>
@@ -582,7 +599,16 @@ function InformesPage() {
                   <TableBody>
                     {sortedRequests.map((req: any) => {
                       const hotel = hotels.find(h => h.id === req.hotel_id);
-                      const timeToFill = req.completed_at ? differenceInDays(new Date(req.completed_at), new Date(req.created_at)) : null;
+                      const timeToFill = req.completed_at ? (() => {
+                        const completedDate = new Date(req.completed_at);
+                        const createdDate = new Date(req.created_at);
+
+                        // Create dates at the start of the day in UTC to avoid timezone issues
+                        const completedStartOfDay = new Date(Date.UTC(completedDate.getUTCFullYear(), completedDate.getUTCMonth(), completedDate.getUTCDate()));
+                        const createdStartOfDay = new Date(Date.UTC(createdDate.getUTCFullYear(), createdDate.getUTCMonth(), createdDate.getUTCDate()));
+
+                        return differenceInDays(completedStartOfDay, createdStartOfDay);
+                      })() : null;
                       return (
                         <TableRow key={req.id}>
                           <TableCell>{hotel?.name || 'N/A'}</TableCell>
