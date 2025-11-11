@@ -2,12 +2,13 @@ import { useLocation } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel, ListItemText, Accordion, AccordionSummary, AccordionDetails, List } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Treemap } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
 import { useSortableData } from '../hooks/useSortableData';
 import { exportToExcel } from '../utils/exportToExcel';
 import DetailsModal from '../components/informes/DetailsModal';
 import OvertimeDetailsTable from '../components/informes/OvertimeDetailsTable';
+import TurnoverTreemap from '../components/informes/TurnoverTreemap';
 import { differenceInDays } from 'date-fns';
 
 // A small component to display a stat with its change from the previous period
@@ -107,24 +108,11 @@ function InformesPage() {
 
   const { currentPeriod, previousPeriod, blacklistedEmployees, payrollsToReview } = data;
 
-  const hotelChartData = [...currentPeriod.hotelRanking]
-    .map(hotel => {
-      const prevHotel = previousPeriod?.hotelRanking.find((h: any) => h.id === hotel.id);
-      return {
-        name: hotel.name,
-        Visitas: hotel.visits,
-        'Visitas (Anterior)': prevHotel?.visits || 0,
-      };
-    })
-    .sort((a, b) => a.Visitas - b.Visitas);
-
   const handleExport = () => {
     const excelData = {
-      hotelData: hotelChartData.map(h => ({ 'Hotel': h.name, 'Visitas': h.Visitas, 'Visitas (Anterior)': h['Visitas (Anterior)'] })).sort((a,b) => b.Visitas - a.Visitas),
       roleData: sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
       cityData: sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
       employeesByHotelData: sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
-      attendanceByEmployeeData: sortedAttendance.map((att: any) => ({ 'Empleado': att.name, 'Visitas': att.value })),
       newEmployeesData: sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
       blacklistedEmployeesData: sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
       summaryData: [
@@ -340,23 +328,41 @@ function InformesPage() {
             )}
           />
         </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison 
+            title="Canceladas por Hotel" 
+            currentValue={currentPeriod.canceledByHotel} 
+            previousValue={previousPeriod?.canceledByHotel || 0} 
+            onClick={() => handleOpenModal(
+              "Solicitudes Canceladas por Hotel", 
+              <List>{currentPeriod.canceledByHotelList.map((item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotel_id);
+                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+              })}</List>
+            )}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison 
+            title="Candidato No Presentado" 
+            currentValue={currentPeriod.candidateNoShow} 
+            previousValue={previousPeriod?.candidateNoShow || 0} 
+            onClick={() => handleOpenModal(
+              "Candidato No Presentado", 
+              <List>{currentPeriod.candidateNoShowList.map((item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotel_id);
+                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+              })}</List>
+            )}
+          />
+        </Grid>
       </Grid>
 
-      {/* Section 2: Hotel Ranking Chart */}
+      {/* Section 2: Hotel Turnover Chart */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" gutterBottom>Ranking de Hoteles por Visitas</Typography>
-        <Paper sx={{ height: 400, p: 2, width: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart layout="vertical" data={hotelChartData} margin={{ top: 5, right: 30, left: 120, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={80} />
-              <Tooltip wrapperStyle={{ zIndex: 1000 }} />
-              <Legend />
-              <Bar dataKey="Visitas" fill="#8884d8" />
-              <Bar dataKey="Visitas (Anterior)" fill="#82ca9d" />
-            </BarChart>
-          </ResponsiveContainer>
+        <Typography variant="h5" gutterBottom>Tasa de Rotación por Hotel (%)</Typography>
+        <Paper sx={{ p: 2, width: '100%' }}>
+          <TurnoverTreemap data={data.hotelTurnover} />
         </Paper>
       </Box>
 

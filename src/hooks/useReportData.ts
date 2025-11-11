@@ -118,6 +118,9 @@ const calculatePeriodStats = (
   );
   const overdueRequests = overdueRequestsList.length;
 
+  const canceledByHotelList = newRequestsList.filter(r => r.status === 'Cancelada por Hotel');
+  const canceledByHotel = canceledByHotelList.length;
+
   // New calculation: employees moved from active to inactive
   const activeToInactiveList = periodEmployeeStatusHistory.filter(change =>
     change.old_is_active === true && change.new_is_active === false
@@ -130,6 +133,9 @@ const calculatePeriodStats = (
     return appDate >= start && appDate <= end;
   });
   const newApplications = newApplicationsList.length;
+
+  const candidateNoShowList = newRequestsList.filter(r => r.status === 'Candidato No Presentado');
+  const candidateNoShow = candidateNoShowList.length;
 
   return {
     visits: periodRecords.length,
@@ -156,6 +162,10 @@ const calculatePeriodStats = (
     permanentRequests,
     newApplications,
     newApplicationsList,
+    canceledByHotel,
+    canceledByHotelList,
+    candidateNoShow,
+    candidateNoShowList,
   };
 };
 

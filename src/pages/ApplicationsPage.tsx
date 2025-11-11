@@ -89,6 +89,7 @@ export default function ApplicationsPage() {
 
   // State for Filters
   const [statusFilter, setStatusFilter] = useState('all');
+  const [hotelFilter, setHotelFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreated, setShowCreated] = useState(false); // State for the new toggle
 
@@ -156,16 +157,19 @@ export default function ApplicationsPage() {
   const filteredApplications = useMemo(() => {
     return applications
       .filter(app => {
-        // First, filter by status and the toggle
+        // Hotel filter
+        if (hotelFilter !== 'all' && app.hotel_id !== hotelFilter) {
+          return false;
+        }
+        
+        // Status and toggle filter
         if (statusFilter === 'all') {
-          // If 'all' is selected, show everything EXCEPT 'empleado_creado' unless the switch is on
           return app.status !== 'empleado_creado' || showCreated;
         }
-        // Otherwise, just match the selected status
         return app.status === statusFilter;
       })
       .filter(app => app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [applications, statusFilter, searchTerm, showCreated]);
+  }, [applications, statusFilter, hotelFilter, searchTerm, showCreated]);
 
   const pendingApplications = filteredApplications.filter(app => app.status === 'pendiente');
   const completedApplications = filteredApplications.filter(app => app.status === 'completada' || app.status === 'empleado_creado');
@@ -207,10 +211,25 @@ export default function ApplicationsPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Hotel</InputLabel>
+                <Select
+                  value={hotelFilter}
+                  label="Hotel"
+                  onChange={(e) => setHotelFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Todos los Hoteles</MenuItem>
+                  {hotels.map(hotel => (
+                    <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
               <FormControlLabel
                 control={<Switch checked={showCreated} onChange={(e) => setShowCreated(e.target.checked)} />}
-                label="Incluir Empleados Creados en 'Todos'"
+                label="Incluir Empleados Creados"
               />
             </Grid>
           </Grid>

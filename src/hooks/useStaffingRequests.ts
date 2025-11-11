@@ -50,16 +50,24 @@ export const useStaffingRequests = () => {
   const updateRequest = async (id: number, updates: Partial<Omit<StaffingRequest, 'hotelName'>>) => {
     const originalRequest = allRequests.find(r => r.id === id);
 
+    // Initialize dbUpdates with the provided updates, excluding hotelName and hotel
+    const { hotelName, hotel, ...dbUpdates } = updates as any;
+
+    // Check for status change and update history and completed_at timestamp
     if (originalRequest && updates.status && originalRequest.status !== updates.status) {
+      // Log the status change history
       const historyEntry = {
         request_id: id,
         changed_by: session?.user?.email,
         change_description: `Estado cambiado de '${originalRequest.status}' a '${updates.status}'`,
       };
       await supabase.from('staffing_request_history').insert([historyEntry]);
-    }
 
-    const { hotelName, hotel, ...dbUpdates } = updates as any;
+      // If the new status marks the request as completed, set the completed_at timestamp
+      if (['Completada', 'Completada Parcialmente'].includes(updates.status)) {
+        dbUpdates.completed_at = new Date().toISOString();
+      }
+    }
 
     const { error } = await supabase
       .from('staffing_requests')
