@@ -29,6 +29,7 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   const [formData, setFormData] = useState(defaultState);
   const [tab, setTab] = useState(0);
   const [history, setHistory] = useState<StaffingRequestHistory[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { hotels } = useHotels();
   const { employees, roles } = useEmployees(); // Get all employees for existing employee assignment
@@ -71,13 +72,18 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   };
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
     const utcDate = new Date(`${formData.start_date}T00:00:00`);
     const submissionData = {
       ...formData,
       start_date: utcDate.toISOString(),
     };
-    await onSubmit(submissionData);
-    onClose();
+    try {
+      await onSubmit(submissionData);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -244,7 +250,7 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={tab === 1}>
+        <Button onClick={handleSubmit} variant="contained" disabled={tab === 1 || isSubmitting}>
           {initialData ? 'Guardar Cambios' : 'Crear Solicitud'}
         </Button>
       </DialogActions>

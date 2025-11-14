@@ -13,9 +13,10 @@ interface KanbanColumnProps {
   textColor?: string;
   onEditRequest: (request: StaffingRequest) => void;
   onArchiveRequest: (id: number) => void;
+  onDeleteRequest: (id: number) => void;
 }
 
-export default function KanbanColumn({ id, title, requests, bgColor, textColor = '#FFFFFF', onEditRequest, onArchiveRequest }: KanbanColumnProps) {
+export default function KanbanColumn({ id, title, requests, bgColor, textColor = '#FFFFFF', onEditRequest, onArchiveRequest, onDeleteRequest }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -47,6 +48,7 @@ export default function KanbanColumn({ id, title, requests, bgColor, textColor =
               request={request} 
               onEdit={() => onEditRequest(request)} 
               onArchive={['Completada', 'Completada Parcialmente', 'Candidato No Presentado', 'Cancelada por Hotel', 'Vencida'].includes(id) ? () => onArchiveRequest(request.id) : undefined} 
+              onDelete={() => onDeleteRequest(request.id)}
             />
           ))}
         </Box>

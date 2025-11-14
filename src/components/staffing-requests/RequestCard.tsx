@@ -3,15 +3,17 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, Typography, Box, Chip, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { StaffingRequest } from '../../types';
 
 interface RequestCardProps {
   request: StaffingRequest;
   onEdit: () => void;
   onArchive?: () => void; // Optional archive function
+  onDelete?: () => void; // Optional delete function
 }
 
-export default function RequestCard({ request, onEdit, onArchive }: RequestCardProps) {
+export default function RequestCard({ request, onEdit, onArchive, onDelete }: RequestCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: request.id,
     data: {
@@ -63,6 +65,11 @@ export default function RequestCard({ request, onEdit, onArchive }: RequestCardP
             <IconButton onClick={onEdit} size="small" sx={{ color: '#FFFFFF' }}>
               <EditIcon fontSize="small" />
             </IconButton>
+            {onDelete && (
+              <IconButton onClick={onDelete} size="small" sx={{ color: '#FFFFFF' }}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>

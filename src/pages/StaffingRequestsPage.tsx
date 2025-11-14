@@ -13,6 +13,7 @@ import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import StaffingRequestDialog from '../components/staffing-requests/StaffingRequestDialog';
 import ArchivedRequestsPage from './ArchivedRequestsPage';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
 
 const statusColumns: StaffingRequest['status'][] = [
   'Pendiente',
@@ -37,7 +38,7 @@ const statusColors: { [key in StaffingRequest['status']]: { bg: string, text: st
 };
 
 export default function StaffingRequestsPage() {
-  const { activeRequests, addRequest, updateRequest, archiveRequest } = useStaffingRequests();
+  const { activeRequests, addRequest, updateRequest, archiveRequest, deleteRequest } = useStaffingRequests();
   const { hotels } = useHotels();
 
   const [hotelFilter, setHotelFilter] = useState<string>('all');
@@ -45,6 +46,8 @@ export default function StaffingRequestsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<StaffingRequest | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'archived'>('kanban');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
 
   const handleOpenDialog = (request?: StaffingRequest) => {
     setEditingRequest(request || null);
@@ -68,6 +71,19 @@ export default function StaffingRequestsPage() {
     if (newMode !== null) {
       setViewMode(newMode);
     }
+  };
+
+  const handleDeleteRequest = (id: number) => {
+    setRequestToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (requestToDelete) {
+      await deleteRequest(requestToDelete);
+    }
+    setDeleteConfirmOpen(false);
+    setRequestToDelete(null);
   };
 
   const filteredRequests = useMemo(() => {
@@ -194,6 +210,7 @@ export default function StaffingRequestsPage() {
                       textColor={statusColors[status].text}
                       onEditRequest={handleOpenDialog}
                       onArchiveRequest={archiveRequest}
+                      onDeleteRequest={handleDeleteRequest}
                     />
                   </Grid>
                 ))}
@@ -209,6 +226,13 @@ export default function StaffingRequestsPage() {
           onClose={handleCloseDialog} 
           onSubmit={handleSubmit} 
           initialData={editingRequest} 
+        />
+        <ConfirmationDialog
+          open={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={handleConfirmDelete}
+          title="Confirmar Eliminación"
+          message="¿Estás seguro de que quieres eliminar esta solicitud? Esta acción no se puede deshacer."
         />
       </Box>
     </Box>

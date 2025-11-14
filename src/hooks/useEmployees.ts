@@ -2,15 +2,14 @@ import { useHotels } from './useHotels';
 import { supabase } from '../utils/supabase';
 import type { Employee } from '../types';
 import { useCallback, useMemo } from 'react';
+import { EMPLOYEE_POSITIONS } from '../data/constants';
 
 export function useEmployees() {
   const { employees, refreshHotels } = useHotels();
 
   const roles = useMemo(() => {
-    if (!employees) return [];
-    const allRoles = employees.map(e => e.role);
-    return [...new Set(allRoles)];
-  }, [employees]);
+    return EMPLOYEE_POSITIONS;
+  }, []);
 
   const addEmployee = useCallback(async (employeeData: Partial<Employee>) => {
     const newEmployee: Employee = {
