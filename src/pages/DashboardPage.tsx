@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab } from '@mui/material';
+import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -55,6 +55,9 @@ function DashboardPage() {
   
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [snackbarInfo, setSnackbarInfo] = useState<{open: boolean, message: string, severity: 'success' | 'error'}>({ open: false, message: '', severity: 'success' });
+  const [customReportDialogOpen, setCustomReportDialogOpen] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   const stats = useDashboardStats();
 
@@ -179,7 +182,56 @@ function DashboardPage() {
             <Button variant="contained" onClick={handleGenerateWeeklyReport}>Generar Reporte Semanal</Button>
             <Button variant="contained" onClick={handleGenerateMonthlyReport}>Generar Reporte Mensual</Button>
             <Button variant="contained" onClick={handleGenerateSemestralReport}>Generar Reporte Semestral</Button>
+            <Button variant="contained" onClick={() => setCustomReportDialogOpen(true)}>Generar Reporte Personalizado</Button>
           </Stack>
+
+          <Dialog open={customReportDialogOpen} onClose={() => setCustomReportDialogOpen(false)}>
+            <DialogTitle>Generar Reporte Personalizado</DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="startDate"
+                label="Fecha de Inicio"
+                type="date"
+                fullWidth
+                variant="standard"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+              <TextField
+                margin="dense"
+                id="endDate"
+                label="Fecha de Fin"
+                type="date"
+                fullWidth
+                variant="standard"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setCustomReportDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={() => {
+                if (customStartDate && customEndDate) {
+                  navigate('/informes', {
+                    state: {
+                      title: 'Reporte Personalizado',
+                      startDate: new Date(customStartDate).toISOString(),
+                      endDate: new Date(customEndDate).toISOString()
+                    }
+                  });
+                  setCustomReportDialogOpen(false);
+                }
+              }}>Generar</Button>
+            </DialogActions>
+          </Dialog>
 
           <Box sx={{ mb: 3 }}><VisitsOverTimeChart data={stats.visitsOverTime} /></Box>
 
