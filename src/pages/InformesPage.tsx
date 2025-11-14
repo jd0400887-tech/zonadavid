@@ -110,15 +110,10 @@ function InformesPage() {
 
   const handleExport = () => {
     const excelData = {
-      roleData: sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
-      cityData: sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
-      employeesByHotelData: sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
-      newEmployeesData: sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
-      blacklistedEmployeesData: sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
-      summaryData: [
+      "Resumen": [
         { 'Métrica': 'Visitas Registradas', 'Valor': currentPeriod.visits },
         { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
-        { 'Métrica': 'Empleados Inactivos', 'Valor': currentPeriod.activeToInactive }, // New export data
+        { 'Métrica': 'Empleados Inactivos', 'Valor': currentPeriod.activeToInactive },
         { 'Métrica': 'Nóminas Revisadas', 'Valor': currentPeriod.payrollsReviewed },
         { 'Métrica': 'Total Horas Overtime', 'Valor': currentPeriod.totalOvertime },
         { 'Métrica': 'Nuevas Solicitudes', 'Valor': currentPeriod.newRequests },
@@ -129,9 +124,13 @@ function InformesPage() {
         { 'Métrica': 'Nóminas por Revisar', 'Valor': payrollsToReview },
         { 'Métrica': 'En Lista Negra', 'Valor': blacklistedEmployees },
       ],
-      reportTitle: title || 'Informe_Personalizado',
+      "Personal por Cargo": sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
+      "Visitas por Ciudad": sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
+      "Empleados por Hotel": sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
+      "Nuevos Empleados": sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
+      "Empleados en Lista Negra": sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
     };
-    exportToExcel(excelData);
+    exportToExcel(excelData, title || 'Informe_Personalizado');
   };
 
   return (
