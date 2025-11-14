@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-const { jsPDF } = require('jspdf');
+const jsPDF = require('jspdf');
 require('jspdf-autotable');
 
 const handler: Handler = async (event, context) => {
