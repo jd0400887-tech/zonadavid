@@ -1,12 +1,11 @@
 import { useLocation } from 'react-router-dom';
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Toolbar, TableSortLabel, ListItemText, Accordion, AccordionSummary, AccordionDetails, List } from '@mui/material';
 import { ArrowUpward, ArrowDownward, Remove, CloudDownload as CloudDownloadIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Treemap } from 'recharts';
 import { useReportData } from '../hooks/useReportData';
 import { useSortableData } from '../hooks/useSortableData';
 import { exportToExcel } from '../utils/exportToExcel';
-import { svgToPng } from '../utils/svgToPng';
 import DetailsModal from '../components/informes/DetailsModal';
 import OvertimeDetailsTable from '../components/informes/OvertimeDetailsTable';
 import TurnoverTreemap from '../components/informes/TurnoverTreemap';
@@ -55,12 +54,10 @@ function InformesPage() {
   const { title, startDate, endDate } = location.state || {};
   const { data, loading, employees, hotels } = useReportData(startDate, endDate);
   const [modalData, setModalData] = useState<{ open: boolean; title: string; content: React.ReactNode }>({ open: false, title: '', content: null });
-  const turnoverChartRef = useRef<HTMLDivElement>(null);
 
   const handleOpenModal = (title: string, content: React.ReactNode) => {
     setModalData({ open: true, title, content });
   };
-
 
   const handleCloseModal = () => {
     setModalData({ open: false, title: '', content: null });
@@ -96,58 +93,6 @@ function InformesPage() {
   const { items: sortedHotelTurnover, requestSort: requestSortHotelTurnover, sortConfig: sortConfigHotelTurnover } = useSortableData(data?.hotelTurnover || [], { key: 'turnoverRate', direction: 'desc' });
   const { items: sortedRequests, requestSort: requestSortRequests, sortConfig: sortConfigRequests } = useSortableData(data?.currentPeriod?.newRequestsList || [], { key: 'created_at', direction: 'desc' });
 
-  const handleDownloadPdf = async () => {
-    const turnoverChartElement = turnoverChartRef.current?.querySelector('svg');
-    let turnoverChartImage = '';
-    if (turnoverChartElement) {
-      turnoverChartImage = await svgToPng(turnoverChartElement);
-    }
-
-    const excelData = {
-      "Resumen": [
-        { 'Métrica': 'Visitas Registradas', 'Valor': currentPeriod.visits },
-        { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
-        { 'Métrica': 'Empleados Inactivos', 'Valor': currentPeriod.activeToInactive },
-        { 'Métrica': 'Nóminas Revisadas', 'Valor': currentPeriod.payrollsReviewed },
-        { 'Métrica': 'Total Horas Overtime', 'Valor': currentPeriod.totalOvertime },
-        { 'Métrica': 'Nuevas Solicitudes', 'Valor': currentPeriod.newRequests },
-        { 'Métrica': 'Tasa de Cumplimiento (%)', 'Valor': currentPeriod.fulfillmentRate.toFixed(1) },
-        { 'Métrica': 'Tiempo Promedio de Cobertura (días)', 'Valor': currentPeriod.avgTimeToFill.toFixed(1) },
-        { 'Métrica': 'Tasa de No Presentación (%)', 'Valor': currentPeriod.noShowRate.toFixed(1) },
-        { 'Métrica': 'Solicitudes Vencidas', 'Valor': currentPeriod.overdueRequests },
-        { 'Métrica': 'Nóminas por Revisar', 'Valor': payrollsToReview },
-        { 'Métrica': 'En Lista Negra', 'Valor': blacklistedEmployees },
-      ],
-      "Personal por Cargo": sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
-      "Visitas por Ciudad": sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
-      "Empleados por Hotel": sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
-      "Nuevos Empleados": sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
-      "Empleados en Lista Negra": sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
-    };
-
-    const response = await fetch('/.netlify/functions/generate-pdf', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data: excelData,
-        reportTitle: title || 'Informe_Personalizado',
-        charts: {
-          turnover: turnoverChartImage,
-        },
-      }),
-    });
-
-    const { pdf } = await response.json();
-    const link = document.createElement('a');
-    link.href = pdf;
-    const dateStr = new Date().toISOString().split('T')[0];
-    const fileName = `${(title || 'Informe_Personalizado').replace(/ /g, '_')}_${dateStr}.pdf`;
-    link.download = fileName;
-    link.click();
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -165,10 +110,15 @@ function InformesPage() {
 
   const handleExport = () => {
     const excelData = {
-      "Resumen": [
+      roleData: sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
+      cityData: sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
+      employeesByHotelData: sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
+      newEmployeesData: sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
+      blacklistedEmployeesData: sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
+      summaryData: [
         { 'Métrica': 'Visitas Registradas', 'Valor': currentPeriod.visits },
         { 'Métrica': 'Nuevos Empleados', 'Valor': currentPeriod.newEmployees },
-        { 'Métrica': 'Empleados Inactivos', 'Valor': currentPeriod.activeToInactive },
+        { 'Métrica': 'Empleados Inactivos', 'Valor': currentPeriod.activeToInactive }, // New export data
         { 'Métrica': 'Nóminas Revisadas', 'Valor': currentPeriod.payrollsReviewed },
         { 'Métrica': 'Total Horas Overtime', 'Valor': currentPeriod.totalOvertime },
         { 'Métrica': 'Nuevas Solicitudes', 'Valor': currentPeriod.newRequests },
@@ -179,13 +129,9 @@ function InformesPage() {
         { 'Métrica': 'Nóminas por Revisar', 'Valor': payrollsToReview },
         { 'Métrica': 'En Lista Negra', 'Valor': blacklistedEmployees },
       ],
-      "Personal por Cargo": sortedRoles.map((r: any) => ({ 'Cargo': r.name, 'Cantidad': r.value })),
-      "Visitas por Ciudad": sortedCities.map(c => ({ 'Ciudad': c.name, 'Visitas (Actual)': c.currentVisits, 'Visitas (Anterior)': c.previousVisits, 'Cambio': c.currentVisits - c.previousVisits })),
-      "Empleados por Hotel": sortedHotels.map((h: any) => ({ 'Hotel': h.name, 'Empleados': h.count })),
-      "Nuevos Empleados": sortedNewEmployees.map((emp: any) => ({ 'Nombre': emp.name })),
-      "Empleados en Lista Negra": sortedBlacklisted.map((emp: any) => ({ 'Nombre': emp.name })),
+      reportTitle: title || 'Informe_Personalizado',
     };
-    exportToExcel(excelData, title || 'Informe_Personalizado');
+    exportToExcel(excelData);
   };
 
   return (
@@ -202,14 +148,6 @@ function InformesPage() {
           onClick={handleExport}
         >
           Exportar a Excel
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<CloudDownloadIcon />}
-          onClick={handleDownloadPdf}
-        >
-          Descargar PDF
         </Button>
       </Box>
       <Paper sx={{ p: 2, mb: 3, border: '1px solid', borderColor: 'divider' }}>
@@ -440,7 +378,7 @@ function InformesPage() {
       {/* Section 2: Hotel Turnover Chart */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" gutterBottom>Tasa de Rotación por Hotel (%)</Typography>
-        <Paper sx={{ p: 2, width: '100%' }} ref={turnoverChartRef}>
+        <Paper sx={{ p: 2, width: '100%' }}>
           <TurnoverTreemap data={data.hotelTurnover} />
         </Paper>
       </Box>
