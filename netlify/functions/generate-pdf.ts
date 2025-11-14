@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions';
-const { jsPDF } = require('jspdf');
-require('jspdf-autotable');
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const handler: Handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
