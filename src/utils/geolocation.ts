@@ -15,3 +15,10 @@ export function getDistanceInMeters(lat1: number, lon1: number, lat2: number, lo
   const d = R * c; // in meters
   return d;
 }
+
+// Calculates the distance between two points in miles.
+export function getDistanceInMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const distanceInMeters = getDistanceInMeters(lat1, lon1, lat2, lon2);
+  const distanceInMiles = distanceInMeters * 0.000621371;
+  return distanceInMiles;
+}

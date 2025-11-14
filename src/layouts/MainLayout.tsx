@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip } from '@mui/material'; // Added Badge, Popover, Chip
+import { useState, useEffect } from 'react';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button } from '@mui/material';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { isToday, isTomorrow, isPast } from 'date-fns';
 
@@ -12,10 +12,11 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import LogoutIcon from '@mui/icons-material/Logout';
-import NotificationsIcon from '@mui/icons-material/Notifications'; // Added NotificationsIcon
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import HomeIcon from '@mui/icons-material/Home'; // Icon for Home Location
 import { useAuth } from '../hooks/useAuth';
-import { useDashboardStats } from '../hooks/useDashboardStats'; // Added useDashboardStats
+import { useDashboardStats } from '../hooks/useDashboardStats';
 
 const drawerWidth = 240;
 
@@ -33,30 +34,62 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null); // State for Popover
-  const { signOut } = useAuth();
-  const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats(); // Get stats
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const { signOut, session, updateUser } = useAuth(); // Get session and updateUser
+  const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats();
 
-  const handleDrawerToggle = () => {
-    setIsDrawerOpen(!isDrawerOpen);
-  };
+  // State for Home Location Dialog
+  const [homeDialogOpen, setHomeDialogOpen] = useState(false);
+  const [homeLat, setHomeLat] = useState('');
+  const [homeLng, setHomeLng] = useState('');
 
+  useEffect(() => {
+    if (session?.user?.user_metadata) {
+      setHomeLat(session.user.user_metadata.home_lat || '');
+      setHomeLng(session.user.user_metadata.home_lng || '');
+    }
+  }, [session]);
+
+  const handleDrawerToggle = () => setIsDrawerOpen(!isDrawerOpen);
   const handleNavigation = (path: string) => {
     navigate(path);
     setIsDrawerOpen(false);
   };
-
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
+  const handleNotificationClick = (event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget);
+  const handleNotificationClose = () => setAnchorEl(null);
 
-  const handleNotificationClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleOpenHomeDialog = () => {
+    setHomeDialogOpen(true);
   };
 
-  const handleNotificationClose = () => {
-    setAnchorEl(null);
+  const handleCloseHomeDialog = () => {
+    setHomeDialogOpen(false);
+  };
+
+  const handleSaveHomeLocation = async () => {
+    await updateUser({ home_lat: homeLat, home_lng: homeLng });
+    handleCloseHomeDialog();
+  };
+
+  const handleFetchLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setHomeLat(position.coords.latitude.toString());
+          setHomeLng(position.coords.longitude.toString());
+        },
+        (error) => {
+          console.error("Error getting location: ", error);
+          alert("No se pudo obtener la ubicación. Asegúrate de haber concedido los permisos.");
+        }
+      );
+    } else {
+      alert("La geolocalización no es soportada por este navegador.");
+    }
   };
 
   const open = Boolean(anchorEl);
@@ -103,6 +136,14 @@ export default function MainLayout() {
         </List>
         <Box sx={{ flexGrow: 1 }} />
         <List>
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleOpenHomeDialog}>
+              <ListItemIcon>
+                <HomeIcon />
+              </ListItemIcon>
+              <ListItemText primary="Mi Domicilio" />
+            </ListItemButton>
+          </ListItem>
           <ListItem disablePadding>
             <ListItemButton onClick={handleLogout}>
               <ListItemIcon>
@@ -244,6 +285,39 @@ export default function MainLayout() {
       <Box component="main" sx={{ flexGrow: 1 }}>
         <Outlet />
       </Box>
+
+      {/* Home Location Dialog */}
+      <Dialog open={homeDialogOpen} onClose={handleCloseHomeDialog}>
+        <DialogTitle>Establecer Ubicación de Domicilio</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="latitude"
+            label="Latitud"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={homeLat}
+            onChange={(e) => setHomeLat(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            id="longitude"
+            label="Longitud"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={homeLng}
+            onChange={(e) => setHomeLng(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHomeDialog}>Cancelar</Button>
+          <Button onClick={handleFetchLocation}>Obtener mi Ubicación</Button>
+          <Button onClick={handleSaveHomeLocation}>Guardar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

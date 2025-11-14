@@ -23,7 +23,7 @@ import DashboardPieChart from '../components/dashboard/DashboardPieChart';
 import { DashboardBarChart } from '../components/dashboard/DashboardBarChart';
 
 // Utils
-import { getDistanceInMeters } from '../utils/geolocation';
+import { getDistanceInMeters, getDistanceInMiles } from '../utils/geolocation';
 
 // Icons
 import MyLocationIcon from '@mui/icons-material/MyLocation';
@@ -39,6 +39,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 const CHECK_IN_RADIUS_METERS = 150;
+const CHECK_IN_RADIUS_MILES = CHECK_IN_RADIUS_METERS * 0.000621371; // Convert meters to miles
 
 // Dynamically import MapContainer
 const LazyMapContainer = lazy(() => import('react-leaflet').then(module => ({ default: module.MapContainer })));
@@ -125,19 +126,23 @@ function DashboardPage() {
       async (position) => {
         const { latitude, longitude } = position.coords;
         let closestHotel: (typeof hotels)[0] | null = null;
-        let minDistance = Infinity;
+        let minDistanceInMiles = Infinity;
 
         hotels.forEach(hotel => {
           if (hotel.latitude && hotel.longitude) {
-            const distance = getDistanceInMeters(latitude, longitude, hotel.latitude, hotel.longitude);
-            if (distance < minDistance) {
-              minDistance = distance;
+            const distanceInMiles = getDistanceInMiles(latitude, longitude, hotel.latitude, hotel.longitude);
+            if (distanceInMiles < minDistanceInMiles) {
+              minDistanceInMiles = distanceInMiles;
               closestHotel = hotel;
             }
           }
         });
 
-        if (closestHotel && minDistance <= CHECK_IN_RADIUS_METERS) {
+        if (closestHotel) {
+          console.log(`Closest hotel: ${closestHotel.name}, Distance: ${minDistanceInMiles.toFixed(2)} miles`);
+        }
+
+        if (closestHotel && minDistanceInMiles <= CHECK_IN_RADIUS_MILES) {
           try {
             await addRecord(closestHotel.id);
             setSnackbarInfo({ open: true, message: `Check-in exitoso en: ${closestHotel.name}`, severity: 'success' });
