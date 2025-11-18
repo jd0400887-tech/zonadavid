@@ -25,6 +25,9 @@ export function useDashboardStats() {
 
     const activeEmployeesByRole = activeEmployeesList.reduce((acc, employee) => {
       const role = employee.role || 'Sin Cargo';
+      if (role.toLowerCase() === 'admin') { // Exclude admin role
+        return acc;
+      }
       acc[role] = (acc[role] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -68,6 +71,10 @@ export function useDashboardStats() {
       return acc;
     }, {} as Record<string, number>);
 
+    const sortedEmployeesByHotel = Object.entries(employeesByHotel)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
     // NEW: Calculate unfulfilled requests
     const unfulfilledRequests = staffingRequests.filter(req =>
       ['Pendiente', 'Enviada a Reclutamiento', 'En Proceso'].includes(req.status)
@@ -89,7 +96,7 @@ export function useDashboardStats() {
       payrollsToReview: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.isActive && (!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTime)).length,
       payrollsReviewedInPeriod: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.lastReviewedTimestamp && new Date(emp.lastReviewedTimestamp).getTime() >= startOfWeekTime).length,
       blacklistedEmployees,
-      employeesByHotel: Object.entries(employeesByHotel).map(([name, value]) => ({ name, value })),
+      employeesByHotel: sortedEmployeesByHotel,
 
       unfulfilledRequestsCount, // NEW stat
       unfulfilledRequests, // NEW stat

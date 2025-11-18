@@ -264,18 +264,34 @@ export default function ApplicationsPage() {
           {loading ? (
             <Typography>Cargando...</Typography>
           ) : completedApplications.length > 0 ? (
-            <Grid container spacing={3}>
-              {completedApplications.map(app => (
-                <Grid item key={app.id} xs={12} sm={6} md={4}>
-                  <ApplicationCard 
-                    application={app} 
-                    onStatusChange={handleStatusChange} 
-                    onAddEmployee={handleOpenAddEmployeeModal} 
-                    getHotelName={getHotelName} 
-                  />
-                </Grid>
-              ))}
-            </Grid>
+            <Box sx={{ 
+              maxHeight: 600, 
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'rgba(0,0,0,0.1)',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#FF5722',
+                borderRadius: '4px',
+                boxShadow: '0 0 6px #FF5722',
+              },
+            }}>
+              <Grid container spacing={3}>
+                {completedApplications.map(app => (
+                  <Grid item key={app.id} xs={12} sm={6} md={4}>
+                    <ApplicationCard 
+                      application={app} 
+                      onStatusChange={handleStatusChange} 
+                      onAddEmployee={handleOpenAddEmployeeModal} 
+                      getHotelName={getHotelName} 
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
           ) : (
             <Typography>No hay aplicaciones completadas.</Typography>
           )}

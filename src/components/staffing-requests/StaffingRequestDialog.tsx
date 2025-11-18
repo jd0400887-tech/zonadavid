@@ -1,6 +1,6 @@
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid, Tabs, Tab, Box, List, ListItem, ListItemText, Typography } from '@mui/material';
 import { useHotels } from '../../hooks/useHotels';
 import { useEmployees } from '../../hooks/useEmployees';
@@ -40,6 +40,16 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   // State for new candidate inputs
   const [newCandidateName, setNewCandidateName] = useState('');
   const [selectedExistingEmployeeId, setSelectedExistingEmployeeId] = useState('');
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState(''); // New state for employee search
+
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearchTerm) {
+      return employees;
+    }
+    return employees.filter(emp =>
+      emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase())
+    );
+  }, [employees, employeeSearchTerm]);
 
   useEffect(() => {
     if (initialData && open) {
@@ -186,6 +196,15 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
                   Asignar Nuevo Candidato
                 </Button>
               </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Buscar Empleado Existente"
+                  value={employeeSearchTerm}
+                  onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Empleado Existente</InputLabel>
@@ -194,7 +213,7 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
                     label="Empleado Existente"
                     onChange={(e) => setSelectedExistingEmployeeId(e.target.value)}
                   >
-                    {employees.map(emp => (
+                    {filteredEmployees.map(emp => (
                       <MenuItem key={emp.id} value={emp.id}>{emp.name}</MenuItem>
                     ))}
                   </Select>

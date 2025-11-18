@@ -2,9 +2,7 @@ import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
 import { useNavigate } from 'react-router-dom';
-
 import { format } from 'date-fns';
 import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths, subWeeks } from 'date-fns';
 
@@ -46,8 +44,6 @@ const LazyMapContainer = lazy(() => import('react-leaflet').then(module => ({ de
 const LazyTileLayer = lazy(() => import('react-leaflet').then(module => ({ default: module.TileLayer })));
 const LazyMarker = lazy(() => import('react-leaflet').then(module => ({ default: module.Marker })));
 const LazyPopup = lazy(() => import('react-leaflet').then(module => ({ default: module.Popup })));
-
- 
 
 function DashboardPage() {
   const navigate = useNavigate();

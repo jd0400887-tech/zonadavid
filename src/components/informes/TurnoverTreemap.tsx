@@ -1,16 +1,33 @@
 import React, { useMemo } from 'react';
-import { ResponsiveContainer, Treemap } from 'recharts';
-import { Box, Typography } from '@mui/material';
+import { ResponsiveContainer, Treemap, Tooltip } from 'recharts';
+import { Box, Typography, Paper } from '@mui/material';
 
 // --- Helper Functions ---
 
 // Function to get color based on turnover rate
 const getColor = (rate: number) => {
-  if (rate > 50) return '#D32F2F'; // Red for very high turnover
-  if (rate > 30) return '#FFC107'; // Amber for high turnover
-  if (rate > 15) return '#FFEE58'; // Yellow for moderate turnover
-  return '#66BB6A'; // Green for low turnover
+  if (rate > 50) return '#E57373'; // A less intense red
+  if (rate > 30) return '#FFB74D'; // A more muted orange
+  if (rate > 15) return '#FFF176'; // A softer yellow
+  return '#81C784'; // A more subtle green
 };
+
+// --- Custom Tooltip ---
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const { name, turnoverRate, separations, size } = payload[0].payload;
+    return (
+      <Paper sx={{ p: 1, backgroundColor: '#000', border: '1px solid #FF5722' }}>
+        <Typography sx={{ fontWeight: 'bold', color: '#FF5722' }}>{name}</Typography>
+        <Typography variant="body2" sx={{ color: '#FF5722' }}>Tasa de Rotación: {turnoverRate.toFixed(1)}%</Typography>
+        <Typography variant="body2" sx={{ color: '#FF5722' }}>Separaciones: {separations}</Typography>
+        <Typography variant="body2" sx={{ color: '#FF5722' }}>Promedio Empleados: {size.toFixed(1)}</Typography>
+      </Paper>
+    );
+  }
+  return null;
+};
+
 
 // --- Custom Content Renderer for Treemap ---
 
@@ -100,7 +117,9 @@ const TurnoverTreemap: React.FC<TurnoverTreemapProps> = ({ data }) => {
         fill="#8884d8"
         content={<CustomizedContent />}
         isAnimationActive={false} // Disable animation
-      />
+      >
+        <Tooltip content={<CustomTooltip />} />
+      </Treemap>
     </ResponsiveContainer>
   );
 };

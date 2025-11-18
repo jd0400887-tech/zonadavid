@@ -109,6 +109,22 @@ export default function PayrollReviewPage() {
       });
   }, [allWorkrecordEmployees, selectedHotel, startOfWeekTimestamp]);
 
+  const groupedByHotel = useMemo(() => {
+    if (selectedHotel !== 'all') {
+      return [];
+    }
+    const groups = workrecordEmployeesFiltered.reduce((acc, employee) => {
+      const hotelName = hotels.find(h => h.id === employee.hotelId)?.name || 'Sin Hotel';
+      if (!acc[hotelName]) {
+        acc[hotelName] = [];
+      }
+      acc[hotelName].push(employee);
+      return acc;
+    }, {} as Record<string, typeof workrecordEmployeesFiltered>);
+
+    return Object.entries(groups).map(([hotelName, employees]) => ({ hotelName, employees }));
+  }, [workrecordEmployeesFiltered, selectedHotel, hotels]);
+
   const handleMarkAsReviewed = async (employeeId: string) => {
     const overtimeValue = overtimeNotes[employeeId];
     const overtime = overtimeValue && !isNaN(parseFloat(overtimeValue)) ? parseFloat(overtimeValue) : null;
@@ -140,7 +156,7 @@ export default function PayrollReviewPage() {
       return;
     }
 
-    updateEmployee({ id: employeeId, lastReviewedTimestamp: null, overtime: null });
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: null });
     refreshHistory();
   };
 
@@ -219,7 +235,20 @@ export default function PayrollReviewPage() {
 
         <Paper sx={{ p: 2, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Desglose por Hotel</Typography>
-          <TableContainer sx={{ maxHeight: 300 }}>
+          <TableContainer sx={{ 
+            maxHeight: 300,
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'rgba(0,0,0,0.1)',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#FF5722',
+              borderRadius: '4px',
+              boxShadow: '0 0 6px #FF5722',
+            },
+          }}>
             <Table stickyHeader>
               <TableHead><TableRow><TableCell>Hotel</TableCell><TableCell align="center">Progreso</TableCell><TableCell align="right">Estado</TableCell><TableCell align="center">Acción</TableCell></TableRow></TableHead>
               <TableBody>

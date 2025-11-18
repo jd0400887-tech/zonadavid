@@ -25,7 +25,20 @@ export default function HotelRankingTable({ data }: HotelRankingTableProps) {
       <Typography variant="h6" sx={{ mb: 2 }}>
         Ranking de Hoteles por Visitas
       </Typography>
-      <TableContainer sx={{ maxHeight: 400 }}>
+      <TableContainer sx={{ 
+        maxHeight: 400,
+        '&::-webkit-scrollbar': {
+          width: '8px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'rgba(0,0,0,0.1)',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: '#FF5722',
+          borderRadius: '4px',
+          boxShadow: '0 0 6px #FF5722',
+        },
+      }}>
         <Table stickyHeader aria-label="hotel ranking table">
           <TableHead>
             <TableRow>

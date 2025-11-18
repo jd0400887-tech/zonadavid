@@ -38,7 +38,7 @@ export function useEmployees() {
       return;
     }
 
-    if (currentEmployee && currentEmployee.isActive !== updatedEmployee.isActive) {
+    if (currentEmployee && updatedEmployee.isActive !== undefined && currentEmployee.isActive !== updatedEmployee.isActive) {
       await supabase.from('employee_status_history').insert({
         employee_id: updatedEmployee.id,
         change_date: new Date().toISOString(),

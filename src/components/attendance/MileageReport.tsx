@@ -99,7 +99,21 @@ export default function MileageReport({ records, homeLocation }: MileageReportPr
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={4}><Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}><Typography variant="h6" color="text.secondary">Total General</Typography><Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>{grandTotal.toFixed(2)}</Typography><Typography variant="subtitle1" color="text.secondary">millas</Typography></Paper></Grid>
           <Grid item xs={12} sm={6} md={4}><Paper sx={{ p: 2, height: '100%' }}><Typography variant="h6" align="center" gutterBottom>Totales Mensuales</Typography><List dense>{monthlyTotals.map(({ month, miles }) => (<ListItem key={month} disableGutters><ListItemText primary={month} secondary={`${miles.toFixed(2)} millas`} /></ListItem>))}</List></Paper></Grid>
-          <Grid item xs={12} sm={12} md={4}><Paper sx={{ p: 2, height: '100%' }}><Typography variant="h6" align="center" gutterBottom>Totales Semanales</Typography><List dense sx={{ maxHeight: 200, overflow: 'auto' }}>{weeklyTotals.map(({ week, miles }) => (<ListItem key={week} disableGutters><ListItemText primary={week} secondary={`${miles.toFixed(2)} millas`} /></ListItem>))}</List></Paper></Grid>
+          <Grid item xs={12} sm={12} md={4}><Paper sx={{ p: 2, height: '100%' }}><Typography variant="h6" align="center" gutterBottom>Totales Semanales</Typography><List dense sx={{ 
+  maxHeight: 200, 
+  overflow: 'auto',
+  '&::-webkit-scrollbar': {
+    width: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: '#FF5722',
+    borderRadius: '4px',
+    boxShadow: '0 0 6px #FF5722',
+  },
+}}>{weeklyTotals.map(({ week, miles }) => (<ListItem key={week} disableGutters><ListItemText primary={week} secondary={`${miles.toFixed(2)} millas`} /></ListItem>))}</List></Paper></Grid>
         </Grid>
       </Box>
 

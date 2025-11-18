@@ -41,7 +41,22 @@ export default function KanbanColumn({ id, title, requests, bgColor, textColor =
         {title} ({requests.length})
       </Typography>
       <SortableContext id={id} items={requests} strategy={verticalListSortingStrategy}>
-        <Box ref={setNodeRef} sx={{ minHeight: '200px', overflowY: 'auto', p: 1 }}>
+        <Box ref={setNodeRef} sx={{ 
+  minHeight: '200px', 
+  overflowY: 'auto', 
+  p: 1,
+  '&::-webkit-scrollbar': {
+    width: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: '#FF5722',
+    borderRadius: '4px',
+    boxShadow: '0 0 6px #FF5722',
+  },
+}}>
           {requests.map(request => (
             <RequestCard 
               key={request.id} 

@@ -102,7 +102,23 @@ export default function MainLayout() {
           Gestion DA
         </Typography>
       </Toolbar>
-      <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box sx={{ 
+  overflow: 'auto', 
+  display: 'flex', 
+  flexDirection: 'column', 
+  height: '100%',
+  '&::-webkit-scrollbar': {
+    width: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: '#FF5722',
+    borderRadius: '4px',
+    boxShadow: '0 0 6px #FF5722',
+  },
+}}>
         <List>
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
