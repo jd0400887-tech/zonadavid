@@ -1,0 +1,1 @@
+ALTER TABLE public.adoption_compliance_history RENAME COLUMN year TO compliance_year;

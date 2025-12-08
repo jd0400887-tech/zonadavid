@@ -1,11 +1,11 @@
-import { useState, useEffect, Fragment, useMemo } from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, LinearProgress, TextField, IconButton, Grid, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Button, ListSubheader, CircularProgress } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { useState, useEffect, Fragment, useMemo, useCallback } from 'react';
+import { Box, Typography, Paper, List, ListItem, ListItemText, Toolbar, FormControl, InputLabel, Select, MenuItem, Chip, TextField, IconButton, Grid, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Button, ListSubheader, CircularProgress } from '@mui/material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import UndoIcon from '@mui/icons-material/Undo';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import PeopleIcon from '@mui/icons-material/People';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import { getWeek } from 'date-fns';
 import { useEmployees } from '../hooks/useEmployees';
 import { useHotels } from '../hooks/useHotels';
 import type { Employee } from '../types';
@@ -14,6 +14,7 @@ import StatCard from '../components/dashboard/StatCard';
 import { usePayrollHistory } from '../hooks/usePayrollHistory';
 import { useTrendData } from '../hooks/useTrendData';
 import { supabase } from '../utils/supabase';
+import { ComplianceReviewModal } from '../components/payroll/ComplianceReviewModal';
 
 export default function PayrollReviewPage() {
   const { employees, updateEmployee } = useEmployees();
@@ -21,6 +22,11 @@ export default function PayrollReviewPage() {
   const { hotels } = useHotels();
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
+  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedEmployeeToReview, setSelectedEmployeeToReview] = useState<Employee | null>(null);
+  const [currentEmployeeComplianceStatus, setCurrentEmployeeComplianceStatus] = useState<string>('incumplimiento_total');
+  const [currentEmployeeComplianceReason, setCurrentEmployeeComplianceReason] = useState<string | null>(null);
 
   const { startOfThisWeek, endOfThisWeek, startOfWeekTimestamp } = useMemo(() => {
     const today = new Date();
@@ -38,26 +44,121 @@ export default function PayrollReviewPage() {
   }, []);
 
   const { history: payrollHistory, refreshHistory } = usePayrollHistory(startOfThisWeek, endOfThisWeek);
+  
+  const fetchEmployeeComplianceForWeek = useCallback(async (employeeId: string, weekNumber: number, year: number) => {
+    const { data, error } = await supabase
+      .from('adoption_compliance_history')
+      .select('compliance_status, reason')
+      .eq('employee_id', employeeId)
+      .eq('week_of_year', weekNumber)
+      .eq('compliance_year', year)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
+      console.error('Error fetching employee compliance:', error);
+      return { compliance_status: 'incumplimiento_total', reason: null };
+    }
+    return data || { compliance_status: 'incumplimiento_total', reason: null };
+  }, []);
 
   useEffect(() => {
-    const initialOvertime = employees.reduce((acc, emp) => {
-      const needsReview = !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp;
-      if (!needsReview) {
-        const review = payrollHistory.find(h => h.employee_id === emp.id);
-        if (review && review.overtime_hours) {
-          acc[emp.id] = String(review.overtime_hours);
-        }
+    const initialOvertime: {[key: string]: string} = {};
+    employees.forEach(emp => {
+      const review = payrollHistory.find(h => h.employee_id === emp.id);
+      if (review && review.overtime_hours) {
+        initialOvertime[emp.id] = String(review.overtime_hours);
       }
-      return acc;
-    }, {} as {[key: string]: string});
+    });
     setOvertimeNotes(initialOvertime);
-  }, [employees, payrollHistory, startOfWeekTimestamp]);
+  }, [employees, payrollHistory]);
 
   const handleOvertimeChange = (employeeId: string, value: string) => {
     setOvertimeNotes(prev => ({
       ...prev,
       [employeeId]: value,
     }));
+  };
+
+  const handleOpenModal = useCallback(async (employee: Employee) => {
+    const currentYear = new Date().getFullYear();
+    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+    const compliance = await fetchEmployeeComplianceForWeek(employee.id, weekNumber, currentYear);
+    
+    setSelectedEmployeeToReview(employee);
+    setCurrentEmployeeComplianceStatus(compliance.compliance_status || 'incumplimiento_total');
+    setCurrentEmployeeComplianceReason(compliance.reason);
+    setModalOpen(true);
+  }, [fetchEmployeeComplianceForWeek]);
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedEmployeeToReview(null);
+  };
+
+  const handleSaveCompliance = async (employeeId: string, status: string, reason: string | null) => {
+    const overtimeValue = overtimeNotes[employeeId];
+    const overtime = overtimeValue && !isNaN(parseFloat(overtimeValue)) ? parseFloat(overtimeValue) : null;
+    
+    // Insert into payroll_review_history
+    const { error: historyError } = await supabase.from('payroll_review_history').insert({
+      employee_id: employeeId,
+      review_date: new Date().toISOString(),
+      overtime_hours: overtime,
+    });
+
+    if (historyError) {
+      console.error('Error saving payroll history:', historyError);
+      alert('Error guardando historial de nómina: ' + historyError.message);
+      return;
+    }
+
+    // Insert/Update into adoption_compliance_history
+    const currentYear = new Date().getFullYear();
+    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+
+    const { data: existingCompliance, error: fetchComplianceError } = await supabase
+      .from('adoption_compliance_history')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .eq('week_of_year', weekNumber)
+      .eq('compliance_year', currentYear)
+      .single();
+
+    if (fetchComplianceError && fetchComplianceError.code !== 'PGRST116') {
+      console.error('Error checking existing compliance record:', fetchComplianceError);
+      alert('Error verificando cumplimiento: ' + fetchComplianceError.message);
+      return;
+    }
+
+    if (existingCompliance) {
+      const { error: updateComplianceError } = await supabase
+        .from('adoption_compliance_history')
+        .update({ compliance_status: status, reason: reason })
+        .eq('id', existingCompliance.id);
+
+      if (updateComplianceError) {
+        console.error('Error updating compliance history:', updateComplianceError);
+        alert('Error actualizando cumplimiento: ' + updateComplianceError.message);
+        return;
+      }
+    } else {
+      const { error: insertComplianceError } = await supabase.from('adoption_compliance_history').insert({
+        employee_id: employeeId,
+        week_of_year: weekNumber,
+        compliance_year: currentYear,
+        compliance_status: status,
+        reason: reason,
+      });
+      if (insertComplianceError) {
+        console.error('Error saving compliance history:', insertComplianceError);
+        alert('Error guardando cumplimiento: ' + insertComplianceError.message);
+        return;
+      }
+    }
+
+    updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString() });
+    refreshHistory();
+    handleCloseModal();
   };
 
   const allWorkrecordEmployees = useMemo(() => 
@@ -128,7 +229,16 @@ export default function PayrollReviewPage() {
   const handleMarkAsReviewed = async (employeeId: string) => {
     const overtimeValue = overtimeNotes[employeeId];
     const overtime = overtimeValue && !isNaN(parseFloat(overtimeValue)) ? parseFloat(overtimeValue) : null;
+    const currentComplianceStatus = complianceStatus[employeeId] || 'incumplimiento_total'; // Default to total non-compliance
+    const currentComplianceReason = complianceReason[employeeId];
+    
+    // Validate that a reason is provided if status is not 'cumplio'
+    if (currentComplianceStatus !== 'cumplio' && !currentComplianceReason) {
+      alert('Por favor, selecciona o escribe un motivo para el estado de cumplimiento.');
+      return;
+    }
 
+    // Insert into payroll_review_history
     const { error: historyError } = await supabase.from('payroll_review_history').insert({
       employee_id: employeeId,
       review_date: new Date().toISOString(),
@@ -140,19 +250,76 @@ export default function PayrollReviewPage() {
       return;
     }
 
+    // Insert/Update into adoption_compliance_history
+    const currentYear = new Date().getFullYear();
+    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+
+    const { data: existingCompliance, error: fetchComplianceError } = await supabase
+      .from('adoption_compliance_history')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .eq('week_of_year', weekNumber)
+      .eq('compliance_year', currentYear)
+      .single();
+
+    if (fetchComplianceError && fetchComplianceError.code !== 'PGRST116') { // PGRST116 is "No rows found"
+      console.error('Error checking existing compliance record:', fetchComplianceError);
+      return;
+    }
+
+    if (existingCompliance) {
+      const { error: updateComplianceError } = await supabase
+        .from('adoption_compliance_history')
+        .update({ compliance_status: currentComplianceStatus, reason: currentComplianceReason })
+        .eq('id', existingCompliance.id);
+
+      if (updateComplianceError) {
+        console.error('Error updating compliance history:', updateComplianceError);
+        return;
+      }
+    } else {
+      const { error: insertComplianceError } = await supabase.from('adoption_compliance_history').insert({
+        employee_id: employeeId,
+        week_of_year: weekNumber,
+        year: currentYear,
+        compliance_status: currentComplianceStatus,
+        reason: currentComplianceReason,
+      });
+      if (insertComplianceError) {
+        console.error('Error saving compliance history:', insertComplianceError);
+        return;
+      }
+    }
+
     updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString() });
     refreshHistory();
   };
 
   const handleUnmarkAsReviewed = async (employeeId: string) => {
-    const { error: deleteError } = await supabase
+    // Delete from payroll_review_history
+    const { error: deletePayrollHistoryError } = await supabase
       .from('payroll_review_history')
       .delete()
       .eq('employee_id', employeeId)
       .gte('review_date', startOfThisWeek.toISOString());
 
-    if (deleteError) {
-      console.error('Error deleting payroll history:', deleteError);
+    if (deletePayrollHistoryError) {
+      console.error('Error deleting payroll history:', deletePayrollHistoryError);
+      return;
+    }
+
+    // Delete from adoption_compliance_history for the current week
+    const currentYear = new Date().getFullYear();
+    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+    const { error: deleteComplianceError } = await supabase
+      .from('adoption_compliance_history')
+      .delete()
+      .eq('employee_id', employeeId)
+      .eq('week_of_year', weekNumber)
+      .eq('compliance_year', currentYear);
+
+    if (deleteComplianceError) {
+      console.error('Error deleting compliance history:', deleteComplianceError);
       return;
     }
 
@@ -314,7 +481,9 @@ export default function PayrollReviewPage() {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <TextField label="Overtime" type="number" size="small" inputProps={{ step: "0.1" }} sx={{ width: '100px' }} value={overtimeNotes[employee.id] || ''} onChange={(e) => handleOvertimeChange(employee.id, e.target.value)} disabled={!employee.needsReview} />
                         {employee.needsReview ? (
-                          <IconButton color="primary" onClick={() => handleMarkAsReviewed(employee.id)}><CheckCircleOutlineIcon /></IconButton>
+                          <Button variant="contained" size="small" onClick={() => handleOpenModal(employee)}>
+                            Calificar
+                          </Button>
                         ) : (
                           <IconButton color="secondary" onClick={() => handleUnmarkAsReviewed(employee.id)}><UndoIcon /></IconButton>
                         )}
@@ -329,6 +498,18 @@ export default function PayrollReviewPage() {
           )}
         </Paper>
       </Box>
+
+      {selectedEmployeeToReview && (
+        <ComplianceReviewModal
+          open={modalOpen}
+          onClose={handleCloseModal}
+          employeeId={selectedEmployeeToReview.id}
+          employeeName={selectedEmployeeToReview.name}
+          initialComplianceStatus={currentEmployeeComplianceStatus}
+          initialComplianceReason={currentEmployeeComplianceReason}
+          onSave={handleSaveCompliance}
+        />
+      )}
     </Box>
   );
 }

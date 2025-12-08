@@ -14,6 +14,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import LogoutIcon from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import HomeIcon from '@mui/icons-material/Home'; // Icon for Home Location
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardStats } from '../hooks/useDashboardStats';
@@ -28,6 +29,7 @@ const menuItems = [
   { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones' },
   { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia' },
   { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina' },
+  { text: 'Seguimiento Workrecord', icon: <QueryStatsIcon />, path: '/seguimiento-workrecord' },
 ];
 
 export default function MainLayout() {

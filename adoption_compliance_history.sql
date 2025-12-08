@@ -1,0 +1,1 @@
+CREATE TABLE adoption_compliance_history ( id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY, employee_id TEXT NOT NULL, review_date TIMESTAMPTZ DEFAULT NOW(), week_of_year INT NOT NULL, year INT NOT NULL, used_app BOOLEAN NOT NULL, FOREIGN KEY (employee_id) REFERENCES employees(id) );

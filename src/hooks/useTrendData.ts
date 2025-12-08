@@ -43,10 +43,16 @@ export const useTrendData = () => {
           weeklyHotel.push(lastRecordOfWeek.pending_hotels);
           weeklyPayroll.push(lastRecordOfWeek.pending_payrolls);
         } else {
-          const lastKnownRecord = data.filter(d => new Date(d.date) < weekStart)
-                                      .reduce((latest, current) => new Date(current.date) > new Date(latest.date) ? current : latest, null);
-          weeklyHotel.push(lastKnownRecord ? lastKnownRecord.pending_hotels : 0);
-          weeklyPayroll.push(lastKnownRecord ? lastKnownRecord.pending_payrolls : 0);
+          const pastRecords = data.filter(d => new Date(d.date) < weekStart);
+          if (pastRecords.length > 0) {
+            pastRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const lastKnownRecord = pastRecords[0];
+            weeklyHotel.push(lastKnownRecord.pending_hotels);
+            weeklyPayroll.push(lastKnownRecord.pending_payrolls);
+          } else {
+            weeklyHotel.push(0);
+            weeklyPayroll.push(0);
+          }
         }
       }
 

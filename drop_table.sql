@@ -1,0 +1,1 @@
+DROP TABLE adoption_compliance_history;

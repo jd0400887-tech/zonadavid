@@ -10,6 +10,7 @@ import InformesPage from './pages/InformesPage'; // Import the new page
 import StaffingRequestsPage from './pages/StaffingRequestsPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import ArchivedRequestsPage from './pages/ArchivedRequestsPage';
+import AdoptionTrackerPage from './pages/AdoptionTrackerPage'; // Import the new page
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './hooks/useAuth';
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="solicitudes" element={<StaffingRequestsPage />} />
             <Route path="aplicaciones" element={<ApplicationsPage />} />
             <Route path="solicitudes-archivadas" element={<ArchivedRequestsPage />} />
+            <Route path="seguimiento-workrecord" element={<AdoptionTrackerPage />} />
           </Route>
         </>
       )}
