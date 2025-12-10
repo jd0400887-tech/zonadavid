@@ -1,5 +1,7 @@
 import { Card, Typography, Box, Avatar, CardActionArea, useTheme } from '@mui/material';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 interface StatCardProps {
   title: string;
@@ -8,9 +10,10 @@ interface StatCardProps {
   color?: string;
   onClick?: () => void;
   trendData?: number[];
+  trend?: number | null;
 }
 
-export default function StatCard({ title, value, icon, color = 'primary.main', onClick, trendData }: StatCardProps) {
+export default function StatCard({ title, value, icon, color = 'primary.main', onClick, trendData, trend }: StatCardProps) {
   const theme = useTheme();
 
   const resolveThemeColor = (colorString: string) => {
@@ -36,7 +39,15 @@ export default function StatCard({ title, value, icon, color = 'primary.main', o
       <Avatar sx={{ bgcolor: color, width: 48, height: 48, mb: 1.5 }}>
         {icon}
       </Avatar>
-      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{value}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{value}</Typography>
+        {trend !== null && trend !== undefined && (
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, color: trend > 0 ? 'success.main' : 'error.main' }}>
+            {trend > 0 ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{Math.abs(trend).toFixed(1)}%</Typography>
+          </Box>
+        )}
+      </Box>
       <Typography variant="subtitle1" color="text.secondary">{title}</Typography>
       {chartData && (
         <Box sx={{ width: '100%', height: 40, mt: 1 }}>

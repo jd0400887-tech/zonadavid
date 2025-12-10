@@ -21,6 +21,7 @@ export default function PayrollReviewPage() {
   const { hotelTrend, payrollTrend } = useTrendData();
   const { hotels } = useHotels();
   const [selectedHotel, setSelectedHotel] = useState<string>('all');
+  const [nameFilter, setNameFilter] = useState<string>(''); // New state for name filter
   const [overtimeNotes, setOvertimeNotes] = useState<{[key: string]: string}>({});
   
   const [modalOpen, setModalOpen] = useState(false);
@@ -189,9 +190,15 @@ export default function PayrollReviewPage() {
     [hotels, allWorkrecordEmployees, startOfWeekTimestamp]
   );
 
+  const workrecordHotels = useMemo(() => {
+    const workrecordHotelIds = new Set(allWorkrecordEmployees.map(emp => emp.hotelId));
+    return hotels.filter(hotel => workrecordHotelIds.has(hotel.id));
+  }, [allWorkrecordEmployees, hotels]);
+
   const workrecordEmployeesFiltered = useMemo(() => {
     return allWorkrecordEmployees
       .filter(emp => selectedHotel === 'all' || emp.hotelId === selectedHotel)
+      .filter(emp => emp.name.toLowerCase().includes(nameFilter.toLowerCase())) // Apply name filter
       .map(emp => ({ ...emp, needsReview: !emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTimestamp }))
       .sort((a, b) => {
         if (a.needsReview !== b.needsReview) {
@@ -444,7 +451,13 @@ export default function PayrollReviewPage() {
                       </Box>
                     </TableCell>
                     <TableCell align="right">{`${stat.reviewed} / ${stat.total}`}</TableCell>
-                    <TableCell align="center"><IconButton size="small" onClick={() => setSelectedHotel(stat.id)}><FilterListIcon /></IconButton></TableCell>
+                    <TableCell align="center">
+                      {selectedHotel === stat.id ? (
+                        <Button variant="outlined" size="small" onClick={() => setSelectedHotel('all')}>Ver Todos</Button>
+                      ) : (
+                        <IconButton size="small" onClick={() => setSelectedHotel(stat.id)}><FilterListIcon /></IconButton>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -452,14 +465,16 @@ export default function PayrollReviewPage() {
           </TableContainer>
         </Paper>
 
+
+
         <Paper sx={{ p: 2, mb: 2 }}>
-          <FormControl fullWidth>
-            <InputLabel>Filtrar por Hotel</InputLabel>
-            <Select value={selectedHotel} label="Filtrar por Hotel" onChange={(e) => setSelectedHotel(e.target.value)}>
-              <MenuItem value="all">Todos los Hoteles</MenuItem>
-              {hotels.map(hotel => <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>)}
-            </Select>
-          </FormControl>
+          <TextField
+            fullWidth
+            label="Buscar por nombre de empleado"
+            variant="outlined"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+          />
         </Paper>
 
         <Paper sx={{ p: 2 }}>

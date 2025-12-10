@@ -1,11 +1,14 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Toolbar, Button, Snackbar, Alert, Grid, TextField, InputAdornment, Select, MenuItem, FormControl, InputLabel, Chip, FormControlLabel, Switch } from '@mui/material';
+import { Box, Typography, Paper, Toolbar, Button, Snackbar, Alert, Grid, TextField, InputAdornment, Select, MenuItem, FormControl, InputLabel, Chip, FormControlLabel, Switch, IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { useApplications, Application } from '../hooks/useApplications';
 import { useHotels } from '../hooks/useHotels';
 import EmployeeForm from '../components/employees/EmployeeForm';
 import FormModal from '../components/form/FormModal';
 import { useEmployees } from '../hooks/useEmployees';
 import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ApplicationForm from '../components/applications/ApplicationForm';
+import { EMPLOYEE_POSITIONS } from '../data/constants';
 
 // Placeholder for the new Card component
 const applicationStatusColors: { [key in Application['status']]: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error' } = {
@@ -14,8 +17,9 @@ const applicationStatusColors: { [key in Application['status']]: 'default' | 'pr
   'empleado_creado': 'success',
 };
 
-const ApplicationCard = ({ application, onStatusChange, onAddEmployee, getHotelName }: any) => (
+const ApplicationCard = ({ application, onStatusChange, onAddEmployee, onDelete, getHotelName }: any) => (
   <Paper sx={{
+    position: 'relative', // Needed for absolute positioning of the delete icon
     p: 2, 
     height: '100%', 
     border: '1px solid #FF5722', 
@@ -23,7 +27,19 @@ const ApplicationCard = ({ application, onStatusChange, onAddEmployee, getHotelN
     backgroundColor: 'rgba(255, 255, 255, 0.05)', // Subtle background for cards
     color: '#FFFFFF',
   }}>
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+    <IconButton 
+      aria-label="delete"
+      onClick={() => onDelete(application.id)}
+      sx={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        color: 'grey.500',
+      }}
+    >
+      <DeleteIcon />
+    </IconButton>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, pr: 4 /* Make space for delete icon */ }}>
       <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'primary.main' }}>
         {application.candidate_name}
       </Typography>
@@ -77,15 +93,18 @@ const ApplicationCard = ({ application, onStatusChange, onAddEmployee, getHotelN
 );
 
 export default function ApplicationsPage() {
-  const { applications, loading, updateApplicationStatus } = useApplications();
+  const { applications, loading, updateApplicationStatus, deleteApplication, addApplication } = useApplications();
   const { hotels } = useHotels();
-  const { addEmployee } = useEmployees();
+  const { employees, addEmployee } = useEmployees();
 
   // State for Modals and Snackbar
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
   const [currentCandidate, setCurrentCandidate] = useState<Partial<Application> | null>(null);
-  const [newEmployeeFormData, setNewEmployeeFormData] = useState<any>(null); // State to hold employee form data
+  const [newEmployeeFormData, setNewEmployeeFormData] = useState<any>(null);
+  const [newApplicationFormData, setNewApplicationFormData] = useState({ candidate_name: '', hotel_id: '', role: '' });
   const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'error' } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, id: number | null }>({ open: false, id: null });
 
   // State for Filters
   const [statusFilter, setStatusFilter] = useState('all');
@@ -102,6 +121,22 @@ export default function ApplicationsPage() {
     }
   };
 
+  const handleDelete = (id: number) => {
+    setConfirmDelete({ open: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (confirmDelete.id) {
+      try {
+        await deleteApplication(confirmDelete.id);
+        setSnackbar({ open: true, message: 'Aplicación eliminada correctamente', severity: 'success' });
+      } catch (error) {
+        setSnackbar({ open: true, message: 'Error al eliminar la aplicación', severity: 'error' });
+      }
+    }
+    setConfirmDelete({ open: false, id: null });
+  };
+
   const handleOpenAddEmployeeModal = (application: Application) => {
     setCurrentCandidate(application);
     setNewEmployeeFormData({
@@ -113,13 +148,36 @@ export default function ApplicationsPage() {
       payrollType: 'timesheet', // Default value
       employeeType: 'permanente', // Default value
     });
-    setIsModalOpen(true);
+    setIsEmployeeModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleCloseEmployeeModal = () => {
+    setIsEmployeeModalOpen(false);
     setCurrentCandidate(null);
     setNewEmployeeFormData(null);
+  };
+  
+  const handleOpenNewAppModal = () => {
+    setNewApplicationFormData({ candidate_name: '', hotel_id: '', role: '' });
+    setIsAppModalOpen(true);
+  };
+
+  const handleCloseNewAppModal = () => {
+    setIsAppModalOpen(false);
+  };
+
+  const handleNewAppFormChange = (field: string, value: any) => {
+    setNewApplicationFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveApplication = async () => {
+    try {
+      await addApplication(newApplicationFormData);
+      setSnackbar({ open: true, message: 'Aplicación creada correctamente', severity: 'success' });
+    } catch (error) {
+      setSnackbar({ open: true, message: 'Error al crear la aplicación', severity: 'error' });
+    }
+    handleCloseNewAppModal();
   };
 
   const handleEmployeeFormChange = (field: string, value: any) => {
@@ -147,12 +205,19 @@ export default function ApplicationsPage() {
     } catch (error) {
       setSnackbar({ open: true, message: 'Error al crear el empleado', severity: 'error' });
     }
-    handleCloseModal();
+    handleCloseEmployeeModal();
   };
 
   const getHotelName = (hotelId: string) => {
     return hotels.find(h => h.id === hotelId)?.name || 'Hotel no encontrado';
   };
+
+  const hotelsWithEmployees = useMemo(() => {
+    const employeeHotelIds = new Set(employees.map(emp => emp.hotelId));
+    return hotels.filter(hotel => employeeHotelIds.has(hotel.id));
+  }, [employees, hotels]);
+
+
 
   const filteredApplications = useMemo(() => {
     return applications
@@ -183,7 +248,7 @@ export default function ApplicationsPage() {
         {/* Filter Controls */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
                 label="Buscar por Nombre de Candidato"
@@ -196,7 +261,7 @@ export default function ApplicationsPage() {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel>Estado</InputLabel>
                 <Select
@@ -226,14 +291,30 @@ export default function ApplicationsPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControlLabel
-                control={<Switch checked={showCreated} onChange={(e) => setShowCreated(e.target.checked)} />}
-                label="Incluir Empleados Creados"
-              />
+            <Grid item xs={12} sm={6} md={3}>
+              <Button fullWidth variant="contained" onClick={handleOpenNewAppModal}>
+                Nueva Aplicación
+              </Button>
             </Grid>
           </Grid>
         </Paper>
+        
+        {/* ... Rest of the component, modals will be at the end */}
+        
+        {/* Modal for creating application */}
+        <FormModal
+          open={isAppModalOpen}
+          onClose={handleCloseNewAppModal}
+          onSave={handleSaveApplication}
+          title="Crear Nueva Aplicación"
+        >
+          <ApplicationForm
+            formData={newApplicationFormData}
+            onFormChange={handleNewAppFormChange}
+            hotels={hotelsWithEmployees}
+            roles={EMPLOYEE_POSITIONS}
+          />
+        </FormModal>
 
         {/* Pending Applications */}
         <Box mb={4}>
@@ -248,6 +329,7 @@ export default function ApplicationsPage() {
                     application={app} 
                     onStatusChange={handleStatusChange} 
                     onAddEmployee={handleOpenAddEmployeeModal} 
+                    onDelete={handleDelete}
                     getHotelName={getHotelName} 
                   />
                 </Grid>
@@ -285,7 +367,8 @@ export default function ApplicationsPage() {
                     <ApplicationCard 
                       application={app} 
                       onStatusChange={handleStatusChange} 
-                      onAddEmployee={handleOpenAddEmployeeModal} 
+                      onAddEmployee={handleOpenAddEmployeeModal}
+                      onDelete={handleDelete}
                       getHotelName={getHotelName} 
                     />
                   </Grid>
@@ -300,8 +383,8 @@ export default function ApplicationsPage() {
         {/* Modal for adding employee */}
         {currentCandidate && newEmployeeFormData && (
           <FormModal
-            open={isModalOpen}
-            onClose={handleCloseModal}
+            open={isEmployeeModalOpen}
+            onClose={handleCloseEmployeeModal}
             onSave={handleSaveEmployee}
             title={`Añadir Nuevo Empleado: ${currentCandidate.candidate_name}`}
           >
@@ -319,6 +402,28 @@ export default function ApplicationsPage() {
             {snackbar?.message}
           </Alert>
         </Snackbar>
+
+        <Dialog
+          open={confirmDelete.open}
+          onClose={() => setConfirmDelete({ open: false, id: null })}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"¿Confirmar eliminación?"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              ¿Estás seguro de que quieres eliminar esta aplicación? Esta acción no se puede deshacer.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmDelete({ open: false, id: null })}>Cancelar</Button>
+            <Button onClick={handleConfirmDelete} autoFocus color="error">
+              Eliminar
+            </Button>
+          </DialogActions>
+        </Dialog>
 
       </Box>
     </Box>
