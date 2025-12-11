@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Box, Typography, Button, Paper, IconButton, Stack, Toolbar, TextField, InputAdornment, Link, Card, CardMedia, CardContent, CardActions } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Typography, Button, Paper, IconButton, Stack, Toolbar, TextField, InputAdornment, Link, Card, CardMedia, CardContent, CardActions, FormControlLabel, Switch } from '@mui/material';
 import { Masonry } from '@mui/lab';
 import { Link as RouterLink } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -7,6 +7,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import SearchIcon from '@mui/icons-material/Search';
 import ApartmentIcon from '@mui/icons-material/Apartment';
+import PeopleIcon from '@mui/icons-material/People'; // Import PeopleIcon for the new filter
 
 import { useHotels } from '../hooks/useHotels';
 import type { Hotel } from '../types';
@@ -19,12 +20,25 @@ import BulkImportButton from '../components/common/BulkImportButton';
 export default function HotelsPage() {
   const { hotels, addHotel, updateHotel, deleteHotel, uploadHotelImage } = useHotels();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Initialize state from localStorage, defaulting to true
+  const [showHotelsWithEmployees, setShowHotelsWithEmployees] = useState(() => {
+    const saved = localStorage.getItem('showHotelsWithEmployeesFilter');
+    // If 'saved' is not null, parse it; otherwise, default to true.
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentHotel, setCurrentHotel] = useState<Partial<Hotel>>({});
+  
+  // Effect to save the filter state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('showHotelsWithEmployeesFilter', JSON.stringify(showHotelsWithEmployees));
+  }, [showHotelsWithEmployees]);
 
   const filteredHotels = hotels.filter(hotel =>
-    hotel.name.toLowerCase().includes(searchQuery.toLowerCase())
+    hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    (!showHotelsWithEmployees || (hotel.totalEmployees && hotel.totalEmployees > 0)) // Filter logic remains the same
   );
 
   const handleOpenAddModal = () => {
@@ -123,7 +137,7 @@ export default function HotelsPage() {
           </Stack>
         </Box>
 
-        <Paper sx={{ p: 2, mb: 2 }}>
+        <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
           <TextField
             fullWidth
             variant="outlined"
@@ -137,6 +151,22 @@ export default function HotelsPage() {
                 </InputAdornment>
               ),
             }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showHotelsWithEmployees}
+                onChange={(e) => setShowHotelsWithEmployees(e.target.checked)}
+                name="showHotelsWithEmployees"
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <PeopleIcon sx={{ mr: 0.5 }} /> Hoteles con personal
+              </Box>
+            }
+            sx={{ flexShrink: 0, ml: 1 }}
           />
         </Paper>
 

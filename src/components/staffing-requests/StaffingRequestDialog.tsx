@@ -1,7 +1,5 @@
-
-
 import { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid, Tabs, Tab, Box, List, ListItem, ListItemText, Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid, Tabs, Tab, Box, List, ListItem, ListItemText, Typography, Chip, Stack } from '@mui/material';
 import { useHotels } from '../../hooks/useHotels';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStaffingRequests } from '../../hooks/useStaffingRequests';
@@ -20,7 +18,7 @@ const defaultState: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName'> = {
   request_type: 'temporal',
   num_of_people: 1,
   role: '',
-  start_date: new Date().toISOString().split('T')[0], // Defaults to today
+  start_date: new Date().toISOString().split('T')[0],
   status: 'Pendiente',
   notes: '',
 };
@@ -32,23 +30,32 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { hotels } = useHotels();
-  const { employees, roles } = useEmployees(); // Get all employees for existing employee assignment
+  const { employees, roles } = useEmployees();
   const { fetchHistory } = useStaffingRequests();
-  // Candidates Hook
   const { candidates, loading: candidatesLoading, addCandidate, updateCandidateStatus, deleteCandidate } = useRequestCandidates(initialData?.id || null);
 
-  // State for new candidate inputs
   const [newCandidateName, setNewCandidateName] = useState('');
   const [selectedExistingEmployeeId, setSelectedExistingEmployeeId] = useState('');
-  const [employeeSearchTerm, setEmployeeSearchTerm] = useState(''); // New state for employee search
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+
+  // --- City Filter Logic ---
+  const [selectedCity, setSelectedCity] = useState<string>('all');
+  const uniqueCities = useMemo(() => {
+    const cities = new Set(hotels.map(hotel => hotel.city));
+    return ['all', ...Array.from(cities).sort()];
+  }, [hotels]);
+
+  const filteredHotels = useMemo(() => {
+    if (selectedCity === 'all') {
+      return hotels;
+    }
+    return hotels.filter(hotel => hotel.city === selectedCity);
+  }, [hotels, selectedCity]);
+  // --- End City Filter Logic ---
 
   const filteredEmployees = useMemo(() => {
-    if (!employeeSearchTerm) {
-      return employees;
-    }
-    return employees.filter(emp =>
-      emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase())
-    );
+    if (!employeeSearchTerm) return employees;
+    return employees.filter(emp => emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase()));
   }, [employees, employeeSearchTerm]);
 
   useEffect(() => {
@@ -58,19 +65,25 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
         ...initialData,
         start_date: new Date(initialData.start_date).toISOString().split('T')[0],
       });
-      
       const loadHistory = async () => {
         const historyData = await fetchHistory(initialData.id);
         setHistory(historyData);
       };
       loadHistory();
-      
+      // Set the initial city filter based on the hotel in the initial data
+      const initialHotel = hotels.find(h => h.id === initialData.hotel_id);
+      if (initialHotel) {
+        setSelectedCity(initialHotel.city);
+      } else {
+        setSelectedCity('all');
+      }
     } else {
       setFormData(defaultState);
       setHistory([]);
       setTab(0);
+      setSelectedCity('all');
     }
-  }, [initialData, open, fetchHistory]);
+  }, [initialData, open, fetchHistory, hotels]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -111,12 +124,41 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel id="hotel-select-label">Hotel</InputLabel>
-                <Select labelId="hotel-select-label" name="hotel_id" value={formData.hotel_id} onChange={handleChange} label="Hotel">
-                  {hotels.map(hotel => (<MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>))}
+                <InputLabel id="city-select-label">Filtrar por Ciudad</InputLabel>
+                <Select
+                  labelId="city-select-label"
+                  value={selectedCity}
+                  label="Filtrar por Ciudad"
+                  onChange={(e) => {
+                    setSelectedCity(e.target.value as string);
+                    // Reset hotel selection if the current hotel is not in the newly filtered list
+                    if (formData.hotel_id && !filteredHotels.some(h => h.id === formData.hotel_id && h.city === e.target.value)) {
+                      setFormData(prev => ({ ...prev, hotel_id: '' }));
+                    }
+                  }}
+                >
+                  <MenuItem value="all">Todas las Ciudades</MenuItem>
+                  {uniqueCities.map(city => (
+                    <MenuItem key={city} value={city}>{city}</MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="hotel-select-label">Hotel</InputLabel>
+                <Select 
+                  labelId="hotel-select-label" 
+                  name="hotel_id" 
+                  value={formData.hotel_id} 
+                  onChange={handleChange} 
+                  label="Hotel"
+                >
+                  {filteredHotels.map(hotel => (<MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>))}
+                </Select>
+              </FormControl>
+            </Grid>
+            {/* Other form controls */}
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel id="type-select-label">Tipo de Solicitud</InputLabel>

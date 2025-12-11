@@ -84,7 +84,7 @@ export function useDashboardStats() {
     const pendingApplications = applications.filter(app => app.status === 'pendiente').length;
 
     return {
-      totalHotels: hotels.length,
+      totalHotels: hotels.filter(h => h.activeEmployees && h.activeEmployees > 0).length,
       activeEmployees: activeEmployeesList.length,
       visitsThisWeek: allAttendanceRecords.filter(r => new Date(r.timestamp).getTime() >= startOfWeek(today, { weekStartsOn: 0 }).getTime()).length,
       pendingApplications,

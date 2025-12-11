@@ -101,14 +101,22 @@ const calculatePeriodStats = (
   const permanentRequests = newRequestsList.filter(r => r.request_type === 'permanente').length;
 
   const completedInPeriod = newRequestsList.filter(r => 
-    (r.status === 'Completada' || r.status === 'Completada Parcialmente') && 
+    r.status === 'Completada' && 
     r.completed_at && 
     new Date(r.completed_at) >= start && 
     new Date(r.completed_at) <= end
   );
   const fulfillmentRate = newRequests > 0 ? (completedInPeriod.length / newRequests) * 100 : 0;
 
-  const timeToFillSum = completedInPeriod.reduce((acc, r) => {
+  const partiallyCompletedInPeriod = newRequestsList.filter(r =>
+    r.status === 'Completada Parcialmente' &&
+    r.completed_at &&
+    new Date(r.completed_at) >= start &&
+    new Date(r.completed_at) <= end
+  );
+  const partialFulfillmentRate = newRequests > 0 ? (partiallyCompletedInPeriod.length / newRequests) * 100 : 0;
+
+  const timeToFillSum = [...completedInPeriod, ...partiallyCompletedInPeriod].reduce((acc, r) => {
     const completedDate = new Date(r.completed_at);
     const createdDate = new Date(r.created_at);
     if (!isNaN(completedDate.getTime()) && !isNaN(createdDate.getTime())) {
@@ -122,35 +130,42 @@ const calculatePeriodStats = (
   }, 0);
   const avgTimeToFill = completedInPeriod.length > 0 ? timeToFillSum / completedInPeriod.length : 0;
 
-  // --- New No-Show Rate Logic ---
-  // Filter for requests that were supposed to start in the current period.
-  const requestsStartingInPeriod = allRequests.filter(r => {
-    const reqStartDate = new Date(r.start_date);
-    return reqStartDate >= start && reqStartDate <= end;
-  });
+  // --- No-Show Rate Logic ---
+  const noShowInPeriodList = newRequestsList.filter(r => r.status === 'Candidato No Presentado');
+  const noShowInPeriod = noShowInPeriodList.length;
+  const noShowRate = newRequests > 0 ? (noShowInPeriod / newRequests) * 100 : 0;
 
-  const noShowInPeriod = requestsStartingInPeriod.filter(r => r.status === 'Candidato No Presentado').length;
-  // The denominator is now the total number of requests starting in the period.
-  const noShowRate = requestsStartingInPeriod.length > 0 ? (noShowInPeriod / requestsStartingInPeriod.length) * 100 : 0;
-
-  const overdueRequestsList = allRequests.filter(r => {
-    const reqStartDate = new Date(r.start_date);
-    return r.status === 'Vencida' && reqStartDate >= start && reqStartDate <= end;
-  });
+  const overdueRequestsList = newRequestsList.filter(r => r.status === 'Vencida');
   const overdueRequests = overdueRequestsList.length;
+  const overdueRequestsRate = newRequests > 0 ? (overdueRequests / newRequests) * 100 : 0;
 
-  const canceledByHotelList = allRequests.filter(r => {
-    const reqStartDate = new Date(r.start_date);
-    return r.status === 'Cancelada por Hotel' && reqStartDate >= start && reqStartDate <= end;
-  });
+  const canceledByHotelList = newRequestsList.filter(r => r.status === 'Cancelada por Hotel');
   const canceledByHotel = canceledByHotelList.length;
+  const canceledByHotelRate = newRequests > 0 ? (canceledByHotel / newRequests) * 100 : 0;
 
-  // New calculation: employees moved from active to inactive
+  const inProgressRequestsList = newRequestsList.filter(r => 
+    ['Pendiente', 'Enviada a Reclutamiento', 'En Proceso'].includes(r.status)
+  );
+  const inProgressRequests = inProgressRequestsList.length;
+  const inProgressRate = newRequests > 0 ? (inProgressRequests / newRequests) * 100 : 0;
+
+  // Split activeToInactive into permanent and temporary
   const activeToInactiveList = periodEmployeeStatusHistory.filter(change =>
     change.old_is_active === true && change.new_is_active === false
   );
-  const uniqueActiveToInactiveIds = new Set(activeToInactiveList.map(item => item.employee_id));
-  const activeToInactive = uniqueActiveToInactiveIds.size;
+  
+  const permanentInactiveList = activeToInactiveList.filter(change => {
+    const employee = allEmployees.find(e => e.id === change.employee_id);
+    return employee?.employeeType === 'permanente';
+  });
+  const permanentInactive = new Set(permanentInactiveList.map(item => item.employee_id)).size;
+
+  const temporaryInactiveList = activeToInactiveList.filter(change => {
+    const employee = allEmployees.find(e => e.id === change.employee_id);
+    return employee?.employeeType === 'temporal';
+  });
+  const temporaryInactive = new Set(temporaryInactiveList.map(item => item.employee_id)).size;
+
 
   const newApplicationsList = allApplications.filter(app => {
     const appDate = new Date(app.created_at);
@@ -180,12 +195,18 @@ const calculatePeriodStats = (
     newRequests,
     newRequestsList,
     fulfillmentRate,
+    partialFulfillmentRate,
     avgTimeToFill,
     noShowRate,
     overdueRequests,
     overdueRequestsList,
-    activeToInactive, // New stat
+    overdueRequestsRate, // Add new rate
+    activeToInactive: permanentInactive + temporaryInactive, // Keep total for backward compatibility if needed
     activeToInactiveList,
+    permanentInactive,
+    permanentInactiveList,
+    temporaryInactive,
+    temporaryInactiveList,
     overtimeDetails: periodPayrollHistory, // Add this line
     temporalRequests,
     permanentRequests,
@@ -193,8 +214,12 @@ const calculatePeriodStats = (
     newApplicationsList,
     canceledByHotel,
     canceledByHotelList,
-    candidateNoShow,
-    candidateNoShowList,
+    canceledByHotelRate, // Add new rate
+    candidateNoShow: noShowInPeriod, // Use the new calculation
+    candidateNoShowList: noShowInPeriodList, // Use the new calculation
+    inProgressRequests, // Add new value
+    inProgressRequestsList, // Add new list
+    inProgressRate, // Add new rate
   };
 };
 

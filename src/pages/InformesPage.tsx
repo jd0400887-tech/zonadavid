@@ -228,12 +228,27 @@ function InformesPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison 
-            title="Empleados Inactivos" 
-            currentValue={currentPeriod.activeToInactive} 
-            previousValue={previousPeriod?.activeToInactive || 0} 
+            title="Inactivos (Permanentes)" 
+            currentValue={currentPeriod.permanentInactive} 
+            previousValue={previousPeriod?.permanentInactive || 0} 
             onClick={() => handleOpenModal(
-              "Empleados Inactivos", 
-              <List>{currentPeriod.activeToInactiveList.map((item: any) => {
+              "Inactivos (Permanentes)", 
+              <List>{currentPeriod.permanentInactiveList.map((item: any) => {
+                const employee = employees.find(e => e.id === item.employee_id);
+                const hotel = hotels.find(h => h.id === employee?.hotelId);
+                return <ListItemText key={item.id} primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
+              })}</List>
+            )}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison 
+            title="Inactivos (Temporales)" 
+            currentValue={currentPeriod.temporaryInactive} 
+            previousValue={previousPeriod?.temporaryInactive || 0} 
+            onClick={() => handleOpenModal(
+              "Inactivos (Temporales)", 
+              <List>{currentPeriod.temporaryInactiveList.map((item: any) => {
                 const employee = employees.find(e => e.id === item.employee_id);
                 const hotel = hotels.find(h => h.id === employee?.hotelId);
                 return <ListItemText key={item.id} primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
@@ -322,19 +337,33 @@ function InformesPage() {
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Tasa de Cumplimiento" currentValue={currentPeriod.fulfillmentRate} previousValue={previousPeriod?.fulfillmentRate || 0} />
+          <StatComparison title="Tasa de Cumplimiento (Total)" currentValue={currentPeriod.fulfillmentRate} previousValue={previousPeriod?.fulfillmentRate || 0} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatComparison title="Tasa de Cumplimiento (Parcial)" currentValue={currentPeriod.partialFulfillmentRate} previousValue={previousPeriod?.partialFulfillmentRate || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison title="Tiempo Promedio de Cobertura" currentValue={currentPeriod.avgTimeToFill} previousValue={previousPeriod?.avgTimeToFill || 0} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatComparison title="Tasa de No Presentación" currentValue={currentPeriod.noShowRate} previousValue={previousPeriod?.noShowRate || 0} />
+          <StatComparison 
+            title="Tasa de No Presentación" 
+            currentValue={currentPeriod.noShowRate} 
+            previousValue={previousPeriod?.noShowRate || 0} 
+            onClick={() => handleOpenModal(
+              "Candidato No Presentado", 
+              <List>{currentPeriod.candidateNoShowList.map((item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotel_id);
+                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+              })}</List>
+            )}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison 
-            title="Solicitudes Vencidas" 
-            currentValue={currentPeriod.overdueRequests} 
-            previousValue={previousPeriod?.overdueRequests || 0} 
+            title="Tasa de Solicitudes Vencidas" 
+            currentValue={currentPeriod.overdueRequestsRate} 
+            previousValue={previousPeriod?.overdueRequestsRate || 0} 
             onClick={() => handleOpenModal(
               "Solicitudes Vencidas", 
               <List>{currentPeriod.overdueRequestsList.map((item: any) => {
@@ -346,9 +375,9 @@ function InformesPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison 
-            title="Canceladas por Hotel" 
-            currentValue={currentPeriod.canceledByHotel} 
-            previousValue={previousPeriod?.canceledByHotel || 0} 
+            title="Tasa de Canceladas por Hotel" 
+            currentValue={currentPeriod.canceledByHotelRate} 
+            previousValue={previousPeriod?.canceledByHotelRate || 0} 
             onClick={() => handleOpenModal(
               "Solicitudes Canceladas por Hotel", 
               <List>{currentPeriod.canceledByHotelList.map((item: any) => {
@@ -360,14 +389,14 @@ function InformesPage() {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatComparison 
-            title="Candidato No Presentado" 
-            currentValue={currentPeriod.candidateNoShow} 
-            previousValue={previousPeriod?.candidateNoShow || 0} 
+            title="Tasa de Solicitudes en Proceso" 
+            currentValue={currentPeriod.inProgressRate} 
+            previousValue={previousPeriod?.inProgressRate || 0} 
             onClick={() => handleOpenModal(
-              "Candidato No Presentado", 
-              <List>{currentPeriod.candidateNoShowList.map((item: any) => {
+              "Solicitudes en Proceso", 
+              <List>{currentPeriod.inProgressRequestsList.map((item: any) => {
                 const hotel = hotels.find(h => h.id === item.hotel_id);
-                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.created_at).toLocaleDateString()}`} />
+                return <ListItemText key={item.id} primary={`${item.role} en ${hotel?.name || 'Hotel desconocido'}`} secondary={`Estado: ${item.status}`} />
               })}</List>
             )}
           />

@@ -11,11 +11,12 @@ import { useHotels } from '../hooks/useHotels';
 import { useEmployees } from '../hooks/useEmployees';
 import { useAttendance } from '../hooks/useAttendance';
 import { useDashboardStats } from '../hooks/useDashboardStats';
+import { useMonthlyGrowthStats } from '../hooks/useMonthlyGrowthStats';
 
 // Components
 import StatCard from '../components/dashboard/StatCard';
 import RequestsCounter from '../components/dashboard/RequestsCounter';
-import VisitsOverTimeChart from '../components/dashboard/VisitsOverTimeChart';
+import MonthlyGrowthChart from '../components/dashboard/MonthlyGrowthChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
 import DashboardPieChart from '../components/dashboard/DashboardPieChart';
 import { DashboardBarChart } from '../components/dashboard/DashboardBarChart';
@@ -57,6 +58,7 @@ function DashboardPage() {
   const [customEndDate, setCustomEndDate] = useState('');
 
   const stats = useDashboardStats();
+  const monthlyGrowthData = useMonthlyGrowthStats();
 
   const handleGenerateWeeklyReport = () => {
     const today = new Date();
@@ -234,7 +236,7 @@ function DashboardPage() {
             </DialogActions>
           </Dialog>
 
-          <Box sx={{ mb: 3 }}><VisitsOverTimeChart data={stats.visitsOverTime} /></Box>
+          <Box sx={{ mb: 3 }}><MonthlyGrowthChart data={monthlyGrowthData} /></Box>
 
           <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}><DashboardBarChart title="Visitas por Ciudad" data={stats.visitsByCity} /></Grid>

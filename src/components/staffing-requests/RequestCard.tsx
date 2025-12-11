@@ -4,13 +4,14 @@ import { Card, CardContent, Typography, Box, Chip, IconButton } from '@mui/mater
 import EditIcon from '@mui/icons-material/Edit';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PeopleIcon from '@mui/icons-material/People';
 import type { StaffingRequest } from '../../types';
 
 interface RequestCardProps {
   request: StaffingRequest;
   onEdit: () => void;
-  onArchive?: () => void; // Optional archive function
-  onDelete?: () => void; // Optional delete function
+  onArchive?: () => void;
+  onDelete?: () => void;
 }
 
 export default function RequestCard({ request, onEdit, onArchive, onDelete }: RequestCardProps) {
@@ -74,11 +75,22 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
           <Typography variant="caption" sx={{ color: '#E0E0E0' }}>{new Date(request.start_date).toLocaleDateString()}</Typography>
-          <Chip 
-            label={`${request.num_of_people} persona(s)`} 
-            size="small" 
-            sx={{ color: '#FFFFFF', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {request.candidate_count > 0 && (
+              <Chip 
+                icon={<PeopleIcon />}
+                label={String(request.candidate_count)} 
+                size="small" 
+                variant="outlined"
+                sx={{ color: '#90caf9', borderColor: '#90caf9' }} // Light blue color
+              />
+            )}
+            <Chip 
+              label={`${request.num_of_people} persona(s)`} 
+              size="small" 
+              sx={{ color: '#FFFFFF', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+            />
+          </Box>
         </Box>
       </CardContent>
     </Card>

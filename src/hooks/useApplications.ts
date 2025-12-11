@@ -92,10 +92,10 @@ export const useApplications = () => {
       .insert({
         hotel_id: applicationData.hotel_id,
         role: applicationData.role,
-        status: 'open',
-        request_type: 'indefinido', // Default value
-        num_of_people: 1, // Default value
-        start_date: new Date().toISOString().split('T')[0], // Default to today
+        status: 'Pendiente', // Corrected default status
+        request_type: 'temporal', // Corrected default request_type
+        num_of_people: 1,
+        start_date: new Date().toISOString().split('T')[0],
       })
       .select()
       .single();

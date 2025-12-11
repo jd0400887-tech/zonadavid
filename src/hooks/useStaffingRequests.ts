@@ -10,21 +10,52 @@ export const useStaffingRequests = () => {
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // Step 1: Fetch all staffing requests
+    const { data: requestsData, error: requestsError } = await supabase
       .from('staffing_requests')
       .select('id, created_at, role, start_date, end_date, hotel_id, status, request_type, notes, is_archived, completed_at, num_of_people, hotel:hotels(name)')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching staffing requests:', error);
+    if (requestsError) {
+      console.error('Error fetching staffing requests:', requestsError);
       setAllRequests([]);
-    } else if (data) {
-      const formattedData = data.map(req => ({
-        ...req,
-        hotelName: req.hotel?.name || 'N/A',
-      }));
-      setAllRequests(formattedData);
+      setLoading(false);
+      return;
     }
+
+    if (!requestsData) {
+      setAllRequests([]);
+      setLoading(false);
+      return;
+    }
+
+    const requestIds = requestsData.map(r => r.id);
+
+    // Step 2: Fetch all candidates for the retrieved requests
+    const { data: candidatesData, error: candidatesError } = await supabase
+      .from('request_candidates')
+      .select('request_id')
+      .in('request_id', requestIds);
+
+    if (candidatesError) {
+      console.error('Error fetching candidates for count:', candidatesError);
+      // Continue without candidate count if this fails
+    }
+
+    // Step 3: Create a count map
+    const candidateCounts = candidatesData?.reduce((acc, curr) => {
+      acc[curr.request_id] = (acc[curr.request_id] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    // Step 4: Combine data
+    const formattedData = requestsData.map(req => ({
+      ...req,
+      hotelName: req.hotel?.name || 'N/A',
+      candidate_count: candidateCounts?.[req.id] || 0, // Add the count
+    }));
+    
+    setAllRequests(formattedData);
     setLoading(false);
   }, []);
 
@@ -50,8 +81,8 @@ export const useStaffingRequests = () => {
   const updateRequest = async (id: number, updates: Partial<Omit<StaffingRequest, 'hotelName'>>) => {
     const originalRequest = allRequests.find(r => r.id === id);
 
-    // Initialize dbUpdates with the provided updates, excluding hotelName and hotel
-    const { hotelName, hotel, ...dbUpdates } = updates as any;
+    // Initialize dbUpdates with the provided updates, excluding fields that don't exist in the table
+    const { hotelName, hotel, candidate_count, ...dbUpdates } = updates as any;
 
     // Check for status change and update history and completed_at timestamp
     if (originalRequest && updates.status && originalRequest.status !== updates.status) {
