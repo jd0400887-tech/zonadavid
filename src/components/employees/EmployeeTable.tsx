@@ -1,6 +1,8 @@
 import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Chip, Box, Avatar } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import type { Employee, Hotel } from '../../types';
 import { getInitials } from '../../utils/stringUtils';
 
@@ -21,6 +23,7 @@ export default function EmployeeTable({ employees, hotels, onEdit, onDelete }: E
             <TableCell>Cargo</TableCell>
             <TableCell>Hotel</TableCell>
             <TableCell>Estado</TableCell>
+            <TableCell>Documentación</TableCell>
             <TableCell>Tipo Nómina</TableCell>
             <TableCell align="right">Acciones</TableCell>
           </TableRow>
@@ -52,6 +55,13 @@ export default function EmployeeTable({ employees, hotels, onEdit, onDelete }: E
                       size="small"
                       sx={{ ml: 1, bgcolor: 'black', color: 'white' }}
                     />
+                  )}
+                </TableCell>
+                <TableCell> {/* Nueva celda para Documentación */}
+                  {employee.documentacion_completa ? (
+                    <Chip label="Completa" color="success" size="small" icon={<CheckCircleOutlineIcon />} />
+                  ) : (
+                    <Chip label="Incompleta" color="error" size="small" icon={<HighlightOffIcon />} />
                   )}
                 </TableCell>
                 <TableCell>

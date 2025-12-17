@@ -456,11 +456,9 @@ const AdoptionTrackerPage = () => {
                 </TableCell>
                 <TableCell align="center">
                   {sparklineData.length > 1 && (
-                    <ResponsiveContainer width={100} height={30}>
-                      <LineChart data={sparklineData}>
-                        <Line type="monotone" dataKey="score" stroke="#8884d8" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <LineChart width={100} height={30} data={sparklineData}>
+                      <Line type="monotone" dataKey="score" stroke="#8884d8" strokeWidth={2} dot={false} />
+                    </LineChart>
                   )}
                 </TableCell>
                 {weekLabels.map((label, index) => {

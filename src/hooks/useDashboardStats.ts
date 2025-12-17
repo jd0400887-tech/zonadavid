@@ -82,6 +82,7 @@ export function useDashboardStats() {
     const unfulfilledRequestsCount = unfulfilledRequests.length;
 
     const pendingApplications = applications.filter(app => app.status === 'pendiente').length;
+    const incompleteDocsCount = employees.filter(e => !e.documentacion_completa).length;
 
     return {
       totalHotels: hotels.filter(h => h.activeEmployees && h.activeEmployees > 0).length,
@@ -100,6 +101,7 @@ export function useDashboardStats() {
 
       unfulfilledRequestsCount, // NEW stat
       unfulfilledRequests, // NEW stat
+      incompleteDocsCount,
     };
   }, [employees, hotels, allAttendanceRecords, staffingRequests, applications]);
 }

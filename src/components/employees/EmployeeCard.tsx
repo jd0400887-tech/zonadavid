@@ -1,6 +1,8 @@
 import { Card, CardContent, Box, Avatar, Typography, Stack, Chip, CardActions, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import type { Employee, Hotel } from '../../types';
 import { getInitials } from '../../utils/stringUtils';
 
@@ -35,6 +37,12 @@ export default function EmployeeCard({ employee, hotel, onEdit, onDelete }: Empl
           <Chip
             label={employee.isActive ? 'Activo' : 'Inactivo'}
             color={employee.isActive ? 'success' : 'error'}
+            size="small"
+          />
+          <Chip
+            icon={employee.documentacion_completa ? <CheckCircleOutlineIcon /> : <HighlightOffIcon />}
+            label={employee.documentacion_completa ? 'Completa' : 'Incompleta'}
+            color={employee.documentacion_completa ? 'success' : 'error'}
             size="small"
           />
           {employee.isBlacklisted && (

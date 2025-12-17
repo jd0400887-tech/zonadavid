@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, Button, Stack, Toolbar, ToggleButtonGroup, ToggleButton, Paper } from '@mui/material';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import SearchIcon from '@mui/icons-material/Search';
@@ -21,6 +22,7 @@ export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee, toggleEmployeeBlacklist } = useEmployees();
   const { hotels } = useHotels();
   
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [hotelFilter, setHotelFilter] = useState('');
@@ -32,19 +34,33 @@ export default function EmployeesPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
 
-  const filteredEmployees = employees
-    .filter(employee => {
-      if (statusFilter === 'active') return employee.isActive && !employee.isBlacklisted;
-      if (statusFilter === 'inactive') return !employee.isActive && !employee.isBlacklisted;
-      if (statusFilter === 'blacklisted') return employee.isBlacklisted;
+  const filteredEmployees = useMemo(() => {
+    const documentationFilter = searchParams.get('documentation');
+
+    return employees.filter(employee => {
+      // Documentation Filter
+      if (documentationFilter === 'incomplete' && employee.documentacion_completa) {
+        return false;
+      }
+
+      // Status Filter
+      if (statusFilter === 'active' && (!employee.isActive || employee.isBlacklisted)) return false;
+      if (statusFilter === 'inactive' && (employee.isActive || employee.isBlacklisted)) return false;
+      if (statusFilter === 'blacklisted' && !employee.isBlacklisted) return false;
+      
+      // Search Query Filter
+      if (!employee.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+
+      // Hotel Filter
+      if (hotelFilter && employee.hotelId !== hotelFilter) {
+        return false;
+      }
+
       return true;
-    })
-    .filter(employee =>
-      employee.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .filter(employee => 
-      !hotelFilter || employee.hotelId === hotelFilter
-    );
+    });
+  }, [employees, statusFilter, searchQuery, hotelFilter, searchParams]);
 
   const handleOpenAddModal = () => {
     setCurrentEmployee({ isActive: true, isBlacklisted: false, payrollType: 'timesheet' });

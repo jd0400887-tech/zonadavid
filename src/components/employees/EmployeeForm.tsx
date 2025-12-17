@@ -102,6 +102,19 @@ export default function EmployeeForm({ employeeData, onFormChange, hotels, onTog
         sx={{ mt: 1 }}
         disabled={isBlacklisted}
       />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={employeeData.documentacion_completa ?? false}
+            onChange={(e) => onFormChange('documentacion_completa', e.target.checked)}
+            name="documentacion_completa"
+            color="primary"
+          />
+        }
+        label="Documentación Completa"
+        sx={{ mt: 1 }}
+        disabled={isBlacklisted}
+      />
 
       {employeeData.id && (
         <Box sx={{ mt: 4 }}>

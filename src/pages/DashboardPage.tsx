@@ -16,6 +16,7 @@ import { useMonthlyGrowthStats } from '../hooks/useMonthlyGrowthStats';
 // Components
 import StatCard from '../components/dashboard/StatCard';
 import RequestsCounter from '../components/dashboard/RequestsCounter';
+import ManualAttendance from '../components/archive/ManualAttendance'; // Import the new component
 import MonthlyGrowthChart from '../components/dashboard/MonthlyGrowthChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
 import DashboardPieChart from '../components/dashboard/DashboardPieChart';
@@ -172,10 +173,11 @@ function DashboardPage() {
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
           <RequestsCounter />
+          <ManualAttendance />
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} /></Grid>
-            <Grid item xs={12} sm={4} md={2}><StatCard title="Visitas (Semana)" value={stats.visitsThisWeek} icon={<EventAvailableIcon />} onClick={() => navigate('/reporte-asistencia')} /></Grid>
+            <Grid item xs={12} sm={4} md={2}><StatCard title="Docs Incompletos" value={stats.incompleteDocsCount} icon={<FactCheckIcon />} onClick={() => navigate('/empleados?documentation=incomplete')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Aplicaciones Pendientes" value={stats.pendingApplications} icon={<PendingActionsIcon />} onClick={() => navigate('/aplicaciones')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Nóminas por Revisar" value={stats.payrollsToReview} icon={<FactCheckIcon />} onClick={() => navigate('/revision-nomina')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="En Lista Negra" value={stats.blacklistedEmployees} icon={<BlockIcon />} onClick={() => navigate('/empleados')} /></Grid>

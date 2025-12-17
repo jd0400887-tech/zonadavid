@@ -22,6 +22,7 @@ export interface Employee {
   payrollType: 'timesheet' | 'Workrecord';
   lastReviewedTimestamp: string | null;
   overtime?: number;
+  documentacion_completa: boolean;
 }
 
 export interface AttendanceRecord {
