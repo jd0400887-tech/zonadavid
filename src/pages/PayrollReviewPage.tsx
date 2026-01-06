@@ -15,6 +15,7 @@ import { usePayrollHistory } from '../hooks/usePayrollHistory';
 import { useTrendData } from '../hooks/useTrendData';
 import { supabase } from '../utils/supabase';
 import { ComplianceReviewModal } from '../components/payroll/ComplianceReviewModal';
+import { NotApplicableModal } from '../components/payroll/NotApplicableModal';
 
 export default function PayrollReviewPage() {
   const { employees, updateEmployee } = useEmployees();
@@ -29,12 +30,15 @@ export default function PayrollReviewPage() {
   const [currentEmployeeComplianceStatus, setCurrentEmployeeComplianceStatus] = useState<string>('incumplimiento_total');
   const [currentEmployeeComplianceReason, setCurrentEmployeeComplianceReason] = useState<string | null>(null);
 
+  const [notApplicableModalOpen, setNotApplicableModalOpen] = useState(false);
+  const [selectedEmployeeForNA, setSelectedEmployeeForNA] = useState<Employee | null>(null);
+
   const { startOfThisWeek, endOfThisWeek, startOfWeekTimestamp } = useMemo(() => {
     const today = new Date();
-    const dayOfWeek = today.getDay();
-    const daysSinceMonday = (dayOfWeek + 6) % 7;
+    const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+    const daysSinceSunday = dayOfWeek; // 0 days if today is Sunday, 1 if Monday, etc.
     const startOfThisWeek = new Date(today);
-    startOfThisWeek.setDate(today.getDate() - daysSinceMonday);
+    startOfThisWeek.setDate(today.getDate() - daysSinceSunday);
     startOfThisWeek.setHours(0, 0, 0, 0);
     const startOfWeekTimestamp = startOfThisWeek.getTime();
 
@@ -94,6 +98,16 @@ export default function PayrollReviewPage() {
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedEmployeeToReview(null);
+  };
+
+  const handleOpenNAModal = (employee: Employee) => {
+    setSelectedEmployeeForNA(employee);
+    setNotApplicableModalOpen(true);
+  };
+
+  const handleCloseNAModal = () => {
+    setNotApplicableModalOpen(false);
+    setSelectedEmployeeForNA(null);
   };
 
   const handleSaveCompliance = async (employeeId: string, status: string, reason: string | null) => {
@@ -160,6 +174,34 @@ export default function PayrollReviewPage() {
     updateEmployee({ id: employeeId, lastReviewedTimestamp: new Date().toISOString() });
     refreshHistory();
     handleCloseModal();
+  };
+
+  const handleMarkAsNotApplicable = async (reason: string) => {
+    if (!selectedEmployeeForNA) return;
+
+    // Update employee's lastReviewedTimestamp to clear them from the current week's review list
+    updateEmployee({ id: selectedEmployeeForNA.id, lastReviewedTimestamp: new Date().toISOString() });
+
+    // Insert a special record into adoption_compliance_history
+    const currentYear = new Date().getFullYear();
+    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+
+    const { error: insertComplianceError } = await supabase.from('adoption_compliance_history').insert({
+      employee_id: selectedEmployeeForNA.id,
+      week_of_year: weekNumber,
+      compliance_year: currentYear,
+      compliance_status: 'no_aplica',
+      reason: reason, // Use the reason from the modal
+    });
+
+    if (insertComplianceError) {
+      console.error('Error saving "no aplica" compliance history:', insertComplianceError);
+      alert('Error guardando estado "no aplica": ' + insertComplianceError.message);
+      // Note: We don't return here, so the modal closes even if DB save fails, but the employee might reappear on next refresh.
+      // This might be desired to avoid getting stuck.
+    }
+    refreshHistory();
+    handleCloseNAModal();
   };
 
   const allWorkrecordEmployees = useMemo(() => 
@@ -496,9 +538,14 @@ export default function PayrollReviewPage() {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <TextField label="Overtime" type="number" size="small" inputProps={{ step: "0.1" }} sx={{ width: '100px' }} value={overtimeNotes[employee.id] || ''} onChange={(e) => handleOvertimeChange(employee.id, e.target.value)} disabled={!employee.needsReview} />
                         {employee.needsReview ? (
-                          <Button variant="contained" size="small" onClick={() => handleOpenModal(employee)}>
-                            Calificar
-                          </Button>
+                          <>
+                            <Button variant="contained" size="small" onClick={() => handleOpenModal(employee)}>
+                              Calificar
+                            </Button>
+                            <Button variant="outlined" size="small" onClick={() => handleOpenNAModal(employee)}>
+                              No Aplica
+                            </Button>
+                          </>
                         ) : (
                           <IconButton color="secondary" onClick={() => handleUnmarkAsReviewed(employee.id)}><UndoIcon /></IconButton>
                         )}
@@ -523,6 +570,15 @@ export default function PayrollReviewPage() {
           initialComplianceStatus={currentEmployeeComplianceStatus}
           initialComplianceReason={currentEmployeeComplianceReason}
           onSave={handleSaveCompliance}
+        />
+      )}
+
+      {selectedEmployeeForNA && (
+        <NotApplicableModal
+          open={notApplicableModalOpen}
+          onClose={handleCloseNAModal}
+          employeeName={selectedEmployeeForNA.name}
+          onSave={handleMarkAsNotApplicable}
         />
       )}
     </Box>

@@ -31,6 +31,9 @@ const REASON_OPTIONS = [
   { value: 'no_funcionaba_app', label: 'No funcionaba la aplicación' },
   { value: 'no_tenia_datos_senal', label: 'No tenía datos o mala señal' },
   { value: 'se_olvido_marcar', label: 'Se le olvidó marcar' },
+  { value: 'no_marca_lunche', label: 'No marca Lunche' },
+  { value: 'no_tiene_codigo', label: 'No tiene Codigo' },
+  { value: 'no_marca_hora_salida', label: 'No marca hora de salida' },
   { value: 'otro', label: 'Otro' },
 ];
 
