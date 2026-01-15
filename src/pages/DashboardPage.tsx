@@ -33,6 +33,7 @@ import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import BlockIcon from '@mui/icons-material/Block';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 // Fix for default marker icon issue with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -188,6 +189,18 @@ function DashboardPage() {
             <Button variant="contained" onClick={handleGenerateMonthlyReport}>Generar Reporte Mensual</Button>
             <Button variant="contained" onClick={handleGenerateSemestralReport}>Generar Reporte Semestral</Button>
             <Button variant="contained" onClick={() => setCustomReportDialogOpen(true)}>Generar Reporte Personalizado</Button>
+            <Button 
+                variant="contained" 
+                color="secondary"
+                startIcon={<AutoAwesomeIcon />}
+                onClick={() => navigate('/reporte-corporativo')}
+                sx={{ 
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                    boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                }}
+            >
+                Análisis Inteligente
+            </Button>
           </Stack>
 
           <Dialog open={customReportDialogOpen} onClose={() => setCustomReportDialogOpen(false)}>
