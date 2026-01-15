@@ -93,7 +93,7 @@ export function useCorporateIntelligence() {
     const disciplineScore = (avgCompliance / 100) * 25;
 
     // TOTAL SCORE
-    const totalScore = Math.round(talentScore + responseScore + supervisionScore + disciplineScore);
+    let totalScore = Math.round(talentScore + responseScore + supervisionScore + disciplineScore);
     let healthStatus: 'healthy' | 'risk' | 'critical' = 'healthy';
     let healthMessage = "La cuenta opera con altos estándares de eficiencia.";
 
@@ -354,14 +354,14 @@ export function useCorporateIntelligence() {
         const issues = [];
         
         // Critical Requests (+3)
-        const hCritical = safeRequestsActive.filter(r => r.hotel_id === h.id && differenceInHours(new Date(), new Date(r.created_at)) > 24).length; 
+        const hCritical = openRequests.filter(r => r.hotel_id === h.id && differenceInHours(new Date(), new Date(r.created_at)) > 24).length; 
         if (hCritical > 0) {
             score += (hCritical * 3);
             issues.push(`${hCritical} Solicitudes Críticas`);
         }
 
         // Open Requests (+1)
-        const hOpen = safeRequestsActive.filter(r => r.hotel_id === h.id).length;
+        const hOpen = openRequests.filter(r => r.hotel_id === h.id).length;
         if (hOpen > 0) {
             score += hOpen;
             if (hCritical === 0) issues.push(`${hOpen} Vacantes Activas`);
@@ -393,6 +393,16 @@ export function useCorporateIntelligence() {
         };
     }).sort((a,b) => b.score - a.score);
 
+
+    // --- AJUSTE DE CÁLCULO HONESTO ---
+    // Si hay hoteles críticos, la puntuación global no puede ser 'saludable'.
+    const tieneHotelesCriticos = healthScores.some(h => h.status === 'critical');
+
+    if (tieneHotelesCriticos && totalScore >= 80) {
+        totalScore = 79; // Limitar la puntuación a la categoría de 'riesgo'
+        healthStatus = 'risk';
+        healthMessage = "Operación estable, pero existen hoteles con incidencias críticas que requieren atención inmediata.";
+    }
 
     setReport({
         accountHealth: { score: totalScore, status: healthStatus, message: healthMessage },
