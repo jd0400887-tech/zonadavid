@@ -137,6 +137,7 @@ export const useStaffingRequests = () => {
       await fetchRequests(); // Revert optimistic update on error
       throw error;
     }
+    await fetchRequests(); // Ensure data is refreshed after successful archive
   };
 
   const unarchiveRequest = async (id: number) => {
@@ -151,6 +152,7 @@ export const useStaffingRequests = () => {
       await fetchRequests(); // Revert optimistic update on error
       throw error;
     }
+    await fetchRequests(); // Ensure data is refreshed after successful unarchive
   };
 
   const fetchHistory = useCallback(async (requestId: number) => {

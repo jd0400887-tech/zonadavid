@@ -180,11 +180,11 @@ const AdoptionTrackerPage = () => {
         const lastWeekRecord = stat.complianceHistory.find(h => h.week_of_year === lastWeekNum);
         const prevWeekRecord = stat.complianceHistory.find(h => h.week_of_year === prevWeekNum);
 
-        if (lastWeekRecord) {
+        if (lastWeekRecord && lastWeekRecord.compliance_status !== 'no_aplica') {
             hotelData[stat.employee.hotelId].lastWeekTotal += COMPLIANCE_SCORES[lastWeekRecord.compliance_status] || 0;
             hotelData[stat.employee.hotelId].lastWeekCount++;
         }
-        if (prevWeekRecord) {
+        if (prevWeekRecord && prevWeekRecord.compliance_status !== 'no_aplica') {
             hotelData[stat.employee.hotelId].prevWeekTotal += COMPLIANCE_SCORES[prevWeekRecord.compliance_status] || 0;
             hotelData[stat.employee.hotelId].prevWeekCount++;
         }
@@ -238,7 +238,7 @@ const AdoptionTrackerPage = () => {
     const lastWeekNum = parseInt(lastWeekLabel.split(" ")[1]);
     const lastWeekScores = filteredStats
       .flatMap(stat => stat.complianceHistory)
-      .filter(record => record.week_of_year === lastWeekNum)
+      .filter(record => record.week_of_year === lastWeekNum && record.compliance_status !== 'no_aplica')
       .map(record => COMPLIANCE_SCORES[record.compliance_status] || 0);
 
     if (lastWeekScores.length === 0) return null;

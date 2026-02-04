@@ -4,13 +4,13 @@ import { startOfWeek, startOfMonth, subMonths } from 'date-fns';
 
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
-import { useStaffingRequests } from './useStaffingRequests';
+import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useApplications } from './useApplications';
 
 export function useDashboardStats() {
   const { hotels, employees } = useHotels();
   const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
-  const { allRequests: staffingRequests } = useStaffingRequests();
+  const { allRequests: staffingRequests } = useStaffingRequestsContext();
   const { applications } = useApplications();
 
   return useMemo(() => {

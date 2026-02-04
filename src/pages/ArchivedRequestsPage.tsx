@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Toolbar, Chip, IconButton, Grid, TextField, Select, MenuItem, InputLabel, FormControl, Button } from '@mui/material';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useStaffingRequests } from '../hooks/useStaffingRequests';
+import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import type { StaffingRequest } from '../types';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import StaffingRequestDetailsDialog from '../components/staffing-requests/StaffingRequestDetailsDialog'; // Import the new dialog
@@ -22,7 +22,7 @@ const allStatuses: StaffingRequest['status'][] = ['Pendiente', 'Enviada a Reclut
 const requestTypes = ['Temporal', 'Permanente'];
 
 export default function ArchivedRequestsPage() {
-  const { deleteRequest, unarchiveRequest, archivedRequests, loading } = useStaffingRequests();
+  const { deleteRequest, unarchiveRequest, archivedRequests, loading } = useStaffingRequestsContext();
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false); // State for details dialog

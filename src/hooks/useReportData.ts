@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useEmployees } from './useEmployees';
 import { useHotels } from './useHotels';
 import { useAttendance } from './useAttendance';
-import { useStaffingRequests } from './useStaffingRequests';
+import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useApplications } from './useApplications'; // Import useApplications
 import { differenceInDays, subDays, startOfWeek } from 'date-fns';
 import { supabase } from '../utils/supabase';
@@ -228,8 +228,7 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
   const { employees, loading: employeesLoading } = useEmployees();
   const { hotels, loading: hotelsLoading } = useHotels();
   const { allRecords, loading: attendanceLoading } = useAttendance({ start: null, end: null });
-  const { allRequests, loading: requestsLoading } = useStaffingRequests();
-  const { applications: allApplications, loading: applicationsLoading } = useApplications(); // Use the hook
+      const { allRequests, loading: requestsLoading } = useStaffingRequestsContext();  const { applications: allApplications, loading: applicationsLoading } = useApplications(); // Use the hook
 
   const [currentPeriodPayrollHistory, setCurrentPeriodPayrollHistory] = useState<PayrollReview[]>([]);
   const [previousPeriodPayrollHistory, setPreviousPeriodPayrollHistory] = useState<PayrollReview[]>([]);

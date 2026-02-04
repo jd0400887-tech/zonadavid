@@ -1,7 +1,11 @@
-import { useStaffingRequests } from '../../hooks/useStaffingRequests';
+import { useStaffingRequestsContext } from '../../contexts/StaffingRequestsContext';
 import { Typography } from '@mui/material';
 
 export default function RequestsCounter() {
-  const { requests } = useStaffingRequests();
-  return null;
+  const { activeRequests } = useStaffingRequestsContext();
+  return (
+    <Typography variant="h6">
+      Solicitudes Activas: {activeRequests.length}
+    </Typography>
+  );
 }

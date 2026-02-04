@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid, Tabs, Tab, Box, List, ListItem, ListItemText, Typography, Chip, Stack } from '@mui/material';
 import { useHotels } from '../../hooks/useHotels';
 import { useEmployees } from '../../hooks/useEmployees';
-import { useStaffingRequests } from '../../hooks/useStaffingRequests';
+import { useStaffingRequestsContext } from '../../contexts/StaffingRequestsContext';
 import { useRequestCandidates } from '../../hooks/useRequestCandidates';
 import type { StaffingRequest, StaffingRequestHistory } from '../../types';
 
@@ -31,27 +31,33 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   
   const { hotels } = useHotels();
   const { employees, roles } = useEmployees();
-  const { fetchHistory } = useStaffingRequests();
+  const { fetchHistory } = useStaffingRequestsContext();
   const { candidates, loading: candidatesLoading, addCandidate, updateCandidateStatus, deleteCandidate } = useRequestCandidates(initialData?.id || null);
 
   const [newCandidateName, setNewCandidateName] = useState('');
   const [selectedExistingEmployeeId, setSelectedExistingEmployeeId] = useState('');
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
 
-  // --- City Filter Logic ---
+  // --- City & Employee Filter Logic ---
   const [selectedCity, setSelectedCity] = useState<string>('all');
+
+  const hotelsWithEmployees = useMemo(() => {
+    const hotelsWithStaff = new Set(employees.map(emp => emp.hotelId));
+    return hotels.filter(hotel => hotelsWithStaff.has(hotel.id));
+  }, [employees, hotels]);
+
   const uniqueCities = useMemo(() => {
-    const cities = new Set(hotels.map(hotel => hotel.city));
+    const cities = new Set(hotelsWithEmployees.map(hotel => hotel.city));
     return ['all', ...Array.from(cities).sort()];
-  }, [hotels]);
+  }, [hotelsWithEmployees]);
 
   const filteredHotels = useMemo(() => {
     if (selectedCity === 'all') {
-      return hotels;
+      return hotelsWithEmployees;
     }
-    return hotels.filter(hotel => hotel.city === selectedCity);
-  }, [hotels, selectedCity]);
-  // --- End City Filter Logic ---
+    return hotelsWithEmployees.filter(hotel => hotel.city === selectedCity);
+  }, [hotelsWithEmployees, selectedCity]);
+  // --- End City & Employee Filter Logic ---
 
   const filteredEmployees = useMemo(() => {
     if (!employeeSearchTerm) return employees;

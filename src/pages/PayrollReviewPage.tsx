@@ -452,7 +452,7 @@ export default function PayrollReviewPage() {
         <Paper sx={{ p: 2, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>Desglose por Hotel</Typography>
           <TableContainer sx={{ 
-            maxHeight: 300,
+            maxHeight: 'auto',
             '&::-webkit-scrollbar': {
               width: '8px',
             },

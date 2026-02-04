@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useEmployees } from './useEmployees';
 import { useHotels } from './useHotels';
-import { useStaffingRequests } from './useStaffingRequests';
+import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useApplications } from './useApplications';
 import { useAttendance } from './useAttendance';
 import { useAdoptionStats } from './useAdoptionStats';
@@ -36,7 +36,7 @@ export interface CorporateReport {
 export function useCorporateIntelligence() {
   const { employees, loading: loadingEmp } = useEmployees();
   const { hotels, loading: loadingHotels } = useHotels();
-  const { activeRequests, allRequests, loading: loadingReq } = useStaffingRequests();
+  const { activeRequests, allRequests, loading: loadingReq } = useStaffingRequestsContext();
   const { applications, loading: loadingApps } = useApplications();
   const { stats: adoptionStats, loading: loadingAdoption } = useAdoptionStats();
   
