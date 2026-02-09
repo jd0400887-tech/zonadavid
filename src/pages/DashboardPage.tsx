@@ -15,7 +15,7 @@ import { useMonthlyGrowthStats } from '../hooks/useMonthlyGrowthStats';
 
 // Components
 import StatCard from '../components/dashboard/StatCard';
-import RequestsCounter from '../components/dashboard/RequestsCounter';
+
 import ManualAttendance from '../components/archive/ManualAttendance'; // Import the new component
 import MonthlyGrowthChart from '../components/dashboard/MonthlyGrowthChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
@@ -173,7 +173,7 @@ function DashboardPage() {
       <Box>
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
-          <RequestsCounter />
+
           <ManualAttendance />
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>

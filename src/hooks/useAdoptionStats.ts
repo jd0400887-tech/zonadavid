@@ -107,7 +107,7 @@ export function useAdoptionStats() {
         
       const complianceHistory = historyForEmployee.slice(0, WEEKS_TO_SHOW);
       
-      const scorableHistory = historyForEmployee.filter(r => r.compliance_status !== 'no_aplica');
+      const scorableHistory = complianceHistory.filter(r => r.compliance_status !== 'no_aplica');
       const totalScore = scorableHistory.reduce((sum, record) => sum + (COMPLIANCE_SCORES[record.compliance_status] || 0), 0);
       const compliancePercentage = scorableHistory.length > 0 ? Math.round(totalScore / scorableHistory.length) : 0;
 
