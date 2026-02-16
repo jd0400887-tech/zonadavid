@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../utils/supabase';
 import type { Employee } from '../types';
-import { getWeek, startOfWeek, addWeeks, format } from 'date-fns';
+import { getWeek, startOfWeek, addWeeks, format, subWeeks } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useHotels } from './useHotels'; // Import useHotels
 
@@ -59,15 +59,18 @@ export function useAdoptionStats() {
     }
 
     const today = new Date();
-    const lastWeek = subWeeks(today, 1); // Empezar desde la semana anterior
-    
+    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 }); // Inicio de la semana actual
+    const weekBeforeCurrentWeekStart = subWeeks(currentWeekStart, 1); // Inicio de la semana ANTERIOR a la actual
+
     const labels: string[] = [];
-    for (let i = WEEKS_TO_SHOW - 1; i >= 0; i--) { // WEEKS_TO_SHOW sigue siendo 7
-        const date = addWeeks(lastWeek, -i); // <- Ahora se añade a 'lastWeek'
+    // Generar semanas desde la más reciente (anterior a la actual) hasta la más antigua (7 semanas atrás de esa)
+    for (let i = 0; i < WEEKS_TO_SHOW; i++) { // Iterar de 0 a WEEKS_TO_SHOW-1 (0 a 6 para 7 semanas)
+        const date = subWeeks(weekBeforeCurrentWeekStart, i); // Restar 'i' semanas desde la semana anterior a la actual
         const weekNum = getWeek(date, { weekStartsOn: 1 });
         labels.push(`Sem ${weekNum}`);
     }
-    labels.reverse(); // Para que las etiquetas vayan de la más antigua a la más reciente (semana anterior)
+    // El orden en 'labels' ahora es: [Sem(X-1), Sem(X-2), ..., Sem(X-7)]
+    labels.reverse(); // Invertir para que sea: [Sem(X-7), Sem(X-6), ..., Sem(X-1)]
     setWeekLabels(labels);
 
     const { data: complianceData, error: complianceError } = await supabase
@@ -114,12 +117,14 @@ export function useAdoptionStats() {
       let compliancePercentage: number | null = null;
       let fullComplianceHistory: ComplianceRecord[] = [];
 
-      const today = new Date();
+      const currentWeekStartForHistory = startOfWeek(new Date(), { weekStartsOn: 1 }); // Inicio de la semana actual
+      const weekBeforeCurrentWeekStartForHistory = subWeeks(currentWeekStartForHistory, 1); // Inicio de la semana ANTERIOR a la actual
+
       // Generar un historial completo para el empleado para las WEEKS_TO_SHOW semanas
-      for (let i = WEEKS_TO_SHOW - 1; i >= 0; i--) {
-        const date = addWeeks(today, -i);
+      for (let i = 0; i < WEEKS_TO_SHOW; i++) { // Iterar de 0 a WEEKS_TO_SHOW-1
+        const date = subWeeks(weekBeforeCurrentWeekStartForHistory, i); // Restar 'i' semanas desde la semana anterior a la actual
         const weekNum = getWeek(date, { weekStartsOn: 1 });
-        const complianceYear = date.getFullYear(); // Ojo: getWeek no incluye el año
+        const complianceYear = date.getFullYear(); 
 
         const existingRecord = historyForEmployee.find(
           h => h.week_of_year === weekNum && h.compliance_year === complianceYear
@@ -132,6 +137,10 @@ export function useAdoptionStats() {
           reason: null,
         });
       }
+      fullComplianceHistory.reverse(); // Invertir para que coincida con el orden final de weekLabels (más antigua a más reciente)
+      // El fullComplianceHistory ahora contiene las semanas en el orden de más reciente a más antigua,
+      // al igual que las weekLabels.
+
 
       // Filtrar semanas no puntuables y calcular el porcentaje
       if (firstTrackingWeekOfYear !== null) {
