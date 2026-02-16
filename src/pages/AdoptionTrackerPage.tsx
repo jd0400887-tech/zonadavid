@@ -54,9 +54,10 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 
 const COMPLIANCE_SCORES: { [key: string]: number } = {
   'cumplio': 100,
-  'modificacion_menor': 75,
+  'modificacion_menor': 85,
   'incumplimiento_parcial': 25,
   'incumplimiento_total': 0,
+  'no_data': 0, // Añadido para consistencia, no puntúa
 };
 
 const COLORS = {
@@ -65,6 +66,7 @@ const COLORS = {
   'incumplimiento_parcial': '#f44336',
   'incumplimiento_total': '#b71c1c',
   'no_aplica': '#9e9e9e',
+  'no_data': '#607d8b', // Gris azulado para semanas sin datos
 };
 
 
@@ -146,7 +148,11 @@ const AdoptionTrackerPage = () => {
   };
 
   const employeeRanking = useMemo(() => {
-    return [...stats].sort((a, b) => a.compliancePercentage - b.compliancePercentage);
+    return [...stats].sort((a, b) => {
+        const aVal = a.compliancePercentage === null ? -1 : a.compliancePercentage;
+        const bVal = b.compliancePercentage === null ? -1 : b.compliancePercentage;
+        return aVal - bVal;
+    });
   }, [stats]);
 
   const hotelComplianceAverage = useMemo(() => {
@@ -164,33 +170,34 @@ const AdoptionTrackerPage = () => {
     const lastWeekNum = hasTrendData ? parseInt(weekLabels[weekLabels.length - 1].split(" ")[1]) : -1;
     const prevWeekNum = hasTrendData ? parseInt(weekLabels[weekLabels.length - 2].split(" ")[1]) : -1;
 
-    stats.forEach(stat => {
-      if (!stat.employee.hotelId) return;
-      if (!hotelData[stat.employee.hotelId]) {
-        hotelData[stat.employee.hotelId] = { 
-            total: 0, count: 0,
-            lastWeekTotal: 0, lastWeekCount: 0,
-            prevWeekTotal: 0, prevWeekCount: 0
-        };
-      }
-      hotelData[stat.employee.hotelId].total += stat.compliancePercentage;
-      hotelData[stat.employee.hotelId].count++;
-
-      if (hasTrendData) {
-        const lastWeekRecord = stat.complianceHistory.find(h => h.week_of_year === lastWeekNum);
-        const prevWeekRecord = stat.complianceHistory.find(h => h.week_of_year === prevWeekNum);
-
-        if (lastWeekRecord && lastWeekRecord.compliance_status !== 'no_aplica') {
-            hotelData[stat.employee.hotelId].lastWeekTotal += COMPLIANCE_SCORES[lastWeekRecord.compliance_status] || 0;
-            hotelData[stat.employee.hotelId].lastWeekCount++;
-        }
-        if (prevWeekRecord && prevWeekRecord.compliance_status !== 'no_aplica') {
-            hotelData[stat.employee.hotelId].prevWeekTotal += COMPLIANCE_SCORES[prevWeekRecord.compliance_status] || 0;
-            hotelData[stat.employee.hotelId].prevWeekCount++;
-        }
-      }
-    });
-
+          stats.forEach(stat => {
+            if (!stat.employee.hotelId) return;
+            if (stat.compliancePercentage === null) return; // Ignorar empleados sin cumplimiento calculable
+    
+            if (!hotelData[stat.employee.hotelId]) {
+              hotelData[stat.employee.hotelId] = { 
+                  total: 0, count: 0,
+                  lastWeekTotal: 0, lastWeekCount: 0,
+                  prevWeekTotal: 0, prevWeekCount: 0
+              };
+            }
+            hotelData[stat.employee.hotelId].total += stat.compliancePercentage;
+            hotelData[stat.employee.hotelId].count++;
+    
+            if (hasTrendData) {
+              const lastWeekRecord = stat.complianceHistory.find(h => h.week_of_year === lastWeekNum);
+              const prevWeekRecord = stat.complianceHistory.find(h => h.week_of_year === prevWeekNum);
+    
+              if (lastWeekRecord && lastWeekRecord.compliance_status !== 'no_aplica' && lastWeekRecord.compliance_status !== 'no_data') {
+                  hotelData[stat.employee.hotelId].lastWeekTotal += COMPLIANCE_SCORES[lastWeekRecord.compliance_status] || 0;
+                  hotelData[stat.employee.hotelId].lastWeekCount++;
+              }
+              if (prevWeekRecord && prevWeekRecord.compliance_status !== 'no_aplica' && prevWeekRecord.compliance_status !== 'no_data') {
+                  hotelData[stat.employee.hotelId].prevWeekTotal += COMPLIANCE_SCORES[prevWeekRecord.compliance_status] || 0;
+                  hotelData[stat.employee.hotelId].prevWeekCount++;
+              }
+            }
+          });
     return Object.entries(hotelData)
       .map(([hotelId, data]) => {
         const avgOverall = data.count > 0 ? data.total / data.count : 0;
@@ -249,7 +256,12 @@ const AdoptionTrackerPage = () => {
 
   
   
-  const overallCompliance = (filteredStats.reduce((acc, stat) => acc + stat.compliancePercentage, 0) / filteredStats.length) || 0;
+  const overallCompliance = useMemo(() => {
+    const validStats = filteredStats.filter(stat => stat.compliancePercentage !== null);
+    if (validStats.length === 0) return 0;
+    const total = validStats.reduce((acc, stat) => acc + (stat.compliancePercentage || 0), 0);
+    return total / validStats.length;
+  }, [filteredStats]);
 
   // Generate Smart Insights (Diagnostic Level)
   const insights = useMemo(() => {
@@ -280,6 +292,7 @@ const AdoptionTrackerPage = () => {
       // 3. Role Bottleneck Analysis
       const roleStats: Record<string, { total: number; count: number }> = {};
       stats.forEach(stat => {
+          if (stat.compliancePercentage === null) return; // Ignorar empleados sin cumplimiento calculable
           const role = stat.employee.role || 'Sin Rol';
           if (!roleStats[role]) roleStats[role] = { total: 0, count: 0 };
           roleStats[role].total += stat.compliancePercentage;
@@ -391,7 +404,7 @@ const AdoptionTrackerPage = () => {
       const row: any = {
         'Empleado': stat.employee.name,
         'Hotel': hotels.find(h => h.id === stat.employee.hotelId)?.name || 'N/A',
-        'Cumplimiento (%)': stat.compliancePercentage.toFixed(0),
+        'Cumplimiento (%)': stat.compliancePercentage !== null ? stat.compliancePercentage.toFixed(0) : 'N/A',
       };
       weekLabels.forEach(label => {
         const weekNum = parseInt(label.split(" ")[1]);
@@ -465,11 +478,6 @@ const AdoptionTrackerPage = () => {
                 Seguimiento Workrecord
             </Typography>
             <Box>
-                <Tooltip title="Refrescar Datos">
-                    <IconButton onClick={refreshStats} color="primary">
-                        <RefreshIcon />
-                    </IconButton>
-                </Tooltip>
                 <Tooltip title="Exportar a Excel">
                     <IconButton onClick={handleExport} color="primary">
                         <FileDownloadIcon />
@@ -608,7 +616,7 @@ const AdoptionTrackerPage = () => {
                                 </ListItemIcon>
                                 <ListItemText 
                                     primary={stat.employee.name} 
-                                    secondary={`${stat.compliancePercentage.toFixed(0)}% Cumplimiento`}
+                                    secondary={stat.compliancePercentage !== null ? `${stat.compliancePercentage.toFixed(0)}% Cumplimiento` : 'N/A Cumplimiento'}
                                     primaryTypographyProps={{ variant: 'body2' }}
                                 />
                             </ListItemButton>
@@ -727,7 +735,7 @@ const AdoptionTrackerPage = () => {
             <TableRow>
               <TableCell>Empleado</TableCell>
               <TableCell align="center">Cumplimiento</TableCell>
-              <TableCell align="center">Tendencia (6 Semanas)</TableCell>
+              <TableCell align="center">Tendencia (7 Semanas)</TableCell>
               {weekLabels.map(label => (
                 <TableCell key={label} align="center">{label}</TableCell>
               ))}
@@ -766,9 +774,9 @@ const AdoptionTrackerPage = () => {
                 <TableCell align="center">
                     <Typography 
                         variant="body2" 
-                        color={compliancePercentage > 75 ? 'green' : compliancePercentage > 50 ? 'orange' : 'red'}
+                        color={compliancePercentage === null ? 'text.secondary' : (compliancePercentage > 75 ? 'green' : compliancePercentage > 50 ? 'orange' : 'red')}
                     >
-                        {compliancePercentage.toFixed(0)}%
+                        {compliancePercentage === null ? 'N/A' : `${compliancePercentage.toFixed(0)}%`}
                     </Typography>
                 </TableCell>
                 <TableCell align="center">
@@ -787,36 +795,42 @@ const AdoptionTrackerPage = () => {
                   let iconColor: "inherit" | "action" | "disabled" | "primary" | "secondary" | "error" | "info" | "success" | "warning" | undefined = 'disabled';
 
                   if (record) {
-                    tooltipTitle = `Estado: ${record.compliance_status}`;
-                    if (record.reason) {
-                        tooltipTitle += `\nMotivo: ${record.reason}`;
-                    }
+                    if (record.compliance_status === 'no_data') {
+                        icon = null; // No icon for no_data
+                        tooltipTitle = "No hay datos de cumplimiento para esta semana.";
+                        iconColor = 'text.secondary'; // Color tenue para el guion
+                    } else {
+                        tooltipTitle = `Estado: ${record.compliance_status}`;
+                        if (record.reason) {
+                            tooltipTitle += `\nMotivo: ${record.reason}`;
+                        }
 
-                    switch (record.compliance_status) {
-                        case 'cumplio':
-                            icon = <CheckCircleIcon />;
-                            iconColor = 'success';
-                            break;
-                        case 'modificacion_menor':
-                            icon = <ErrorOutlineIcon />;
-                            iconColor = 'warning';
-                            break;
-                        case 'incumplimiento_parcial':
-                            icon = <HelpOutlineIcon />;
-                            iconColor = 'error';
-                            break;
-                        case 'incumplimiento_total':
-                            icon = <DoNotDisturbAltIcon />;
-                            iconColor = 'error';
-                            break;
-                        case 'no_aplica':
-                            icon = <BlockIcon />;
-                            iconColor = 'action';
-                            tooltipTitle = `No Aplica: ${record.reason || 'Sin motivo especificado'}`;
-                            break;
-                        default:
-                            icon = null;
-                            break;
+                        switch (record.compliance_status) {
+                            case 'cumplio':
+                                icon = <CheckCircleIcon />;
+                                iconColor = 'success';
+                                break;
+                            case 'modificacion_menor':
+                                icon = <ErrorOutlineIcon />;
+                                iconColor = 'warning';
+                                break;
+                            case 'incumplimiento_parcial':
+                                icon = <HelpOutlineIcon />;
+                                iconColor = 'error';
+                                break;
+                            case 'incumplimiento_total':
+                                icon = <DoNotDisturbAltIcon />;
+                                iconColor = 'error';
+                                break;
+                            case 'no_aplica':
+                                icon = <BlockIcon />;
+                                iconColor = 'action';
+                                tooltipTitle = `No Aplica: ${record.reason || 'Sin motivo especificado'}`;
+                                break;
+                            default:
+                                icon = null;
+                                break;
+                        }
                     }
                   }
 
@@ -847,19 +861,20 @@ const AdoptionTrackerPage = () => {
             <>
                 <DialogTitle>
                     Historial Detallado: {selectedEmployeeForDetail.employee.name}
-                    <Typography variant="subtitle2" color="text.secondary">
-                        {hotels.find(h => h.id === selectedEmployeeForDetail.employee.hotelId)?.name || 'Hotel desconocido'}
-                    </Typography>
                 </DialogTitle>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ px: 3, pt: 0, pb: 1 }}>
+                    {hotels.find(h => h.id === selectedEmployeeForDetail.employee.hotelId)?.name || 'Hotel desconocido'}
+                </Typography>
                 <DialogContent dividers>
                     <List>
                         {weekLabels.map((label, index) => {
                              const weekNum = parseInt(label.split(" ")[1]);
                              const record = selectedEmployeeForDetail.complianceHistory.find((h: any) => h.week_of_year === weekNum);
                              
-                             if (!record) return null;
+                             if (!record) return null; // No debería suceder con el fullComplianceHistory
 
                              const statusColor = COLORS[record.compliance_status as keyof typeof COLORS] || '#grey';
+                             const statusText = record.compliance_status === 'no_data' ? 'Sin Datos' : record.compliance_status.replace(/_/g, ' ');
                              
                              return (
                                 <ListItem key={label} sx={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -871,13 +886,13 @@ const AdoptionTrackerPage = () => {
                                              <Box sx={{ display: 'flex', alignItems: 'center', color: statusColor }}>
                                                 <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: statusColor, mr: 1 }} />
                                                 <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                                                    {record.compliance_status.replace(/_/g, ' ')}
+                                                    {statusText}
                                                 </Typography>
                                              </Box>
                                         </Grid>
                                         <Grid item xs={7}>
                                             <Typography variant="body2" color="text.secondary">
-                                                {record.reason || 'Sin observaciones'}
+                                                {record.reason || (record.compliance_status === 'no_data' ? 'No hay actividad registrada para esta semana.' : 'Sin observaciones')}
                                             </Typography>
                                         </Grid>
                                     </Grid>

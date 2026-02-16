@@ -15,7 +15,8 @@ export interface ComplianceRecord {
 interface AdoptionStat {
   employee: Employee;
   complianceHistory: ComplianceRecord[];
-  compliancePercentage: number;
+  compliancePercentage: number | null; // Permitir null para empleados sin datos de cumplimiento
+  firstTrackingWeekOfYear: number | null;
 }
 
 export interface HotelRankingInfo {
@@ -24,12 +25,12 @@ export interface HotelRankingInfo {
     nonComplianceCount: number;
 }
 
-const WEEKS_TO_SHOW = 6;
+const WEEKS_TO_SHOW = 7;
 
 // Puntuación para calcular el porcentaje de cumplimiento
 const COMPLIANCE_SCORES: { [key: string]: number } = {
   'cumplio': 100,
-  'modificacion_menor': 75,
+  'modificacion_menor': 85,
   'incumplimiento_parcial': 25,
   'incumplimiento_total': 0,
 };
@@ -103,18 +104,47 @@ export function useAdoptionStats() {
     const adoptionStats = employees.map(employee => {
       const historyForEmployee = complianceData
         .filter(r => r.employee_id === employee.id)
-        .sort((a, b) => b.compliance_year - a.compliance_year || b.week_of_year - a.week_of_year);
-        
-      const complianceHistory = historyForEmployee.slice(0, WEEKS_TO_SHOW);
-      
-      const scorableHistory = complianceHistory.filter(r => r.compliance_status !== 'no_aplica');
-      const totalScore = scorableHistory.reduce((sum, record) => sum + (COMPLIANCE_SCORES[record.compliance_status] || 0), 0);
-      const compliancePercentage = scorableHistory.length > 0 ? Math.round(totalScore / scorableHistory.length) : 0;
+        .sort((a, b) => a.compliance_year - b.compliance_year || a.week_of_year - b.week_of_year); // Ordenar de más antiguo a más nuevo
 
+      const oldestRecord = historyForEmployee.length > 0 ? historyForEmployee[0] : null;
+      const firstTrackingWeekOfYear = oldestRecord ? oldestRecord.week_of_year : null;
+
+      let compliancePercentage: number | null = null;
+      let fullComplianceHistory: ComplianceRecord[] = [];
+
+      const today = new Date();
+      // Generar un historial completo para el empleado para las WEEKS_TO_SHOW semanas
+      for (let i = WEEKS_TO_SHOW - 1; i >= 0; i--) {
+        const date = addWeeks(today, -i);
+        const weekNum = getWeek(date, { weekStartsOn: 1 });
+        const complianceYear = date.getFullYear(); // Ojo: getWeek no incluye el año
+
+        const existingRecord = historyForEmployee.find(
+          h => h.week_of_year === weekNum && h.compliance_year === complianceYear
+        );
+
+        fullComplianceHistory.push(existingRecord || {
+          week_of_year: weekNum,
+          compliance_year: complianceYear,
+          compliance_status: 'no_data', // Nuevo estado para indicar que no hay datos
+          reason: null,
+        });
+      }
+
+      // Filtrar semanas no puntuables y calcular el porcentaje
+      if (firstTrackingWeekOfYear !== null) {
+        const scorableHistory = fullComplianceHistory.filter(r =>
+          r.week_of_year >= firstTrackingWeekOfYear && r.compliance_status !== 'no_aplica' && r.compliance_status !== 'no_data'
+        );
+        const totalScore = scorableHistory.reduce((sum, record) => sum + (COMPLIANCE_SCORES[record.compliance_status] || 0), 0);
+        compliancePercentage = scorableHistory.length > 0 ? Math.round(totalScore / scorableHistory.length) : null;
+      }
+      
       return {
         employee,
-        complianceHistory,
+        complianceHistory: fullComplianceHistory,
         compliancePercentage,
+        firstTrackingWeekOfYear,
       };
     });
 

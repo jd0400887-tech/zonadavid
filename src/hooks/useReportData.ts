@@ -292,32 +292,21 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
       setPayrollHistoryLoading(false);
 
 
-      // NEW: Fetch employee status history for current period
-      const { data: currentStatusHistoryData, error: currentStatusHistoryError } = await supabase
+      // Fetch ALL employee status history up to currentEnd for accurate historical status
+      const { data: allStatusHistoryData, error: allStatusHistoryError } = await supabase
         .from('employee_status_history')
         .select('*')
-        .gte('change_date', currentStart.toISOString())
+        .gte('change_date', '2000-01-01T00:00:00Z') // Fetch from a very early date
         .lte('change_date', currentEnd.toISOString());
 
-      if (currentStatusHistoryError) {
-        console.error('Error fetching current employee status history:', currentStatusHistoryError);
-        setCurrentPeriodEmployeeStatusHistory([]);
+      if (allStatusHistoryError) {
+        console.error('Error fetching all employee status history:', allStatusHistoryError);
+        setCurrentPeriodEmployeeStatusHistory([]); 
+        setPreviousPeriodEmployeeStatusHistory([]); // Asegurarse que esté vacío si hay error
       } else {
-        setCurrentPeriodEmployeeStatusHistory(currentStatusHistoryData as EmployeeStatusChange[]);
-      }
-
-      // NEW: Fetch employee status history for previous period
-      const { data: previousStatusHistoryData, error: previousStatusHistoryError } = await supabase
-        .from('employee_status_history')
-        .select('*')
-        .gte('change_date', previousStart.toISOString())
-        .lte('change_date', previousEnd.toISOString());
-
-      if (previousStatusHistoryError) {
-        console.error('Error fetching previous employee status history:', previousStatusHistoryError);
-        setPreviousPeriodEmployeeStatusHistory([]);
-      } else {
-        setPreviousPeriodEmployeeStatusHistory(previousStatusHistoryData as EmployeeStatusChange[]);
+        setCurrentPeriodEmployeeStatusHistory(allStatusHistoryData as EmployeeStatusChange[]);
+        // Para el período previo, también usaremos el mismo historial amplio y filtramos dentro del useMemo
+        setPreviousPeriodEmployeeStatusHistory(allStatusHistoryData as EmployeeStatusChange[]); 
       }
       setEmployeeStatusHistoryLoading(false);
     };
@@ -338,8 +327,26 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     const previousStart = subDays(currentStart, periodDuration + 1);
     const previousEnd = subDays(currentEnd, periodDuration + 1);
 
-    const currentPeriodStats = calculatePeriodStats(allRecords, employees, hotels, allRequests, allApplications, currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistory, currentStart, currentEnd);
-    const previousPeriodStats = calculatePeriodStats(allRecords, employees, hotels, allRequests, allApplications, previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistory, previousStart, previousEnd);
+    const currentPeriodEmployeeStatusHistoryFiltered = currentPeriodEmployeeStatusHistory.filter(change => {
+      const changeDate = new Date(change.change_date);
+      return changeDate >= currentStart && changeDate <= currentEnd;
+    });
+
+    const previousPeriodEmployeeStatusHistoryFiltered = previousPeriodEmployeeStatusHistory.filter(change => {
+      const changeDate = new Date(change.change_date);
+      return changeDate >= previousStart && changeDate <= previousEnd;
+    });
+
+    const currentPeriodStats = calculatePeriodStats(
+        allRecords, employees, hotels, allRequests, allApplications,
+        currentPeriodPayrollHistory, currentPeriodEmployeeStatusHistoryFiltered,
+        currentStart, currentEnd
+    );
+    const previousPeriodStats = calculatePeriodStats(
+        allRecords, employees, hotels, allRequests, allApplications,
+        previousPeriodPayrollHistory, previousPeriodEmployeeStatusHistoryFiltered,
+        previousStart, previousEnd
+    );
 
     const activeEmployeesList = employees.filter(e => e.isActive);
     const activeEmployees = activeEmployeesList.length;
@@ -365,36 +372,62 @@ export const useReportData = (startDate: string | null, endDate: string | null) 
     );
     const payrollsToReview = payrollsToReviewList.length;
 
-    const hotelTurnover = hotels.map(hotel => {
-      const hotelEmployees = employees.filter(e => e.hotelId === hotel.id && e.employeeType === 'permanente');
-      const hotelEmployeeIds = hotelEmployees.map(e => e.id);
+          const hotelTurnover = hotels.map(hotel => {
+            const allPermanentHotelEmployees = employees.filter(e => e.hotelId === hotel.id && e.employeeType === 'permanente');
+            const allPermanentHotelEmployeeIds = allPermanentHotelEmployees.map(e => e.id);
+      
+            // Function to determine if an employee was active at a given date
+            const wasEmployeeActiveAtDate = (employeeId: string, targetDate: Date, history: EmployeeStatusChange[]) => {
+              const relevantHistory = history
+                .filter(change => change.employee_id === employeeId && new Date(change.change_date) <= targetDate)
+                .sort((a, b) => new Date(b.change_date).getTime() - new Date(a.change_date).getTime()); // Latest change first
+      
+              if (relevantHistory.length > 0) {
+                // The most recent status change before or at targetDate determines activity
+                return relevantHistory[0].new_is_active;
+              } else {
+                // If no history up to targetDate, assume active if their idTimestamp (hiring date) is before or at targetDate
+                const employee = allPermanentHotelEmployees.find(e => e.id === employeeId);
+                if (employee) {
+                  const idTimestamp = parseInt(employee.id.split('-')[1]);
+                  return !isNaN(idTimestamp) && new Date(idTimestamp) <= targetDate;
+                }
+                return false;
+              }
+            };
+      
+            const employeesAtStart = allPermanentHotelEmployees.filter(emp => 
+              wasEmployeeActiveAtDate(emp.id, currentStart, currentPeriodEmployeeStatusHistory)
+            ).length;
+      
+            const employeesAtEnd = allPermanentHotelEmployees.filter(emp =>
+              wasEmployeeActiveAtDate(emp.id, currentEnd, currentPeriodEmployeeStatusHistory)
+            ).length;
+            
+            const avgEmployees = (employeesAtStart + employeesAtEnd) / 2;
+      
+            const separationEvents = currentPeriodEmployeeStatusHistory.filter(change =>
+              allPermanentHotelEmployeeIds.includes(change.employee_id) &&
+              new Date(change.change_date) >= currentStart &&
+              new Date(change.change_date) <= currentEnd &&
+              change.old_is_active === true &&
+              change.new_is_active === false
+            );
+            const uniqueSeparatedEmployeeIds = new Set(separationEvents.map(event => event.employee_id));
+            const separations = uniqueSeparatedEmployeeIds.size;
+      
+            const rate = avgEmployees > 0 ? (separations / avgEmployees) * 100 : 0;
+      
 
-      const separationEvents = currentPeriodEmployeeStatusHistory.filter(change =>
-        hotelEmployeeIds.includes(change.employee_id) &&
-        change.old_is_active === true &&
-        change.new_is_active === false
-      );
-      const uniqueSeparatedEmployeeIds = new Set(separationEvents.map(event => event.employee_id));
-      const separations = uniqueSeparatedEmployeeIds.size;
-
-      const employeesAtStart = hotelEmployees.filter(e => {
-        const idTimestamp = parseInt(e.id.split('-')[1]);
-        return !isNaN(idTimestamp) && idTimestamp <= currentStart.getTime();
-      }).length;
-      const employeesAtEnd = hotelEmployees.length;
-      const avgEmployees = (employeesAtStart + employeesAtEnd) / 2;
-
-      const rate = avgEmployees > 0 ? (separations / avgEmployees) * 100 : 0;
-
-      return {
-        hotelId: hotel.id,
-        hotelName: hotel.name,
-        turnoverRate: rate,
-        separations,
-        avgEmployees,
-      };
-    }).sort((a, b) => b.turnoverRate - a.turnoverRate);
-
+      
+            return {
+              hotelId: hotel.id,
+              hotelName: hotel.name,
+              turnoverRate: rate,
+              separations,
+              avgEmployees,
+            };
+          }).sort((a, b) => b.turnoverRate - a.turnoverRate);
     return {
       currentPeriod: currentPeriodStats,
       previousPeriod: previousPeriodStats,

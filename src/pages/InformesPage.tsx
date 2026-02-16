@@ -9,6 +9,7 @@ import { exportToExcel } from '../utils/exportToExcel';
 import DetailsModal from '../components/informes/DetailsModal';
 import OvertimeDetailsTable from '../components/informes/OvertimeDetailsTable';
 import TurnoverTreemap from '../components/informes/TurnoverTreemap';
+import EmployeeListFilterable from '../components/informes/EmployeeListFilterable';
 import { differenceInDays } from 'date-fns';
 
 // A small component to display a stat with its change from the previous period
@@ -205,10 +206,7 @@ function InformesPage() {
             previousValue={previousPeriod?.newEmployees || 0} 
             onClick={() => handleOpenModal(
               "Nuevos Empleados (Permanentes)", 
-              <List>{currentPeriod.newEmployeesList.map((item: any) => {
-                const hotel = hotels.find(h => h.id === item.hotelId);
-                return <ListItemText key={item.id} primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
-              })}</List>
+              <EmployeeListFilterable employees={currentPeriod.newEmployeesList} hotels={hotels} title="Nuevos Empleados (Permanentes)" />
             )}
           />
         </Grid>
@@ -219,10 +217,7 @@ function InformesPage() {
             previousValue={previousPeriod?.newTemporaryEmployees || 0} 
             onClick={() => handleOpenModal(
               "Nuevos Empleados (Temporales)", 
-              <List>{currentPeriod.newTemporaryEmployeesList.map((item: any) => {
-                const hotel = hotels.find(h => h.id === item.hotelId);
-                return <ListItemText key={item.id} primary={`${item.name} - ${hotel?.name || 'Hotel desconocido'}`} />
-              })}</List>
+              <EmployeeListFilterable employees={currentPeriod.newTemporaryEmployeesList} hotels={hotels} title="Nuevos Empleados (Temporales)" />
             )}
           />
         </Grid>
@@ -231,14 +226,20 @@ function InformesPage() {
             title="Inactivos (Permanentes)" 
             currentValue={currentPeriod.permanentInactive} 
             previousValue={previousPeriod?.permanentInactive || 0} 
-            onClick={() => handleOpenModal(
-              "Inactivos (Permanentes)", 
-              <List>{currentPeriod.permanentInactiveList.map((item: any) => {
+            onClick={() => {
+              const enrichedList = currentPeriod.permanentInactiveList.map((item: any) => {
                 const employee = employees.find(e => e.id === item.employee_id);
-                const hotel = hotels.find(h => h.id === employee?.hotelId);
-                return <ListItemText key={item.id} primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
-              })}</List>
-            )}
+                return { 
+                  id: item.id, 
+                  name: employee?.name || 'Empleado desconocido', 
+                  hotelId: employee?.hotelId || 'N/A' 
+                };
+              });
+              handleOpenModal(
+                "Inactivos (Permanentes)", 
+                <EmployeeListFilterable employees={enrichedList} hotels={hotels} title="Inactivos (Permanentes)" />
+              );
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -246,21 +247,36 @@ function InformesPage() {
             title="Inactivos (Temporales)" 
             currentValue={currentPeriod.temporaryInactive} 
             previousValue={previousPeriod?.temporaryInactive || 0} 
-            onClick={() => handleOpenModal(
-              "Inactivos (Temporales)", 
-              <List>{currentPeriod.temporaryInactiveList.map((item: any) => {
+            onClick={() => {
+              const enrichedList = currentPeriod.temporaryInactiveList.map((item: any) => {
                 const employee = employees.find(e => e.id === item.employee_id);
-                const hotel = hotels.find(h => h.id === employee?.hotelId);
-                return <ListItemText key={item.id} primary={`${employee?.name || 'Empleado desconocido'} - ${hotel?.name || 'Hotel desconocido'}`} secondary={`Fecha: ${new Date(item.change_date).toLocaleDateString()}`} />
-              })}</List>
-            )}
+                return { 
+                  id: item.id, 
+                  name: employee?.name || 'Empleado desconocido', 
+                  hotelId: employee?.hotelId || 'N/A' 
+                };
+              });
+              handleOpenModal(
+                "Inactivos (Temporales)", 
+                <EmployeeListFilterable employees={enrichedList} hotels={hotels} title="Inactivos (Temporales)" />
+              );
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }} onClick={() => handleOpenModal(
+          <Paper sx={{ p: 2, textAlign: 'center', height: '100%', cursor: 'pointer' }} onClick={() => {
+            const enrichedList = data.blacklistedEmployeesList.map((item: any) => {
+                const hotel = hotels.find(h => h.id === item.hotelId);
+                return { 
+                  id: item.id, 
+                  name: item.name, 
+                  hotelId: item.hotelId || 'N/A' 
+                };
+              });
+            handleOpenModal(
             "Empleados en Lista Negra", 
-            <List>{data.blacklistedEmployeesList.map((item: any) => <ListItemText key={item.id} primary={item.name} />)}</List>
-          )}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
+            <EmployeeListFilterable employees={enrichedList} hotels={hotels} title="Empleados en Lista Negra" />
+          )}}><Typography variant="h6" color="text.secondary">En Lista Negra</Typography><Typography variant="h4">{blacklistedEmployees}</Typography></Paper>
         </Grid>
 
         {/* Payroll Review */}

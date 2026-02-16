@@ -11,7 +11,7 @@ export const useTrendData = () => {
     const fetchTrendData = async () => {
       setLoading(true);
       const today = new Date();
-      const startDate = format(subDays(today, 48), 'yyyy-MM-dd'); // 7 weeks ago
+      const startDate = format(subDays(today, 49), 'yyyy-MM-dd'); // 7 weeks ago
 
       const { data, error } = await supabase
         .from('daily_stats')
