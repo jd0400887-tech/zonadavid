@@ -59,13 +59,15 @@ export function useAdoptionStats() {
     }
 
     const today = new Date();
+    const lastWeek = subWeeks(today, 1); // Empezar desde la semana anterior
     
     const labels: string[] = [];
-    for (let i = WEEKS_TO_SHOW - 1; i >= 0; i--) {
-        const date = addWeeks(today, -i);
+    for (let i = WEEKS_TO_SHOW - 1; i >= 0; i--) { // WEEKS_TO_SHOW sigue siendo 7
+        const date = addWeeks(lastWeek, -i); // <- Ahora se añade a 'lastWeek'
         const weekNum = getWeek(date, { weekStartsOn: 1 });
         labels.push(`Sem ${weekNum}`);
     }
+    labels.reverse(); // Para que las etiquetas vayan de la más antigua a la más reciente (semana anterior)
     setWeekLabels(labels);
 
     const { data: complianceData, error: complianceError } = await supabase
