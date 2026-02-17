@@ -208,7 +208,7 @@ export default function CorporateReportPage() {
                     </Typography>
                     <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
                         <Chip label="Análisis en tiempo real" size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.5)' }} />
-                        <Chip label="Basado en 4 pilares operativos" size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.5)' }} />
+                        <Chip label="Puntaje basado en 4 pilares clave" size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.5)' }} />
                     </Box>
                 </Grid>
             </Grid>

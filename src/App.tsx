@@ -12,6 +12,7 @@ import ApplicationsPage from './pages/ApplicationsPage';
 import ArchivedRequestsPage from './pages/ArchivedRequestsPage';
 import AdoptionTrackerPage from './pages/AdoptionTrackerPage'; // Import the new page
 import CorporateReportPage from './pages/CorporateReportPage';
+import HistoricalReportPage from './pages/HistoricalReportPage';
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './hooks/useAuth';
 
@@ -45,6 +46,7 @@ function App() {
             <Route path="solicitudes-archivadas" element={<ArchivedRequestsPage />} />
             <Route path="seguimiento-workrecord" element={<AdoptionTrackerPage />} />
             <Route path="reporte-corporativo" element={<CorporateReportPage />} />
+            <Route path="reporte-historico" element={<HistoricalReportPage />} />
           </Route>
         </>
       )}

@@ -15,7 +15,7 @@ export function useDashboardStats() {
 
   return useMemo(() => {
     const today = new Date();
-    const startOfWeekTime = startOfWeek(today, { weekStartsOn: 1 }).getTime();
+    const startOfWeekTime = startOfWeek(today, { weekStartsOn: 0 }).getTime();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
 
@@ -94,7 +94,7 @@ export function useDashboardStats() {
       hotelRankingByVisits,
       visitsOverTime: Object.entries(visitsOverTime).map(([date, visits]) => ({ date, visits })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
       newEmployeesLastMonth,
-      payrollsToReview: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.isActive && !emp.lastReviewedTimestamp).length,
+      payrollsToReview: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.isActive && (!emp.lastReviewedTimestamp || new Date(emp.lastReviewedTimestamp).getTime() < startOfWeekTime)).length,
       payrollsReviewedInPeriod: employees.filter(emp => emp.payrollType === 'Workrecord' && emp.lastReviewedTimestamp && new Date(emp.lastReviewedTimestamp).getTime() >= startOfWeekTime).length,
       blacklistedEmployees,
       employeesByHotel: sortedEmployeesByHotel,

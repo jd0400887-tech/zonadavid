@@ -238,9 +238,9 @@ function DashboardPage() {
               <Button onClick={() => setCustomReportDialogOpen(false)}>Cancelar</Button>
               <Button onClick={() => {
                 if (customStartDate && customEndDate) {
-                  navigate('/informes', {
+                  navigate('/reporte-historico', {
                     state: {
-                      title: 'Reporte Personalizado',
+                      title: 'Reporte Gerencial Personalizado',
                       startDate: new Date(customStartDate).toISOString(),
                       endDate: new Date(customEndDate).toISOString()
                     }
