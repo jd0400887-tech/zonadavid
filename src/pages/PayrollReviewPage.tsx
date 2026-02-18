@@ -5,7 +5,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import PeopleIcon from '@mui/icons-material/People';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { getWeek } from 'date-fns';
+import { getWeek, subWeeks } from 'date-fns';
 import { useEmployees } from '../hooks/useEmployees';
 import { useHotels } from '../hooks/useHotels';
 import type { Employee } from '../types';
@@ -128,8 +128,9 @@ export default function PayrollReviewPage() {
     }
 
     // Insert/Update into adoption_compliance_history
-    const currentYear = new Date().getFullYear();
-    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+    const lastWeek = subWeeks(new Date(), 1);
+    const currentYear = lastWeek.getFullYear();
+    const weekNumber = getWeek(lastWeek, { weekStartsOn: 1 });
 
     const { data: existingCompliance, error: fetchComplianceError } = await supabase
       .from('adoption_compliance_history')
@@ -183,8 +184,9 @@ export default function PayrollReviewPage() {
     updateEmployee({ id: selectedEmployeeForNA.id, lastReviewedTimestamp: new Date().toISOString() });
 
     // Insert a special record into adoption_compliance_history
-    const currentYear = new Date().getFullYear();
-    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+    const lastWeek = subWeeks(new Date(), 1);
+    const currentYear = lastWeek.getFullYear();
+    const weekNumber = getWeek(lastWeek, { weekStartsOn: 1 });
 
     const { error: insertComplianceError } = await supabase.from('adoption_compliance_history').insert({
       employee_id: selectedEmployeeForNA.id,
@@ -358,8 +360,9 @@ export default function PayrollReviewPage() {
     }
 
     // Delete from adoption_compliance_history for the current week
-    const currentYear = new Date().getFullYear();
-    const weekNumber = getWeek(new Date(), { weekStartsOn: 1 });
+    const lastWeek = subWeeks(new Date(), 1);
+    const currentYear = lastWeek.getFullYear();
+    const weekNumber = getWeek(lastWeek, { weekStartsOn: 1 });
     const { error: deleteComplianceError } = await supabase
       .from('adoption_compliance_history')
       .delete()

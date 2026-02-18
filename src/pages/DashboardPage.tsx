@@ -173,7 +173,6 @@ function DashboardPage() {
       <Box>
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
-
           <ManualAttendance />
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>
