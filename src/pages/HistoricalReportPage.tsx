@@ -66,18 +66,26 @@ const PillarContent = ({ data }: { data: HistoricalPillarData }) => {
         <Paper key={idx} sx={{ p: 3, mb: 4, height: 350, backgroundColor: 'rgba(0,0,0,0.2)' }}>
           <Typography variant="h6" gutterBottom>{chart.title}</Typography>
           <LineChart
-            series={chart.series.map(s => ({ data: s.data.map(d => d.value), label: s.label, area: true, color: s.label.includes('Ingresos') ? 'url(#hiresGradient)' : 'url(#attritionGradient)', stroke: s.label.includes('Ingresos') ? '#2e7d32' : '#d32f2f' }))}
+            series={chart.series.map(s => {
+              const seriesType = s.label.includes('Balance') ? 'bar' : 'line';
+              const color = s.label.includes('Positivo') ? '#2e7d32' : 
+                            s.label.includes('Negativo') ? '#d32f2f' :
+                            s.label.includes('Ingresos') ? '#4caf50' : '#f44336';
+              return {
+                data: s.data.map(d => d.value),
+                label: s.label,
+                type: seriesType,
+                color: color,
+                area: seriesType === 'line',
+                stack: s.label.includes('Balance') ? 'balance' : undefined,
+              };
+            })}
             xAxis={[{ scaleType: 'point', data: chart.series[0]?.data.map(d => d.date) || [], label: 'Meses' }]}
             height={250}
             margin={{ left: 50, right: 20, top: 40, bottom: 30 }}
             slotProps={{ legend: { direction: 'row', position: { vertical: 'top', horizontal: 'middle' }, padding: 0 } }}
-            sx={{ '.MuiLineElement-root': { strokeWidth: 3 }, '.MuiAreaElement-root': { opacity: 0.3 } }}
-          >
-            <defs>
-              <linearGradient id="hiresGradient" gradientTransform="rotate(90)"><stop offset="5%" stopColor="#4caf50" stopOpacity={0.8} /><stop offset="95%" stopColor="#4caf50" stopOpacity={0} /></linearGradient>
-              <linearGradient id="attritionGradient" gradientTransform="rotate(90)"><stop offset="5%" stopColor="#f44336" stopOpacity={0.8} /><stop offset="95%" stopColor="#f44336" stopOpacity={0} /></linearGradient>
-            </defs>
-          </LineChart>
+            sx={{ '.MuiAreaElement-root': { opacity: 0.2 } }}
+          />
         </Paper>
       ))}
     </Box>
@@ -115,18 +123,13 @@ export default function HistoricalReportPage() {
 
   return (
     <>
-      {!isDrawerOpen && (
-        <Fab color="primary" aria-label="open drawer" onClick={() => setIsDrawerOpen(true)} sx={{ position: 'fixed', top: 80, left: 16, zIndex: 1201 }}>
-          <MenuIcon />
-        </Fab>
-      )}
-
       <Drawer
         variant="temporary"
         open={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         sx={{ '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}
       >
+        <Toolbar />
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
             <Typography variant="h6" gutterBottom>Informe Gerencial</Typography>
@@ -150,6 +153,15 @@ export default function HistoricalReportPage() {
       </Drawer>
 
       <Box sx={{ flexGrow: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <IconButton onClick={() => setIsDrawerOpen(true)} color="primary" aria-label="open drawer" sx={{ mr: 2 }}>
+                <MenuIcon />
+            </IconButton>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                Análisis Histórico
+            </Typography>
+        </Box>
+
         {loading && <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /><Typography sx={{ ml: 2 }}>Cargando análisis histórico...</Typography></Box>}
         {error && <Alert severity="error" sx={{ mt: 4 }}>Error al cargar el informe: {error}</Alert>}
         
