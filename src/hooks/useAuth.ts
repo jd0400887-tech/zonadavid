@@ -67,11 +67,23 @@ export function useAuth() {
   const signOut = async () => {
     setLoading(true);
     try {
+      // 1. Limpieza agresiva de caché local antes de Supabase
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // 2. Cerrar sesión en Supabase
       await supabase.auth.signOut();
+      
+      // 3. Limpiar estados internos de React
       setSession(null);
       setProfile(null);
     } catch (err) {
       console.error('Error during signOut:', err);
+      // Fallback: si falla Supabase, igual limpiamos todo localmente
+      localStorage.clear();
+      sessionStorage.clear();
+      setSession(null);
+      setProfile(null);
     } finally {
       setLoading(false);
     }

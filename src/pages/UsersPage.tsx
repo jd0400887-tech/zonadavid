@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Box, Toolbar, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, CircularProgress, Chip } from '@mui/material';
+import { Box, Toolbar, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, CircularProgress, Chip, Checkbox, FormGroup, FormControlLabel } from '@mui/material';
 import { supabase } from '../utils/supabase';
 import { Profile } from '../types';
 
+const ALL_MODULES = [
+  'Dashboard',
+  'Empleados',
+  'Hoteles',
+  'Solicitudes',
+  'Aplicaciones',
+  'Reporte Asistencia',
+  'Revisión de Nómina',
+  'Seguimiento Workrecord'
+];
+
 export default function UsersPage() {
-  const [users, setUsers] = useState<(Profile & { email_auth?: string })[]>([]);
+  const [users, setUsers] = useState<(Profile & { permissions?: string[] })[]>([]);
   const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // 1. Obtener perfiles
       const { data: profiles, error: pError } = await supabase
         .from('profiles')
         .select('*');
@@ -62,6 +72,30 @@ export default function UsersPage() {
     }
   };
 
+  const handleTogglePermission = async (userId: string, module: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    const currentPermissions = user.permissions || [];
+    const newPermissions = currentPermissions.includes(module)
+      ? currentPermissions.filter(p => p !== module)
+      : [...currentPermissions, module];
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ permissions: newPermissions })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, permissions: newPermissions } : u));
+      setSnackbar({ open: true, message: 'Permisos actualizados', severity: 'success' });
+    } catch (error: any) {
+      setSnackbar({ open: true, message: 'Error: ' + error.message, severity: 'error' });
+    }
+  };
+
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}><CircularProgress /></Box>;
   }
@@ -79,8 +113,8 @@ export default function UsersPage() {
             <TableHead>
               <TableRow>
                 <TableCell><b>ID Usuario</b></TableCell>
-                <TableCell><b>Rol Actual</b></TableCell>
-                <TableCell><b>Zona Asignada</b></TableCell>
+                <TableCell><b>Rol y Zona</b></TableCell>
+                <TableCell><b>Módulos Permitidos</b></TableCell>
                 <TableCell><b>Acciones</b></TableCell>
               </TableRow>
             </TableHead>
@@ -92,30 +126,48 @@ export default function UsersPage() {
                     {user.role === 'ADMIN' && <Chip label="ADMIN" size="small" color="primary" sx={{ ml: 1 }} />}
                   </TableCell>
                   <TableCell>
-                    <FormControl size="small" fullWidth>
-                      <Select
-                        value={user.role}
-                        onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                      >
-                        <MenuItem value="ADMIN">ADMIN</MenuItem>
-                        <MenuItem value="COORDINATOR">COORDINADOR</MenuItem>
-                        <MenuItem value="INSPECTOR">INSPECTOR</MenuItem>
-                        <MenuItem value="RECRUITER">RECLUTADOR</MenuItem>
-                      </Select>
-                    </FormControl>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <FormControl size="small" fullWidth>
+                        <Select
+                          value={user.role}
+                          onChange={(e) => handleUpdateRole(user.id, e.target.value)}
+                        >
+                          <MenuItem value="ADMIN">ADMIN</MenuItem>
+                          <MenuItem value="COORDINATOR">COORDINADOR</MenuItem>
+                          <MenuItem value="INSPECTOR">INSPECTOR</MenuItem>
+                          <MenuItem value="RECRUITER">RECLUTADOR</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <FormControl size="small" fullWidth disabled={user.role === 'ADMIN' || user.role === 'RECRUITER'}>
+                        <Select
+                          value={user.assigned_zone || 'Ninguna'}
+                          onChange={(e) => handleUpdateZone(user.id, e.target.value)}
+                        >
+                          <MenuItem value="Ninguna">Ninguna / Todas</MenuItem>
+                          <MenuItem value="Centro">Centro</MenuItem>
+                          <MenuItem value="Norte">Norte</MenuItem>
+                          <MenuItem value="Noroeste">Noroeste</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
                   </TableCell>
                   <TableCell>
-                    <FormControl size="small" fullWidth disabled={user.role === 'ADMIN' || user.role === 'RECRUITER'}>
-                      <Select
-                        value={user.assigned_zone || 'Ninguna'}
-                        onChange={(e) => handleUpdateZone(user.id, e.target.value)}
-                      >
-                        <MenuItem value="Ninguna">Ninguna / Todas</MenuItem>
-                        <MenuItem value="Centro">Centro</MenuItem>
-                        <MenuItem value="Norte">Norte</MenuItem>
-                        <MenuItem value="Noroeste">Noroeste</MenuItem>
-                      </Select>
-                    </FormControl>
+                    <FormGroup sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
+                      {ALL_MODULES.map((module) => (
+                        <FormControlLabel
+                          key={module}
+                          control={
+                            <Checkbox 
+                              size="small"
+                              checked={(user.permissions || []).includes(module)}
+                              onChange={() => handleTogglePermission(user.id, module)}
+                              disabled={user.role === 'ADMIN'} // Admin tiene todo por defecto
+                            />
+                          }
+                          label={<Typography variant="caption">{module}</Typography>}
+                        />
+                      ))}
+                    </FormGroup>
                   </TableCell>
                   <TableCell>
                     <Typography variant="caption" color="text.secondary">
