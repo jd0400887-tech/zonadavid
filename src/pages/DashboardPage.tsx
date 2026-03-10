@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { useEmployees } from '../hooks/useEmployees';
 import { useAttendance } from '../hooks/useAttendance';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 import { useMonthlyGrowthStats } from '../hooks/useMonthlyGrowthStats';
+import { useAuth } from '../hooks/useAuth';
 
 // Components
 import StatCard from '../components/dashboard/StatCard';
@@ -34,6 +35,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import BlockIcon from '@mui/icons-material/Block';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 
 // Fix for default marker icon issue with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -50,6 +52,9 @@ const LazyPopup = lazy(() => import('react-leaflet').then(module => ({ default: 
 
 function DashboardPage() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const [selectedZone, setSelectedZone] = useState<'Todas' | 'Centro' | 'Norte' | 'Noroeste'>('Todas');
+  
   const { hotels } = useHotels();
   const { addRecord } = useAttendance({ start: null, end: null });
   
@@ -59,8 +64,19 @@ function DashboardPage() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  const stats = useDashboardStats();
-  const monthlyGrowthData = useMonthlyGrowthStats();
+  // Filtrar hoteles por zona antes de pasarlos a las estadísticas
+  const filteredHotels = useMemo(() => {
+    if (selectedZone === 'Todas') return hotels;
+    return hotels.filter(h => h.zone === selectedZone);
+  }, [hotels, selectedZone]);
+
+  const filteredHotelIds = useMemo(() => filteredHotels.map(h => h.id), [filteredHotels]);
+
+  const stats = useDashboardStats(filteredHotelIds);
+  const monthlyGrowthData = useMonthlyGrowthStats(filteredHotelIds);
+
+  const isRecruiter = profile?.role === 'RECRUITER';
+  const isAdminOrCoord = profile?.role === 'ADMIN' || profile?.role === 'COORDINATOR';
 
   const handleGenerateWeeklyReport = () => {
     const today = new Date();
@@ -165,8 +181,33 @@ function DashboardPage() {
     setSnackbarInfo(prev => ({ ...prev, open: false }));
   };
 
-  const hotelsWithLocation = hotels.filter(h => h.latitude != null && h.longitude != null);
+  const hotelsWithLocation = filteredHotels.filter(h => h.latitude != null && h.longitude != null);
   const mapCenter: [number, number] = hotelsWithLocation.length > 0 ? [hotelsWithLocation[0].latitude!, hotelsWithLocation[0].longitude!] : [40.7128, -74.0060];
+
+  if (isRecruiter) {
+    return (
+      <Box>
+        <Toolbar />
+        <Box sx={{ p: 3, textAlign: 'center', mt: 10 }}>
+          <Typography variant="h4" gutterBottom color="primary" sx={{ textShadow: '0 0 8px rgba(255, 87, 34, 0.5)' }}>
+            Panel de Reclutamiento
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+            Bienvenido. El panel de métricas generales está restringido para tu perfil.<br/>
+            Usa el menú lateral para gestionar solicitudes y aplicaciones.
+          </Typography>
+          <Button 
+            variant="contained" 
+            size="large" 
+            onClick={() => navigate('/solicitudes')}
+            startIcon={<AssignmentIcon />}
+          >
+            Ver Solicitudes de Personal
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -174,6 +215,41 @@ function DashboardPage() {
         <Toolbar />
         <Box component="main" sx={{ p: 3 }}>
           <ManualAttendance />
+          
+          {isAdminOrCoord && (
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Typography variant="subtitle1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                ZONA SELECCIONADA:
+              </Typography>
+              <ToggleButtonGroup
+                color="primary"
+                value={selectedZone}
+                exclusive
+                onChange={(_e, val) => val && setSelectedZone(val)}
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  '& .MuiToggleButton-root': {
+                    px: 3,
+                    borderColor: 'rgba(255, 87, 34, 0.3)',
+                    '&.Mui-selected': {
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                      }
+                    }
+                  }
+                }}
+              >
+                <ToggleButton value="Todas">Todas</ToggleButton>
+                <ToggleButton value="Centro">Centro</ToggleButton>
+                <ToggleButton value="Norte">Norte</ToggleButton>
+                <ToggleButton value="Noroeste">Noroeste</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          )}
+
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Hoteles Totales" value={stats.totalHotels} icon={<ApartmentIcon />} onClick={() => navigate('/hoteles')} /></Grid>
             <Grid item xs={12} sm={4} md={2}><StatCard title="Empleados Activos" value={stats.activeEmployees} icon={<PeopleIcon />} onClick={() => navigate('/empleados')} /></Grid>

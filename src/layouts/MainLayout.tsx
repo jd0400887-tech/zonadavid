@@ -16,20 +16,22 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import HomeIcon from '@mui/icons-material/Home'; // Icon for Home Location
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 
 const drawerWidth = 240;
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Empleados', icon: <PeopleIcon />, path: '/empleados' },
-  { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles' },
-  { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes' },
-  { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones' },
-  { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia' },
-  { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina' },
-  { text: 'Seguimiento Workrecord', icon: <QueryStatsIcon />, path: '/seguimiento-workrecord' },
+const allMenuItems = [
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR', 'RECRUITER'] },
+  { text: 'Usuarios', icon: <SupervisorAccountIcon />, path: '/usuarios', roles: ['ADMIN'] },
+  { text: 'Empleados', icon: <PeopleIcon />, path: '/empleados', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
+  { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
+  { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR', 'RECRUITER'] },
+  { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR', 'RECRUITER'] },
+  { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
+  { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
+  { text: 'Seguimiento Workrecord', icon: <QueryStatsIcon />, path: '/seguimiento-workrecord', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
 ];
 
 export default function MainLayout() {
@@ -37,8 +39,11 @@ export default function MainLayout() {
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const { signOut, session, updateUser } = useAuth(); // Get session and updateUser
+  const { signOut, session, profile, updateUser } = useAuth(); // Added profile
   const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats();
+
+  const userRole = profile?.role || 'INSPECTOR';
+  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
 
   // State for Home Location Dialog
   const [homeDialogOpen, setHomeDialogOpen] = useState(false);
@@ -183,9 +188,12 @@ export default function MainLayout() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Buenos días, David";
-    if (hour < 18) return "Buenas tardes, David";
-    return "Buenas noches, David";
+    const name = profile?.email?.split('@')[0] || 'Usuario';
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    
+    if (hour < 12) return `Buenos días, ${capitalize(name)}`;
+    if (hour < 18) return `Buenas tardes, ${capitalize(name)}`;
+    return `Buenas noches, ${capitalize(name)}`;
   };
 
   const getRequestStatus = (startDate: string) => {

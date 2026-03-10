@@ -14,10 +14,11 @@ import AdoptionTrackerPage from './pages/AdoptionTrackerPage'; // Import the new
 import CorporateReportPage from './pages/CorporateReportPage';
 import HistoricalReportPage from './pages/HistoricalReportPage';
 import LoginPage from './pages/LoginPage';
+import UsersPage from './pages/UsersPage';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const { session, loading } = useAuth();
+  const { session, profile, loading } = useAuth(); // Added profile
 
   if (loading) {
     return <div>Loading...</div>;
@@ -35,6 +36,7 @@ function App() {
           <Route path="/login" element={<Navigate to="/" />} />
           <Route path="/" element={<MainLayout />}>
             <Route index element={<DashboardPage />} />
+            <Route path="usuarios" element={profile?.role === 'ADMIN' ? <UsersPage /> : <Navigate to="/" />} />
             <Route path="empleados" element={<EmployeesPage />} />
             <Route path="hoteles" element={<HotelsPage />} />
             <Route path="hotel/:hotelId" element={<HotelDetailPage />} />

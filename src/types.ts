@@ -8,6 +8,14 @@ export interface Hotel {
   imageUrl: string | null;
   activeEmployees?: number;
   totalEmployees?: number;
+  zone: 'Centro' | 'Norte' | 'Noroeste';
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  role: 'ADMIN' | 'COORDINATOR' | 'INSPECTOR' | 'RECRUITER';
+  assigned_zone: 'Centro' | 'Norte' | 'Noroeste' | null;
 }
 
 export interface Employee {

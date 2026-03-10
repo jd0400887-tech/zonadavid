@@ -12,12 +12,27 @@ export interface MonthlyData {
   newApplications: number; // Add newApplications
 }
 
-export const useMonthlyGrowthStats = (months: number = 6) => {
+export const useMonthlyGrowthStats = (hotelIds?: string[], months: number = 6) => {
   const { employees, hotels } = useHotels();
   const { allRecords: allAttendanceRecords } = useAttendance({ start: null, end: null });
   const { applications: allApplications } = useApplications(); // Get allApplications
 
   return useMemo(() => {
+    // 1. FILTRAR DATOS BASE SI SE PROPORCIONAN HOTEL_IDS
+    const filteredHotels = hotelIds && hotelIds.length > 0 
+      ? hotels.filter(h => hotelIds.includes(h.id))
+      : hotels;
+    
+    const filteredHotelIdsSet = new Set(filteredHotels.map(h => h.id));
+
+    const filteredEmployees = hotelIds && hotelIds.length > 0
+      ? employees.filter(e => filteredHotelIdsSet.has(e.hotelId))
+      : employees;
+
+    const filteredAttendance = hotelIds && hotelIds.length > 0
+      ? allAttendanceRecords.filter(r => filteredHotelIdsSet.has(r.hotelId))
+      : allAttendanceRecords;
+
     const data: MonthlyData[] = [];
     const today = new Date();
 
@@ -29,7 +44,7 @@ export const useMonthlyGrowthStats = (months: number = 6) => {
       const monthLabel = format(start, 'MMM yyyy');
 
       // 1. Active Employees at the end of the month
-      const activeEmployees = employees.filter(e => {
+      const activeEmployees = filteredEmployees.filter(e => {
         const isActiveThisMonth = 
           e.isActive || 
           (e.lastReviewedTimestamp && new Date(e.lastReviewedTimestamp) > start);
@@ -37,15 +52,13 @@ export const useMonthlyGrowthStats = (months: number = 6) => {
       }).length;
 
       // 2. Active Hotels at the end of the month
-      const activeHotels = hotels.filter(h => {
-        // A simple heuristic: if a hotel has any employee, it's considered active.
-        // A more robust logic might use a `created_at` field for hotels.
-        const hasEmployees = employees.some(e => e.hotelId === h.id);
+      const activeHotels = filteredHotels.filter(h => {
+        const hasEmployees = filteredEmployees.some(e => e.hotelId === h.id);
         return hasEmployees;
       }).length;
 
       // 3. Visits during the month
-      const visits = allAttendanceRecords.filter(r => {
+      const visits = filteredAttendance.filter(r => {
         const recordDate = new Date(r.timestamp);
         return recordDate >= start && recordDate <= end;
       }).length;
@@ -61,10 +74,10 @@ export const useMonthlyGrowthStats = (months: number = 6) => {
         activeEmployees,
         activeHotels,
         visits,
-        newApplications, // Add newApplications
+        newApplications,
       });
     }
 
     return data;
-  }, [employees, hotels, allAttendanceRecords, allApplications, months]);
+  }, [employees, hotels, allAttendanceRecords, allApplications, months, hotelIds]);
 };
