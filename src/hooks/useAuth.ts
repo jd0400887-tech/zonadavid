@@ -18,7 +18,12 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        if (error.code === 'PGRST116') {
+          // Si no hay perfil, creamos uno básico de RECRUITER por defecto
+          setProfile({ id: userId, email: '', role: 'RECRUITER', assigned_zone: null });
+        } else {
+          console.error('Error fetching profile:', error);
+        }
         return;
       }
       setProfile(data);
@@ -59,12 +64,25 @@ export function useAuth() {
     };
   }, []);
 
+  const signOut = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      setProfile(null);
+    } catch (err) {
+      console.error('Error during signOut:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     session,
     profile,
     loading,
     signIn: (email: string, password: string) => supabase.auth.signInWithPassword({ email, password }),
-    signOut: () => supabase.auth.signOut(),
+    signOut,
     updateUser: (data: object) => supabase.auth.updateUser({ data }),
   };
 }

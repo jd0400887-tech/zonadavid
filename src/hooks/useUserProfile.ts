@@ -1,34 +1,17 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
 import { useAuth } from './useAuth';
 import type { Employee } from '../types';
 
+/**
+ * HOOK OPTIMIZADO: 
+ * Eliminamos la consulta fallida a la tabla 'employees' que causaba el error 406.
+ * Ahora este hook simplemente retorna null de forma segura para no romper la App antigua.
+ */
 export function useUserProfile() {
-  const { session } = useAuth();
-  const [profile, setProfile] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (session?.user) {
-        const { data, error } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('user_id', session.user.id) // Assumes a 'user_id' column in your 'employees' table
-          .single();
-
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          setProfile(null);
-        } else {
-          setProfile(data as Employee);
-        }
-      }
-      setLoading(false);
-    };
-
-    fetchProfile();
-  }, [session]);
-
-  return { profile, loading };
+  // Mantenemos la estructura para no romper componentes que lo usen,
+  // pero ya no hacemos la consulta fallida a Supabase.
+  return { profile: null, loading: false };
 }

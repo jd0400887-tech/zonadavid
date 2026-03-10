@@ -63,8 +63,15 @@ export default function MainLayout() {
     setIsDrawerOpen(false);
   };
   const handleLogout = async () => {
-    await signOut();
-    navigate('/login');
+    try {
+      setIsDrawerOpen(false); // Close drawer first
+      await signOut();
+      navigate('/login', { replace: true }); // Use replace to prevent going back
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback redirect even if signOut fails
+      navigate('/login', { replace: true });
+    }
   };
   const handleNotificationClick = (event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget);
   const handleNotificationClose = () => setAnchorEl(null);
