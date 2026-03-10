@@ -61,7 +61,14 @@ export const useStaffingRequests = () => {
 
   useEffect(() => {
     fetchRequests();
-  }, [fetchRequests]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Carga inicial al montar
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchRequests();
+    }
+  }, [session, fetchRequests]); // Recarga cuando la sesión está lista
 
   const activeRequests = useMemo(() => allRequests.filter(r => !r.is_archived), [allRequests]);
   const archivedRequests = useMemo(() => allRequests.filter(r => r.is_archived), [allRequests]);

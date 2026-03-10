@@ -1,8 +1,7 @@
 
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Toolbar, Button, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Toolbar, Button, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useHotels } from '../hooks/useHotels';
 import type { StaffingRequest } from '../types';
@@ -38,7 +37,7 @@ const statusColors: { [key in StaffingRequest['status']]: { bg: string, text: st
 };
 
 export default function StaffingRequestsPage() {
-  const { activeRequests, addRequest, updateRequest, archiveRequest, deleteRequest } = useStaffingRequestsContext();
+  const { activeRequests, loading, addRequest, updateRequest, archiveRequest, deleteRequest } = useStaffingRequestsContext();
   const { hotels } = useHotels();
 
   const [hotelFilter, setHotelFilter] = useState<string>('all');
@@ -48,6 +47,15 @@ export default function StaffingRequestsPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'archived'>('kanban');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
+
+  if (loading && activeRequests.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <CircularProgress size={60} thickness={4} />
+        <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>Cargando solicitudes...</Typography>
+      </Box>
+    );
+  }
 
   const handleOpenDialog = (request?: StaffingRequest) => {
     setEditingRequest(request || null);
