@@ -1,5 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Paper, Typography, Box } from '@mui/material';
+import { Paper, Typography, Box, useTheme } from '@mui/material';
 
 interface DashboardBarChartProps {
   data: { name: string; value: number }[];
@@ -22,6 +22,7 @@ const CustomYAxisTick = (props: any) => {
 };
 
 export function DashboardBarChart({ data, title }: DashboardBarChartProps) {
+  const theme = useTheme();
   if (!data || data.length === 0) {
     return (
       <Paper sx={{
@@ -29,10 +30,10 @@ export function DashboardBarChart({ data, title }: DashboardBarChartProps) {
         height: '300px', 
         display: 'flex', 
         flexDirection: 'column',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'rgba(0, 0, 0, 0.2)',
         border: '1px solid',
         borderColor: 'primary.main',
-        boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`
+        boxShadow: theme.palette.mode === 'light' ? '0 4px 12px rgba(0,0,0,0.05)' : `0 0 5px #FF5722, 0 0 10px #FF5722`
       }}>
         <Typography variant="h6">{title}</Typography>
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -48,10 +49,10 @@ export function DashboardBarChart({ data, title }: DashboardBarChartProps) {
   return (
     <Paper sx={{
       p: 2,
-      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+      backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'rgba(0, 0, 0, 0.2)',
       border: '1px solid',
       borderColor: 'primary.main',
-      boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`,
+      boxShadow: theme.palette.mode === 'light' ? '0 4px 12px rgba(0,0,0,0.05)' : `0 0 5px #FF5722, 0 0 10px #FF5722`,
       height: '420px', // Set a fixed height for the paper
       display: 'flex',
       flexDirection: 'column',

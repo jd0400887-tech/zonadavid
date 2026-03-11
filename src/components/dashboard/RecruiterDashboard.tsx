@@ -46,11 +46,11 @@ export default function RecruiterDashboard({ stats, selectedZone, onZoneChange }
         <Paper sx={{ 
           p: 0.5, 
           display: 'flex', 
-          backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+          backgroundColor: theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(0, 0, 0, 0.4)', 
           borderRadius: '12px',
           border: '1px solid',
-          borderColor: 'rgba(255, 87, 34, 0.3)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          borderColor: theme.palette.mode === 'light' ? 'rgba(255, 87, 34, 0.1)' : 'rgba(255, 87, 34, 0.3)',
+          boxShadow: theme.palette.mode === 'light' ? '0 2px 10px rgba(0,0,0,0.05)' : '0 4px 20px rgba(0,0,0,0.5)'
         }}>
           <ToggleButtonGroup
             value={selectedZone}
@@ -61,7 +61,7 @@ export default function RecruiterDashboard({ stats, selectedZone, onZoneChange }
               '& .MuiToggleButton-root': {
                 border: 'none',
                 borderRadius: '8px',
-                color: 'text.secondary',
+                color: theme.palette.text.secondary,
                 px: 3,
                 py: 0.5,
                 mx: 0.5,
@@ -78,7 +78,7 @@ export default function RecruiterDashboard({ stats, selectedZone, onZoneChange }
                   }
                 },
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backgroundColor: theme.palette.mode === 'light' ? 'rgba(255, 87, 34, 0.05)' : 'rgba(255, 255, 255, 0.05)',
                   color: 'primary.light'
                 }
               }
@@ -128,10 +128,10 @@ export default function RecruiterDashboard({ stats, selectedZone, onZoneChange }
         <Grid item xs={12}>
           <Paper sx={{ 
             p: 2, 
-            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'rgba(0, 0, 0, 0.2)',
             border: '1px solid',
             borderColor: 'primary.main',
-            boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`
+            boxShadow: theme.palette.mode === 'light' ? '0 4px 12px rgba(0,0,0,0.05)' : `0 0 5px #FF5722, 0 0 10px #FF5722`
           }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6" sx={{ color: 'text.primary' }}>Solicitudes Críticas (Sin cubrir totalmente)</Typography>

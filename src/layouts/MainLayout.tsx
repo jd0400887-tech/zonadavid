@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button, Paper } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button, Paper, useTheme } from '@mui/material';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { isToday, isTomorrow, isPast } from 'date-fns';
 
@@ -37,6 +37,7 @@ const allMenuItems = [
 export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const { signOut, session, profile, updateUser } = useAuth(); // Added profile
@@ -219,7 +220,15 @@ export default function MainLayout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'primary.main',
+          color: theme.palette.mode === 'light' ? 'text.primary' : 'white',
+          boxShadow: theme.palette.mode === 'light' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+        }}
+      >
         <Toolbar>
           <IconButton
             color="inherit"
@@ -242,7 +251,7 @@ export default function MainLayout() {
                   {getGreeting()}
                 </Typography>
                 <Typography variant="caption" sx={{ 
-                  color: 'text.secondary', 
+                  color: theme.palette.mode === 'light' ? 'text.secondary' : 'rgba(255,255,255,0.7)', 
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '1px',
@@ -256,15 +265,16 @@ export default function MainLayout() {
             <Grid item sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}> 
               <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                 <Paper sx={{ 
-                  backgroundColor: 'rgba(255, 87, 34, 0.05)',
-                  border: '1px solid rgba(255, 87, 34, 0.2)',
+                  backgroundColor: theme.palette.mode === 'light' ? 'rgba(255, 87, 34, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid',
+                  borderColor: theme.palette.mode === 'light' ? 'rgba(255, 87, 34, 0.2)' : 'rgba(255, 255, 255, 0.2)',
                   borderRadius: '8px',
                   px: 2,
                   py: 0.5,
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
                 }}>
                   <Typography variant="body2" sx={{ 
-                    color: 'primary.main',
+                    color: theme.palette.mode === 'light' ? 'primary.main' : 'white',
                     fontWeight: 600,
                     fontFamily: 'monospace',
                     letterSpacing: '0.5px'
@@ -332,23 +342,70 @@ export default function MainLayout() {
       </AppBar>
       
       <Drawer
-        variant="temporary"
-        open={isDrawerOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: drawerWidth,
-            backgroundColor: 'rgba(48, 48, 48, 0.5)', // More transparent background
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)', // For Safari
-            borderRight: '1px solid rgba(255, 255, 255, 0.12)' // A subtle border to define the edge
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
+          variant="temporary"
+          open={isDrawerOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              backgroundColor: theme.palette.mode === 'light' ? '#1E293B' : 'rgba(48, 48, 48, 0.9)',
+              color: theme.palette.mode === 'light' ? '#FFFFFF' : 'inherit',
+              backdropFilter: 'blur(10px)',
+              borderRight: 'none'
+            },
+          }}
+        >
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 900 }}>GESTION DA</Typography>
+          </Box>
+          <List sx={{ px: 1 }}>
+            {menuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => handleNavigation(item.path)}
+                    sx={{
+                      borderRadius: '8px',
+                      backgroundColor: isActive ? 'rgba(255, 87, 34, 0.15)' : 'transparent',
+                      color: isActive ? '#FF5722' : (theme.palette.mode === 'light' ? '#94A3B8' : 'grey.500'),
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 87, 34, 0.05)',
+                        color: '#FF5722'
+                      },
+                      '& .MuiListItemIcon-root': {
+                        color: isActive ? '#FF5722' : (theme.palette.mode === 'light' ? '#94A3B8' : 'grey.500'),
+                        minWidth: 40
+                      }
+                    }}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: isActive ? 700 : 500 }} />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+          <Box sx={{ flexGrow: 1 }} />
+          <List sx={{ px: 1, pb: 2 }}>
+            {(profile?.role === 'ADMIN' || (profile?.permissions || []).includes('Mi Domicilio')) && (
+              <ListItem disablePadding>
+                <ListItemButton onClick={handleOpenHomeDialog} sx={{ borderRadius: '8px', color: theme.palette.mode === 'light' ? '#94A3B8' : 'inherit' }}>
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><HomeIcon /></ListItemIcon>
+                  <ListItemText primary="Mi Domicilio" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+                </ListItemButton>
+              </ListItem>
+            )}
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleLogout} sx={{ borderRadius: '8px', color: theme.palette.mode === 'light' ? '#94A3B8' : 'inherit' }}>
+                <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}><LogoutIcon /></ListItemIcon>
+                <ListItemText primary="Cerrar Sesión" primaryTypographyProps={{ fontSize: '0.9rem' }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Drawer>
 
       <Box component="main" sx={{ flexGrow: 1, p: 3, pt: 1 }}>
         <Toolbar />

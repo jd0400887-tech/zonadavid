@@ -64,11 +64,20 @@ export default function StatCard({ title, value, icon, color = 'primary.main', o
 
   return (
     <Card sx={{
-      backgroundColor: 'rgba(0, 0, 0, 0.2)',
-      border: '1px solid',
-      borderColor: 'primary.main',
-      boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`,
-      height: '100%'
+      backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'rgba(0, 0, 0, 0.2)',
+      border: 'none',
+      borderLeft: theme.palette.mode === 'light' ? '4px solid #FF5722' : '1px solid #FF5722', // Borde grueso solo en modo claro
+      boxShadow: theme.palette.mode === 'light' 
+        ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' 
+        : `0 0 5px #FF5722, 0 0 10px #FF5722`,
+      height: '100%',
+      transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+      '&:hover': {
+        transform: theme.palette.mode === 'light' ? 'translateY(-4px)' : 'none',
+        boxShadow: theme.palette.mode === 'light' 
+          ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' 
+          : `0 0 15px #FF5722`,
+      }
     }}>
       {onClick ? (
         <CardActionArea onClick={onClick} sx={{ height: '100%' }}>

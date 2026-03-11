@@ -3,21 +3,15 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
 import { StaffingRequestsProvider } from './contexts/StaffingRequestsContext';
 import { AuthProvider } from './contexts/AuthContext';
 
 createRoot(document.getElementById('root')!).render(
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
-    <BrowserRouter>
-      <AuthProvider>
-        <StaffingRequestsProvider>
-          <App />
-        </StaffingRequestsProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </ThemeProvider>
+  <BrowserRouter>
+    <AuthProvider>
+      <StaffingRequestsProvider>
+        <App />
+      </StaffingRequestsProvider>
+    </AuthProvider>
+  </BrowserRouter>
 );

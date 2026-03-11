@@ -61,8 +61,34 @@ export const useStaffingRequests = () => {
 
   useEffect(() => {
     fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Carga inicial al montar
+
+    // Configurar suscripción en tiempo real más robusta
+    const channel = supabase
+      .channel('staffing_db_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'staffing_requests' },
+        (payload) => {
+          console.log('Cambio detectado en staffing_requests:', payload);
+          fetchRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'request_candidates' },
+        (payload) => {
+          console.log('Cambio detectado en request_candidates:', payload);
+          fetchRequests();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Estado de suscripción Realtime:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchRequests]);
 
   useEffect(() => {
     if (session?.user) {

@@ -28,117 +28,23 @@ const statusColors: { [key in StaffingRequest['status']]: { bg: string, text: st
   'Vencida': { bg: '#ffebe6', text: '#bf2600' },
 };
 
+import RefreshIcon from '@mui/icons-material/Refresh';
+
+// ... (dentro del componente StaffingRequestsPage)
 export default function StaffingRequestsPage() {
-  const { activeRequests, loading, addRequest, updateRequest, archiveRequest, deleteRequest } = useStaffingRequestsContext();
-  const { hotels } = useHotels();
-
-  const [zoneFilter, setZoneFilter] = useState<'Todas' | 'Centro' | 'Norte' | 'Noroeste'>('Todas');
-  const [hotelFilter, setHotelFilter] = useState<string>('all');
-  const [requestTypeFilter, setRequestTypeFilter] = useState<'all' | 'temporal' | 'permanente'>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingRequest, setEditingRequest] = useState<StaffingRequest | null>(null);
-  const [viewMode, setViewMode] = useState<'kanban' | 'archived'>('kanban');
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
-
-  const handleOpenDialog = (request?: StaffingRequest) => {
-    setEditingRequest(request || null);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingRequest(null);
-  };
-
-  const handleSubmit = async (formData: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName' | 'is_archived'>) => {
-    if (editingRequest) {
-      await updateRequest(editingRequest.id, formData);
-    } else {
-      await addRequest(formData);
-    }
-  };
-
-  const handleViewModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: 'kanban' | 'archived') => {
-    if (newMode !== null) {
-      setViewMode(newMode);
-    }
-  };
-
-  const handleDeleteRequest = (id: number) => {
-    setRequestToDelete(id);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (requestToDelete) {
-      await deleteRequest(requestToDelete);
-    }
-    setDeleteConfirmOpen(false);
-    setRequestToDelete(null);
-  };
-
-  const filteredRequests = useMemo(() => {
-    return activeRequests
-      .filter(req => {
-        if (zoneFilter === 'Todas') return true;
-        const hotel = hotels.find(h => h.id === req.hotel_id);
-        return hotel?.zone === zoneFilter;
-      })
-      .filter(req => hotelFilter === 'all' || req.hotel_id === hotelFilter)
-      .filter(req => requestTypeFilter === 'all' || req.request_type === requestTypeFilter)
-      .filter(req => {
-        if (!searchTerm) return true;
-        const lowerCaseSearch = searchTerm.toLowerCase();
-        return (req.role.toLowerCase().includes(lowerCaseSearch) || (req.notes && req.notes.toLowerCase().includes(lowerCaseSearch)));
-      });
-  }, [activeRequests, hotelFilter, searchTerm, zoneFilter, hotels]);
-
-  const requestsByStatus = useMemo(() => {
-    const grouped: { [key in StaffingRequest['status']]?: StaffingRequest[] } = {};
-    statusColumns.forEach(status => {
-      grouped[status] = filteredRequests.filter(req => req.status === status);
-    });
-    return grouped;
-  }, [filteredRequests]);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    if (!over) return;
-    const activeId = active.id;
-    const overId = over.id;
-    if (activeId === overId) return;
-    const activeContainer = active.data.current.sortable.containerId;
-    const overContainer = over.data.current?.sortable?.containerId || over.id;
-    if (activeContainer !== overContainer) {
-      updateRequest(activeId, { status: overContainer as StaffingRequest['status'] });
-    }
-  };
-
-  if (loading && activeRequests.length === 0) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <CircularProgress size={60} thickness={4} />
-        <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>Cargando solicitudes...</Typography>
-      </Box>
-    );
-  }
-
+  const { activeRequests, loading, addRequest, updateRequest, archiveRequest, deleteRequest, fetchRequests } = useStaffingRequestsContext();
+  // ...
   return (
     <Box component="main" sx={{ p: 1 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h4">Gestión de Solicitudes</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewModeChange} size="small">
-            <ToggleButton value="kanban"><ViewKanbanIcon /></ToggleButton>
-            <ToggleButton value="archived"><ArchiveIcon /></ToggleButton>
-          </ToggleButtonGroup>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>Nueva Solicitud</Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h4">Gestión de Solicitudes</Typography>
+          <IconButton onClick={() => fetchRequests()} disabled={loading} color="primary">
+            <RefreshIcon className={loading ? 'rotating' : ''} />
+          </IconButton>
         </Box>
-      </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+...
 
       {viewMode === 'kanban' ? (
         <>

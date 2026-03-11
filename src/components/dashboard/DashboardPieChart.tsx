@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, Sector } from 'recharts';
-import { Paper, Typography, Box } from '@mui/material';
+import { Paper, Typography, Box, useTheme } from '@mui/material';
 
 interface DashboardPieChartProps {
   data: { name: string; value: number }[];
@@ -59,6 +59,7 @@ const renderActiveShape = (props: any) => {
 
 export default function DashboardPieChart({ data, title }: DashboardPieChartProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const theme = useTheme();
 
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index);
@@ -68,11 +69,11 @@ export default function DashboardPieChart({ data, title }: DashboardPieChartProp
     return (
       <Paper sx={{
         p: 2,
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        height: '420px',
+        backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'rgba(0, 0, 0, 0.2)',
         border: '1px solid',
         borderColor: 'primary.main',
-        boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`
+        boxShadow: theme.palette.mode === 'light' ? '0 4px 12px rgba(0,0,0,0.05)' : `0 0 5px #FF5722, 0 0 10px #FF5722`
       }}>
         <Typography variant="h6">{title}</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -85,10 +86,10 @@ export default function DashboardPieChart({ data, title }: DashboardPieChartProp
   return (
     <Paper sx={{
       p: 2,
-      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+      backgroundColor: theme.palette.mode === 'light' ? '#FFFFFF' : 'rgba(0, 0, 0, 0.2)',
       border: '1px solid',
       borderColor: 'primary.main',
-      boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`,
+      boxShadow: theme.palette.mode === 'light' ? '0 4px 12px rgba(0,0,0,0.05)' : `0 0 5px #FF5722, 0 0 10px #FF5722`,
       height: '420px', // Match BarChart height
       display: 'flex',
       flexDirection: 'column'
