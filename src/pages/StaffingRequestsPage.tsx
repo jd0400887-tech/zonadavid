@@ -34,6 +34,7 @@ export default function StaffingRequestsPage() {
 
   const [zoneFilter, setZoneFilter] = useState<'Todas' | 'Centro' | 'Norte' | 'Noroeste'>('Todas');
   const [hotelFilter, setHotelFilter] = useState<string>('all');
+  const [requestTypeFilter, setRequestTypeFilter] = useState<'all' | 'temporal' | 'permanente'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<StaffingRequest | null>(null);
@@ -86,6 +87,7 @@ export default function StaffingRequestsPage() {
         return hotel?.zone === zoneFilter;
       })
       .filter(req => hotelFilter === 'all' || req.hotel_id === hotelFilter)
+      .filter(req => requestTypeFilter === 'all' || req.request_type === requestTypeFilter)
       .filter(req => {
         if (!searchTerm) return true;
         const lowerCaseSearch = searchTerm.toLowerCase();
@@ -142,10 +144,10 @@ export default function StaffingRequestsPage() {
         <>
           <Paper sx={{ p: 2, mb: 3 }}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={3}>
                 <TextField fullWidth label="Buscar por Cargo o Notas" variant="outlined" size="small" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }} />
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={4} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Filtrar por Zona</InputLabel>
                   <Select value={zoneFilter} label="Filtrar por Zona" onChange={(e) => { setZoneFilter(e.target.value as any); setHotelFilter('all'); }}>
@@ -156,7 +158,7 @@ export default function StaffingRequestsPage() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={4} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Hotel</InputLabel>
                   <Select value={hotelFilter} label="Hotel" onChange={(e) => setHotelFilter(e.target.value)}>
@@ -164,6 +166,16 @@ export default function StaffingRequestsPage() {
                     {hotels.filter(h => zoneFilter === 'Todas' || h.zone === zoneFilter).map(hotel => (
                       <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
                     ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={4} md={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Tipo</InputLabel>
+                  <Select value={requestTypeFilter} label="Tipo" onChange={(e) => setRequestTypeFilter(e.target.value as any)}>
+                    <MenuItem value="all">Todos</MenuItem>
+                    <MenuItem value="temporal">Temporal</MenuItem>
+                    <MenuItem value="permanente">Permanente</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

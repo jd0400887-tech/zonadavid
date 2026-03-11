@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid, Tabs, Tab, Box, List, ListItem, ListItemText, Typography, Chip, Stack } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid, Tabs, Tab, Box, List, ListItem, ListItemText, Typography, Chip, Stack, Autocomplete } from '@mui/material';
 import { useHotels } from '../../hooks/useHotels';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStaffingRequestsContext } from '../../contexts/StaffingRequestsContext';
@@ -38,26 +38,16 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
   const [selectedExistingEmployeeId, setSelectedExistingEmployeeId] = useState('');
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
 
-  // --- City & Employee Filter Logic ---
-  const [selectedCity, setSelectedCity] = useState<string>('all');
-
-  const hotelsWithEmployees = useMemo(() => {
-    const hotelsWithStaff = new Set(employees.map(emp => emp.hotelId));
-    return hotels.filter(hotel => hotelsWithStaff.has(hotel.id));
-  }, [employees, hotels]);
-
-  const uniqueCities = useMemo(() => {
-    const cities = new Set(hotelsWithEmployees.map(hotel => hotel.city));
-    return ['all', ...Array.from(cities).sort()];
-  }, [hotelsWithEmployees]);
+  // --- Zone & Hotel Filter Logic ---
+  const [selectedZone, setSelectedZone] = useState<string>('all');
 
   const filteredHotels = useMemo(() => {
-    if (selectedCity === 'all') {
-      return hotelsWithEmployees;
+    if (selectedZone === 'all') {
+      return hotels;
     }
-    return hotelsWithEmployees.filter(hotel => hotel.city === selectedCity);
-  }, [hotelsWithEmployees, selectedCity]);
-  // --- End City & Employee Filter Logic ---
+    return hotels.filter(hotel => hotel.zone === selectedZone);
+  }, [hotels, selectedZone]);
+  // --- End Zone Filter Logic ---
 
   const filteredEmployees = useMemo(() => {
     if (!employeeSearchTerm) return employees;
@@ -76,18 +66,18 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
         setHistory(historyData);
       };
       loadHistory();
-      // Set the initial city filter based on the hotel in the initial data
+      // Set the initial zone filter based on the hotel in the initial data
       const initialHotel = hotels.find(h => h.id === initialData.hotel_id);
-      if (initialHotel) {
-        setSelectedCity(initialHotel.city);
+      if (initialHotel && initialHotel.zone) {
+        setSelectedZone(initialHotel.zone);
       } else {
-        setSelectedCity('all');
+        setSelectedZone('all');
       }
     } else {
       setFormData(defaultState);
       setHistory([]);
       setTab(0);
-      setSelectedCity('all');
+      setSelectedZone('all');
     }
   }, [initialData, open, fetchHistory, hotels]);
 
@@ -130,39 +120,45 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel id="city-select-label">Filtrar por Ciudad</InputLabel>
+                <InputLabel id="zone-select-label">Filtrar por Zona</InputLabel>
                 <Select
-                  labelId="city-select-label"
-                  value={selectedCity}
-                  label="Filtrar por Ciudad"
+                  labelId="zone-select-label"
+                  value={selectedZone}
+                  label="Filtrar por Zona"
                   onChange={(e) => {
-                    setSelectedCity(e.target.value as string);
+                    setSelectedZone(e.target.value as string);
                     // Reset hotel selection if the current hotel is not in the newly filtered list
-                    if (formData.hotel_id && !filteredHotels.some(h => h.id === formData.hotel_id && h.city === e.target.value)) {
+                    if (formData.hotel_id && !filteredHotels.some(h => h.id === formData.hotel_id && h.zone === e.target.value)) {
                       setFormData(prev => ({ ...prev, hotel_id: '' }));
                     }
                   }}
                 >
-                  <MenuItem value="all">Todas las Ciudades</MenuItem>
-                  {uniqueCities.map(city => (
-                    <MenuItem key={city} value={city}>{city}</MenuItem>
-                  ))}
+                  <MenuItem value="all">Todas las Zonas</MenuItem>
+                  <MenuItem value="Centro">Centro</MenuItem>
+                  <MenuItem value="Norte">Norte</MenuItem>
+                  <MenuItem value="Noroeste">Noroeste</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel id="hotel-select-label">Hotel</InputLabel>
-                <Select 
-                  labelId="hotel-select-label" 
-                  name="hotel_id" 
-                  value={formData.hotel_id} 
-                  onChange={handleChange} 
-                  label="Hotel"
-                >
-                  {filteredHotels.map(hotel => (<MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                options={filteredHotels}
+                getOptionLabel={(option) => option.name}
+                value={hotels.find(h => h.id === formData.hotel_id) || null}
+                onChange={(_event, newValue) => {
+                  setFormData(prev => ({ ...prev, hotel_id: newValue ? newValue.id : '' }));
+                }}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    label="Buscar Hotel" 
+                    placeholder="Escribe el nombre del hotel..." 
+                    variant="outlined"
+                    fullWidth 
+                  />
+                )}
+                noOptionsText="No se encontraron hoteles en esta zona"
+              />
             </Grid>
             {/* Other form controls */}
             <Grid item xs={12} sm={6}>
