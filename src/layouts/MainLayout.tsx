@@ -23,15 +23,15 @@ import { useDashboardStats } from '../hooks/useDashboardStats';
 const drawerWidth = 240;
 
 const allMenuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR', 'RECRUITER'] },
-  { text: 'Usuarios', icon: <SupervisorAccountIcon />, path: '/usuarios', roles: ['ADMIN'] },
-  { text: 'Empleados', icon: <PeopleIcon />, path: '/empleados', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
-  { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
-  { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR', 'RECRUITER'] },
-  { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR', 'RECRUITER'] },
-  { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
-  { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
-  { text: 'Seguimiento Workrecord', icon: <QueryStatsIcon />, path: '/seguimiento-workrecord', roles: ['ADMIN', 'COORDINATOR', 'INSPECTOR'] },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Usuarios', icon: <SupervisorAccountIcon />, path: '/usuarios' },
+  { text: 'Empleados', icon: <PeopleIcon />, path: '/empleados' },
+  { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles' },
+  { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes' },
+  { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones' },
+  { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia' },
+  { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina' },
+  { text: 'Seguimiento Workrecord', icon: <QueryStatsIcon />, path: '/seguimiento-workrecord' },
 ];
 
 export default function MainLayout() {
@@ -42,8 +42,13 @@ export default function MainLayout() {
   const { signOut, session, profile, updateUser } = useAuth(); // Added profile
   const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats();
 
-  const userRole = profile?.role || 'INSPECTOR';
-  const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
+  const menuItems = allMenuItems.filter(item => {
+    if (profile?.role === 'ADMIN') return true; // Admin ve todo siempre
+    if (item.text === 'Usuarios') return false; // Solo Admin ve Usuarios
+    
+    // El resto depende de los permisos marcados
+    return (profile?.permissions || []).includes(item.text);
+  });
 
   // State for Home Location Dialog
   const [homeDialogOpen, setHomeDialogOpen] = useState(false);
