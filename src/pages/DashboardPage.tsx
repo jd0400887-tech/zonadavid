@@ -186,37 +186,32 @@ function DashboardPage() {
 
   if (isRecruiter) {
     return (
-      <Box>
-        <Toolbar />
-        <Box sx={{ p: 3, textAlign: 'center', mt: 10 }}>
-          <Typography variant="h4" gutterBottom color="primary" sx={{ textShadow: '0 0 8px rgba(255, 87, 34, 0.5)' }}>
-            Panel de Reclutamiento
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-            Bienvenido. El panel de métricas generales está restringido para tu perfil.<br/>
-            Usa el menú lateral para gestionar solicitudes y aplicaciones.
-          </Typography>
-          <Button 
-            variant="contained" 
-            size="large" 
-            onClick={() => navigate('/solicitudes')}
-            startIcon={<AssignmentIcon />}
-          >
-            Ver Solicitudes de Personal
-          </Button>
-        </Box>
+      <Box sx={{ p: 3, textAlign: 'center', mt: 5 }}>
+        <Typography variant="h4" gutterBottom color="primary" sx={{ textShadow: '0 0 8px rgba(255, 87, 34, 0.5)' }}>
+          Panel de Reclutamiento
+        </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+          Bienvenido. El panel de métricas generales está restringido para tu perfil.<br/>
+          Usa el menú lateral para gestionar solicitudes y aplicaciones.
+        </Typography>
+        <Button 
+          variant="contained" 
+          size="large" 
+          onClick={() => navigate('/solicitudes')}
+          startIcon={<AssignmentIcon />}
+        >
+          Ver Solicitudes de Personal
+        </Button>
       </Box>
     );
   }
 
   return (
     <>
-      <Box>
-        <Toolbar />
-        <Box component="main" sx={{ p: 3 }}>
-          <ManualAttendance />
-          
-          {isAdminOrCoord && (
+      <Box component="main" sx={{ p: 1 }}>
+        <ManualAttendance />
+        
+        {isAdminOrCoord && (
             <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="subtitle1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                 ZONA SELECCIONADA:
@@ -341,7 +336,6 @@ function DashboardPage() {
         </Box>
         <Fab color="primary" aria-label="registrar asistencia" sx={{ position: 'fixed', bottom: 32, right: 32, transition: 'box-shadow 0.3s ease-in-out', '&:hover': { boxShadow: `0 0 12px 3px #FF5722`, } }} onClick={handleCheckIn} disabled={isCheckingIn}>{isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon />}</Fab>
         <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}><Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
-      </Box>
     </>
   );
 }

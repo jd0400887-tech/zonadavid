@@ -7,7 +7,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import SearchIcon from '@mui/icons-material/Search';
 import ApartmentIcon from '@mui/icons-material/Apartment';
-import PeopleIcon from '@mui/icons-material/People'; // Import PeopleIcon for the new filter
+import PeopleIcon from '@mui/icons-material/People';
 
 import { useHotels } from '../hooks/useHotels';
 import type { Hotel } from '../types';
@@ -21,24 +21,21 @@ export default function HotelsPage() {
   const { hotels, addHotel, updateHotel, deleteHotel, uploadHotelImage } = useHotels();
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Initialize state from localStorage, defaulting to true
   const [showHotelsWithEmployees, setShowHotelsWithEmployees] = useState(() => {
     const saved = localStorage.getItem('showHotelsWithEmployeesFilter');
-    // If 'saved' is not null, parse it; otherwise, default to true.
     return saved !== null ? JSON.parse(saved) : true;
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentHotel, setCurrentHotel] = useState<Partial<Hotel>>({});
   
-  // Effect to save the filter state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('showHotelsWithEmployeesFilter', JSON.stringify(showHotelsWithEmployees));
   }, [showHotelsWithEmployees]);
 
   const filteredHotels = hotels.filter(hotel =>
     hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    (!showHotelsWithEmployees || (hotel.totalEmployees && hotel.totalEmployees > 0)) // Filter logic remains the same
+    (!showHotelsWithEmployees || (hotel.totalEmployees && hotel.totalEmployees > 0))
   );
 
   const handleOpenAddModal = () => {
@@ -62,11 +59,8 @@ export default function HotelsPage() {
 
   const handleSave = () => {
     if (currentHotel.id) {
-      // Find the full hotel object from the current hotels state to get the latest imageUrl
       const existingHotel = hotels.find(h => h.id === currentHotel.id);
       const hotelToUpdate: Partial<Hotel> = { ...currentHotel };
-
-      // If imageUrl is missing in currentHotel but present in existingHotel, add it
       if (!hotelToUpdate.imageUrl && existingHotel?.imageUrl) {
         hotelToUpdate.imageUrl = existingHotel.imageUrl;
       }
@@ -83,157 +77,122 @@ export default function HotelsPage() {
     }
   };
 
-  const modalTitle = currentHotel.id ? "Editar Hotel" : "Añadir Nuevo Hotel";
-
   const handleHotelImport = async (parsedData: Partial<Hotel>[]) => {
     let successCount = 0;
     let errorCount = 0;
-
     for (const item of parsedData) {
       if (item.name && item.city && item.address) {
         const hotelData = { ...item };
-        if ('imagenUrl' in hotelData) {
-          hotelData.imageUrl = (hotelData as any).imagenUrl;
-          delete (hotelData as any).imagenUrl;
-        }
         await addHotel(hotelData);
         successCount++;
       } else {
         errorCount++;
       }
     }
-
     return { successCount, errorCount };
   };
 
   return (
-    <Box>
-      <Toolbar />
-      <Box component="main" sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4">Gestión de Hoteles</Typography>
-          <Stack direction="row" spacing={2}>
-            <BulkImportButton<Partial<Hotel>>
-              buttonText="Importar Hoteles (CSV)"
-              requiredHeaders={['name', 'city', 'address']}
-              onDataParsed={handleHotelImport}
-            />
-            <Button variant="outlined" startIcon={<SaveAltIcon />} onClick={() => exportHotelsToExcel(filteredHotels)}>
-              Exportar a Excel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleOpenAddModal}
-              sx={{
-                transition: 'box-shadow 0.3s ease-in-out',
-                '&:hover': {
-                  boxShadow: `0 0 8px 2px #FF5722`,
-                }
-              }}
-            >
-              Añadir Hotel
-            </Button>
-          </Stack>
-        </Box>
-
-        <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Buscar hotel por nombre..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
+    <Box component="main" sx={{ p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h4">Gestión de Hoteles</Typography>
+        <Stack direction="row" spacing={2}>
+          <BulkImportButton<Partial<Hotel>>
+            buttonText="Importar Hoteles (CSV)"
+            requiredHeaders={['name', 'city', 'address']}
+            onDataParsed={handleHotelImport}
+          />
+          <Button variant="outlined" startIcon={<SaveAltIcon />} onClick={() => exportHotelsToExcel(filteredHotels)}>
+            Exportar a Excel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenAddModal}
+            sx={{
+              transition: 'box-shadow 0.3s ease-in-out',
+              '&:hover': { boxShadow: `0 0 8px 2px #FF5722` }
             }}
-          />
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showHotelsWithEmployees}
-                onChange={(e) => setShowHotelsWithEmployees(e.target.checked)}
-                name="showHotelsWithEmployees"
-                color="primary"
-              />
-            }
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <PeopleIcon sx={{ mr: 0.5 }} /> Hoteles con personal
-              </Box>
-            }
-            sx={{ flexShrink: 0, ml: 1 }}
-          />
-        </Paper>
-
-        {filteredHotels.length > 0 ? (
-          <Masonry columns={{ xs: 1, sm: 2, md: 3, lg: 4 }} spacing={3}>
-            {filteredHotels.map((hotel) => (
-              <Card key={hotel.id}>
-                {hotel.imageUrl ? (
-                  <CardMedia
-                    component="img"
-                    height="140"
-                    image={hotel.imageUrl}
-                    alt={hotel.name}
-                  />
-                ) : (
-                  <Box sx={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.800' }}>
-                    <ApartmentIcon sx={{ fontSize: 60, color: 'grey.500' }} />
-                  </Box>
-                )}
-                <CardContent>
-                  <Typography gutterBottom variant="h5" component="div">
-                    <Link component={RouterLink} to={`/hotel/${hotel.id}`} sx={{ color: 'text.primary', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                      {hotel.name}
-                    </Link>
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {hotel.city} - {hotel.address}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Personal: {hotel.activeEmployees} activos / {hotel.totalEmployees} en total
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ justifyContent: 'flex-end' }}>
-                  <IconButton aria-label="edit" onClick={() => handleOpenEditModal(hotel)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton aria-label="delete" onClick={() => handleDelete(hotel.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </CardActions>
-              </Card>
-            ))}
-          </Masonry>
-        ) : (
-          <Paper sx={{ mt: 2 }}>
-            <EmptyState 
-              icon={<ApartmentIcon />}
-              title="No se encontraron hoteles"
-              subtitle="Intenta con otro término de búsqueda o añade un nuevo hotel."
-            />
-          </Paper>
-        )}
-
-        <FormModal
-          open={isModalOpen}
-          onClose={handleCloseModal}
-          onSave={handleSave}
-          title={modalTitle}
-        >
-          <HotelForm
-            hotelData={currentHotel}
-            onFormChange={handleFormChange}
-            uploadHotelImage={uploadHotelImage}
-            isEditMode={!!currentHotel.id}
-          />
-        </FormModal>
+          >
+            Añadir Hotel
+          </Button>
+        </Stack>
       </Box>
+
+      <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          size="small"
+          placeholder="Buscar hotel por nombre..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showHotelsWithEmployees}
+              onChange={(e) => setShowHotelsWithEmployees(e.target.checked)}
+              size="small"
+              color="primary"
+            />
+          }
+          label={
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <PeopleIcon sx={{ mr: 0.5, fontSize: 20 }} /> <Typography variant="body2">Hoteles con personal</Typography>
+            </Box>
+          }
+          sx={{ flexShrink: 0, ml: 1 }}
+        />
+      </Paper>
+
+      {filteredHotels.length > 0 ? (
+        <Masonry columns={{ xs: 1, sm: 2, md: 3, lg: 4 }} spacing={3}>
+          {filteredHotels.map((hotel) => (
+            <Card key={hotel.id}>
+              {hotel.imageUrl ? (
+                <CardMedia component="img" height="140" image={hotel.imageUrl} alt={hotel.name} />
+              ) : (
+                <Box sx={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.800' }}>
+                  <ApartmentIcon sx={{ fontSize: 60, color: 'grey.500' }} />
+                </Box>
+              )}
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="div">
+                  <Link component={RouterLink} to={`/hotel/${hotel.id}`} sx={{ color: 'text.primary', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                    {hotel.name}
+                  </Link>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {hotel.city} - {hotel.address}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Personal: {hotel.activeEmployees} activos / {hotel.totalEmployees} en total
+                </Typography>
+              </CardContent>
+              <CardActions sx={{ justifyContent: 'flex-end' }}>
+                <IconButton aria-label="edit" onClick={() => handleOpenEditModal(hotel)}><EditIcon /></IconButton>
+                <IconButton aria-label="delete" onClick={() => handleDelete(hotel.id)}><DeleteIcon /></IconButton>
+              </CardActions>
+            </Card>
+          ))}
+        </Masonry>
+      ) : (
+        <Paper sx={{ mt: 2 }}>
+          <EmptyState icon={<ApartmentIcon />} title="No se encontraron hoteles" subtitle="Intenta con otro término de búsqueda o añade un nuevo hotel." />
+        </Paper>
+      )}
+
+      <FormModal open={isModalOpen} onClose={handleCloseModal} onSave={handleSave} title={currentHotel.id ? "Editar Hotel" : "Añadir Nuevo Hotel"}>
+        <HotelForm hotelData={currentHotel} onFormChange={handleFormChange} uploadHotelImage={uploadHotelImage} isEditMode={!!currentHotel.id} />
+      </FormModal>
     </Box>
   );
 }

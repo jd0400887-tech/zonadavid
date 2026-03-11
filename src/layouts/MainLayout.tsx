@@ -320,7 +320,7 @@ export default function MainLayout() {
         {drawerContent}
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, pt: 1 }}>
         <Toolbar />
         <Outlet />
       </Box>

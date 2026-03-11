@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { TextField, Button, Box, Grid, Typography } from '@mui/material';
+import { TextField, Button, Box, Grid, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import type { Hotel } from '../../types';
@@ -56,6 +56,22 @@ export default function HotelForm({ hotelData, onFormChange, uploadHotelImage, i
         onChange={(e) => onFormChange('name', e.target.value)}
         required
       />
+      <Box sx={{ mt: 2, mb: 1 }}>
+        <FormControl fullWidth variant="outlined" required>
+          <InputLabel id="zone-label">Zona</InputLabel>
+          <Select
+            labelId="zone-label"
+            id="zone"
+            value={hotelData.zone || 'Centro'}
+            onChange={(e) => onFormChange('zone', e.target.value)}
+            label="Zona"
+          >
+            <MenuItem value="Centro">Centro</MenuItem>
+            <MenuItem value="Norte">Norte</MenuItem>
+            <MenuItem value="Noroeste">Noroeste</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
       <TextField
         margin="dense"
         id="city"

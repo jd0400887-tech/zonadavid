@@ -25,6 +25,7 @@ export default function EmployeesPage() {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
+  const [zoneFilter, setZoneFilter] = useState('all');
   const [hotelFilter, setHotelFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
 
@@ -53,6 +54,12 @@ export default function EmployeesPage() {
         return false;
       }
 
+      // Zone Filter
+      if (zoneFilter !== 'all') {
+        const hotel = hotels.find(h => h.id === employee.hotelId);
+        if (hotel?.zone !== zoneFilter) return false;
+      }
+
       // Hotel Filter
       if (hotelFilter && employee.hotelId !== hotelFilter) {
         return false;
@@ -60,7 +67,7 @@ export default function EmployeesPage() {
 
       return true;
     });
-  }, [employees, statusFilter, searchQuery, hotelFilter, searchParams]);
+  }, [employees, statusFilter, searchQuery, hotelFilter, searchParams, zoneFilter, hotels]);
 
   const handleOpenAddModal = () => {
     setCurrentEmployee({ isActive: true, isBlacklisted: false, payrollType: 'timesheet' });
@@ -121,18 +128,8 @@ export default function EmployeesPage() {
     let successCount = 0;
     let errorCount = 0;
 
-
-
     for (const item of parsedData) {
       if (item.name && item.hotelId && item.role && item.payrollType) {
-      let currentHotel = hotels.find((h) => h.id === item.hotelId);
-      if (!currentHotel) {
-        console.warn(
-          `Employee "${item.name}" is associated with a missing hotel ID "${item.hotelId}". Displaying as "Hotel Desconocido".`
-        );
-        currentHotel = { id: 'unknown', name: 'Hotel Desconocido', address: 'N/A', city: 'Desconocida', latitude: 0, longitude: 0, imageUrl: '' };
-      }
-
         addEmployee({
           name: item.name,
           hotelId: item.hotelId,
@@ -151,105 +148,107 @@ export default function EmployeesPage() {
   };
 
   return (
-    <Box>
-      <Toolbar />
-      <Box component="main" sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-          <Typography variant="h4">Gestión de Empleados</Typography>
-          <Stack direction="row" spacing={2}>
-            <BulkImportButton<Partial<Employee>>
-              buttonText="Importar Empleados (CSV)"
-              requiredHeaders={['name', 'hotelId', 'role', 'payrollType']}
-              onDataParsed={handleEmployeeImport}
-            />
-            <Button variant="outlined" startIcon={<SaveAltIcon />} onClick={() => exportEmployeesToExcel(filteredEmployees, hotels)}>
-              Exportar a Excel
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleOpenAddModal}
-              sx={{
-                transition: 'box-shadow 0.3s ease-in-out',
-                '&:hover': {
-                  boxShadow: `0 0 8px 2px #FF5722`,
-                }
-              }}
-            >
-              Añadir Empleado
-            </Button>
-          </Stack>
-        </Box>
-
-        <EmployeeFilters 
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
-          hotels={hotels}
-          hotelFilter={hotelFilter}
-          onHotelChange={setHotelFilter}
-        />
-
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-          <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewChange}>
-            <ToggleButton value="grid" aria-label="grid view">
-              <ViewModuleIcon />
-            </ToggleButton>
-            <ToggleButton value="table" aria-label="table view">
-              <ViewListIcon />
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        {filteredEmployees.length > 0 ? (
-          viewMode === 'grid' ? (
-            <EmployeeGrid 
-              employees={filteredEmployees} 
-              hotels={hotels} 
-              onEdit={handleOpenEditModal} 
-              onDelete={handleDeleteRequest} 
-            />
-          ) : (
-            <EmployeeTable 
-              employees={filteredEmployees} 
-              hotels={hotels} 
-              onEdit={handleOpenEditModal} 
-              onDelete={handleDeleteRequest} 
-            />
-          )
-        ) : (
-          <Paper sx={{ mt: 2 }}>
-            <EmptyState 
-              icon={<SearchIcon />}
-              title="No se encontraron empleados"
-              subtitle="Intenta cambiar los filtros o el término de búsqueda."
-            />
-          </Paper>
-        )}
-
-        <FormModal
-          open={isModalOpen}
-          onClose={handleCloseModal}
-          onSave={handleSave}
-          title={modalTitle}
-        >
-          <EmployeeForm
-            employeeData={currentEmployee}
-            onFormChange={handleFormChange}
-            hotels={hotels}
-            onToggleBlacklist={handleToggleBlacklist}
+    <Box component="main" sx={{ p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h4">Gestión de Empleados</Typography>
+        <Stack direction="row" spacing={2}>
+          <BulkImportButton<Partial<Employee>>
+            buttonText="Importar Empleados (CSV)"
+            requiredHeaders={['name', 'hotelId', 'role', 'payrollType']}
+            onDataParsed={handleEmployeeImport}
           />
-        </FormModal>
-
-        <ConfirmationDialog
-          open={isConfirmOpen}
-          onClose={() => setIsConfirmOpen(false)}
-          onConfirm={handleConfirmDelete}
-          title="Confirmar Eliminación"
-          content="¿Estás seguro de que quieres eliminar este empleado? Esta acción no se puede deshacer."
-        />
+          <Button variant="outlined" startIcon={<SaveAltIcon />} onClick={() => exportEmployeesToExcel(filteredEmployees, hotels)}>
+            Exportar a Excel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenAddModal}
+            sx={{
+              transition: 'box-shadow 0.3s ease-in-out',
+              '&:hover': {
+                boxShadow: `0 0 8px 2px #FF5722`,
+              }
+            }}
+          >
+            Añadir Empleado
+          </Button>
+        </Stack>
       </Box>
+
+      <EmployeeFilters 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        hotels={hotels}
+        zoneFilter={zoneFilter}
+        onZoneChange={(val) => {
+          setZoneFilter(val);
+          setHotelFilter('');
+        }}
+        hotelFilter={hotelFilter}
+        onHotelChange={setHotelFilter}
+      />
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewChange}>
+          <ToggleButton value="grid" aria-label="grid view">
+            <ViewModuleIcon />
+          </ToggleButton>
+          <ToggleButton value="table" aria-label="table view">
+            <ViewListIcon />
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
+      {filteredEmployees.length > 0 ? (
+        viewMode === 'grid' ? (
+          <EmployeeGrid 
+            employees={filteredEmployees} 
+            hotels={hotels} 
+            onEdit={handleOpenEditModal} 
+            onDelete={handleDeleteRequest} 
+          />
+        ) : (
+          <EmployeeTable 
+            employees={filteredEmployees} 
+            hotels={hotels} 
+            onEdit={handleOpenEditModal} 
+            onDelete={handleDeleteRequest} 
+          />
+        )
+      ) : (
+        <Paper sx={{ mt: 2 }}>
+          <EmptyState 
+            icon={<SearchIcon />}
+            title="No se encontraron empleados"
+            subtitle="Intenta cambiar los filtros o el término de búsqueda."
+          />
+        </Paper>
+      )}
+
+      <FormModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        title={modalTitle}
+      >
+        <EmployeeForm
+          employeeData={currentEmployee}
+          onFormChange={handleFormChange}
+          hotels={hotels}
+          onToggleBlacklist={handleToggleBlacklist}
+        />
+      </FormModal>
+
+      <ConfirmationDialog
+        open={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmar Eliminación"
+        content="¿Estás seguro de que quieres eliminar este empleado? Esta acción no se puede deshacer."
+      />
     </Box>
   );
 }

@@ -8,6 +8,8 @@ interface EmployeeFiltersProps {
   statusFilter: string;
   onStatusChange: (filter: string) => void;
   hotels: Hotel[];
+  zoneFilter: string;
+  onZoneChange: (zone: string) => void;
   hotelFilter: string;
   onHotelChange: (hotelId: string) => void;
 }
@@ -18,6 +20,8 @@ export default function EmployeeFilters({
   statusFilter,
   onStatusChange,
   hotels,
+  zoneFilter,
+  onZoneChange,
   hotelFilter,
   onHotelChange,
 }: EmployeeFiltersProps) {
@@ -30,12 +34,29 @@ export default function EmployeeFilters({
           exclusive
           onChange={(_e, newFilter) => newFilter && onStatusChange(newFilter)}
           aria-label="Filtro de estado"
+          size="small"
         >
           <ToggleButton value="active">Activos</ToggleButton>
           <ToggleButton value="inactive">Inactivos</ToggleButton>
           <ToggleButton value="blacklisted">Lista Negra</ToggleButton>
         </ToggleButtonGroup>
-        <FormControl sx={{ minWidth: 200 }}>
+
+        <FormControl sx={{ minWidth: 150 }} size="small">
+          <InputLabel id="zone-filter-label">Zona</InputLabel>
+          <Select
+            labelId="zone-filter-label"
+            value={zoneFilter}
+            onChange={(e) => onZoneChange(e.target.value)}
+            label="Zona"
+          >
+            <MenuItem value="all">Todas las Zonas</MenuItem>
+            <MenuItem value="Centro">Centro</MenuItem>
+            <MenuItem value="Norte">Norte</MenuItem>
+            <MenuItem value="Noroeste">Noroeste</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 200 }} size="small">
           <InputLabel id="hotel-filter-label">Hotel</InputLabel>
           <Select
             labelId="hotel-filter-label"
@@ -44,17 +65,20 @@ export default function EmployeeFilters({
             label="Hotel"
           >
             <MenuItem value="">
-              <em>Todos</em>
+              <em>Todos los Hoteles</em>
             </MenuItem>
-            {hotels.map((hotel) => (
-              <MenuItem key={hotel.id} value={hotel.id}>
-                {hotel.name}
-              </MenuItem>
-            ))}
+            {hotels
+              .filter(h => zoneFilter === 'all' || h.zone === zoneFilter)
+              .map((hotel) => (
+                <MenuItem key={hotel.id} value={hotel.id}>
+                  {hotel.name}
+                </MenuItem>
+              ))}
           </Select>
         </FormControl>
         <TextField
           variant="outlined"
+          size="small"
           placeholder="Buscar por nombre..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -65,7 +89,7 @@ export default function EmployeeFilters({
               </InputAdornment>
             ),
           }}
-          sx={{ flexGrow: 1, minWidth: '250px' }}
+          sx={{ flexGrow: 1, minWidth: '200px' }}
         />
       </Box>
     </Paper>

@@ -101,9 +101,8 @@ export default function UsersPage() {
   }
 
   return (
-    <Box>
-      <Toolbar />
-      <Box sx={{ p: 3 }}>
+    <Box component="main" sx={{ p: 1 }}>
+      <Box sx={{ p: 2 }}>
         <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
           Gestión de Usuarios y Permisos
         </Typography>

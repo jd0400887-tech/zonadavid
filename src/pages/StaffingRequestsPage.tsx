@@ -1,6 +1,5 @@
-
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Toolbar, Button, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Button, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useHotels } from '../hooks/useHotels';
@@ -15,14 +14,7 @@ import ArchivedRequestsPage from './ArchivedRequestsPage';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 
 const statusColumns: StaffingRequest['status'][] = [
-  'Pendiente',
-  'Enviada a Reclutamiento',
-  'En Proceso',
-  'Completada',
-  'Completada Parcialmente',
-  'Candidato No Presentado',
-  'Cancelada por Hotel',
-  'Vencida',
+  'Pendiente', 'Enviada a Reclutamiento', 'En Proceso', 'Completada', 'Completada Parcialmente', 'Candidato No Presentado', 'Cancelada por Hotel', 'Vencida',
 ];
 
 const statusColors: { [key in StaffingRequest['status']]: { bg: string, text: string } } = {
@@ -40,6 +32,7 @@ export default function StaffingRequestsPage() {
   const { activeRequests, loading, addRequest, updateRequest, archiveRequest, deleteRequest } = useStaffingRequestsContext();
   const { hotels } = useHotels();
 
+  const [zoneFilter, setZoneFilter] = useState<'Todas' | 'Centro' | 'Norte' | 'Noroeste'>('Todas');
   const [hotelFilter, setHotelFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -47,15 +40,6 @@ export default function StaffingRequestsPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'archived'>('kanban');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
-
-  if (loading && activeRequests.length === 0) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <CircularProgress size={60} thickness={4} />
-        <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>Cargando solicitudes...</Typography>
-      </Box>
-    );
-  }
 
   const handleOpenDialog = (request?: StaffingRequest) => {
     setEditingRequest(request || null);
@@ -75,7 +59,7 @@ export default function StaffingRequestsPage() {
     }
   };
 
-  const handleViewModeChange = (event: React.MouseEvent<HTMLElement>, newMode: 'kanban' | 'archived') => {
+  const handleViewModeChange = (_event: React.MouseEvent<HTMLElement>, newMode: 'kanban' | 'archived') => {
     if (newMode !== null) {
       setViewMode(newMode);
     }
@@ -96,16 +80,18 @@ export default function StaffingRequestsPage() {
 
   const filteredRequests = useMemo(() => {
     return activeRequests
+      .filter(req => {
+        if (zoneFilter === 'Todas') return true;
+        const hotel = hotels.find(h => h.id === req.hotel_id);
+        return hotel?.zone === zoneFilter;
+      })
       .filter(req => hotelFilter === 'all' || req.hotel_id === hotelFilter)
       .filter(req => {
         if (!searchTerm) return true;
         const lowerCaseSearch = searchTerm.toLowerCase();
-        return (
-          req.role.toLowerCase().includes(lowerCaseSearch) ||
-          (req.notes && req.notes.toLowerCase().includes(lowerCaseSearch))
-        );
+        return (req.role.toLowerCase().includes(lowerCaseSearch) || (req.notes && req.notes.toLowerCase().includes(lowerCaseSearch)));
       });
-  }, [activeRequests, hotelFilter, searchTerm]);
+  }, [activeRequests, hotelFilter, searchTerm, zoneFilter, hotels]);
 
   const requestsByStatus = useMemo(() => {
     const grouped: { [key in StaffingRequest['status']]?: StaffingRequest[] } = {};
@@ -115,134 +101,91 @@ export default function StaffingRequestsPage() {
     return grouped;
   }, [filteredRequests]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require mouse to move 8px to start dragging
-      },
-    })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (!over) return;
-
     const activeId = active.id;
     const overId = over.id;
-
     if (activeId === overId) return;
-
     const activeContainer = active.data.current.sortable.containerId;
     const overContainer = over.data.current?.sortable?.containerId || over.id;
-
     if (activeContainer !== overContainer) {
-      const newStatus = overContainer as StaffingRequest['status'];
-      updateRequest(activeId, { status: newStatus });
+      updateRequest(activeId, { status: overContainer as StaffingRequest['status'] });
     }
   };
 
-  return (
-    <Box>
-      <Toolbar />
-      <Box component="main" sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4">Gestión de Solicitudes</Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              aria-label="view mode"
-              size="small"
-            >
-              <ToggleButton value="kanban" aria-label="kanban view">
-                <ViewKanbanIcon />
-              </ToggleButton>
-              <ToggleButton value="archived" aria-label="archived view">
-                <ArchiveIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
-              Nueva Solicitud
-            </Button>
-          </Box>
-        </Box>
-
-        {viewMode === 'kanban' ? (
-          <>
-            <Paper sx={{ p: 2, mb: 3 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Buscar por Cargo o Notas"
-                    variant="outlined"
-                    size="small"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Hotel</InputLabel>
-                    <Select
-                      value={hotelFilter}
-                      label="Hotel"
-                      onChange={(e) => setHotelFilter(e.target.value)}
-                    >
-                      <MenuItem value="all">Todos</MenuItem>
-                      {hotels.map(hotel => (
-                        <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-            </Paper>
-
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
-              <Grid container spacing={2} sx={{ flexWrap: 'wrap' }}>
-                {statusColumns.map(status => (
-                  <Grid item key={status} xs={12} sm={6} md={4} lg={3} sx={{ 
-                    flexGrow: (requestsByStatus[status] && requestsByStatus[status].length > 0) ? 1 : 0.1,
-                    transition: 'flex-grow 0.3s ease-out', // Smooth transition for resizing
-                  }}>
-                    <KanbanColumn
-                      id={status}
-                      title={status}
-                      requests={requestsByStatus[status] || []}
-                      bgColor={statusColors[status].bg}
-                      textColor={statusColors[status].text}
-                      onEditRequest={handleOpenDialog}
-                      onArchiveRequest={archiveRequest}
-                      onDeleteRequest={handleDeleteRequest}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </DndContext>
-          </>
-        ) : (
-          <ArchivedRequestsPage />
-        )}
-
-        <StaffingRequestDialog 
-          open={isDialogOpen} 
-          onClose={handleCloseDialog} 
-          onSubmit={handleSubmit} 
-          initialData={editingRequest} 
-        />
-        <ConfirmationDialog
-          open={deleteConfirmOpen}
-          onClose={() => setDeleteConfirmOpen(false)}
-          onConfirm={handleConfirmDelete}
-          title="Confirmar Eliminación"
-          message="¿Estás seguro de que quieres eliminar esta solicitud? Esta acción no se puede deshacer."
-        />
+  if (loading && activeRequests.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <CircularProgress size={60} thickness={4} />
+        <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>Cargando solicitudes...</Typography>
       </Box>
+    );
+  }
+
+  return (
+    <Box component="main" sx={{ p: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h4">Gestión de Solicitudes</Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewModeChange} size="small">
+            <ToggleButton value="kanban"><ViewKanbanIcon /></ToggleButton>
+            <ToggleButton value="archived"><ArchiveIcon /></ToggleButton>
+          </ToggleButtonGroup>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>Nueva Solicitud</Button>
+        </Box>
+      </Box>
+
+      {viewMode === 'kanban' ? (
+        <>
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <TextField fullWidth label="Buscar por Cargo o Notas" variant="outlined" size="small" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }} />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Filtrar por Zona</InputLabel>
+                  <Select value={zoneFilter} label="Filtrar por Zona" onChange={(e) => { setZoneFilter(e.target.value as any); setHotelFilter('all'); }}>
+                    <MenuItem value="Todas">Todas las Zonas</MenuItem>
+                    <MenuItem value="Centro">Centro</MenuItem>
+                    <MenuItem value="Norte">Norte</MenuItem>
+                    <MenuItem value="Noroeste">Noroeste</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Hotel</InputLabel>
+                  <Select value={hotelFilter} label="Hotel" onChange={(e) => setHotelFilter(e.target.value)}>
+                    <MenuItem value="all">Todos los Hoteles</MenuItem>
+                    {hotels.filter(h => zoneFilter === 'Todas' || h.zone === zoneFilter).map(hotel => (
+                      <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+            <Grid container spacing={2} sx={{ flexWrap: 'wrap' }}>
+              {statusColumns.map(status => (
+                <Grid item key={status} xs={12} sm={6} md={4} lg={3} sx={{ flexGrow: (requestsByStatus[status]?.length || 0) > 0 ? 1 : 0.1, transition: 'flex-grow 0.3s ease-out' }}>
+                  <KanbanColumn id={status} title={status} requests={requestsByStatus[status] || []} bgColor={statusColors[status].bg} textColor={statusColors[status].text} onEditRequest={handleOpenDialog} onArchiveRequest={archiveRequest} onDeleteRequest={handleDeleteRequest} />
+                </Grid>
+              ))}
+            </Grid>
+          </DndContext>
+        </>
+      ) : (
+        <ArchivedRequestsPage />
+      )}
+
+      <StaffingRequestDialog open={isDialogOpen} onClose={handleCloseDialog} onSubmit={handleSubmit} initialData={editingRequest} />
+      <ConfirmationDialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleConfirmDelete} title="Confirmar Eliminación" message="¿Estás seguro de que quieres eliminar esta solicitud? Esta acción no se puede deshacer." />
     </Box>
   );
 }
