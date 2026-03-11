@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, Typography, Box, Chip, IconButton, LinearProgress, Tooltip } from '@mui/material';
+import { Card, CardContent, Typography, Box, Chip, IconButton, LinearProgress, Tooltip, Divider, Stack } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
-import WarningIcon from '@mui/icons-material/Warning';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import type { StaffingRequest } from '../../types';
 
 interface RequestCardProps {
@@ -20,22 +21,8 @@ interface RequestCardProps {
 export default function RequestCard({ request, onEdit, onArchive, onDelete }: RequestCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: request.id,
-    data: {
-      request,
-    },
+    data: { request },
   });
-
-  // Lógica de Urgencia por Fecha de Inicio
-  const isUrgent = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(request.start_date);
-    startDate.setHours(0, 0, 0, 0);
-    
-    const isCompleted = ['Completada', 'Completada Parcialmente', 'Cancelada por Hotel', 'Vencida'].includes(request.status);
-    
-    return !isCompleted && startDate <= today;
-  }, [request.start_date, request.status]);
 
   // Lógica de Semáforo de 72 Horas
   const timeStats = useMemo(() => {
@@ -56,14 +43,16 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
   }, [request.created_at]);
 
   const style = {
-    transform: CSS.Transform.toString(transform ? { ...transform, scaleX: 1.03, scaleY: 1.03 } : null),
+    transform: CSS.Transform.toString(transform ? { ...transform, scaleX: 1.02, scaleY: 1.02 } : null),
     transition,
-    opacity: isDragging ? 0.9 : 1,
-    boxShadow: isDragging 
-      ? '0 0 15px #FF5722, 0 0 25px #FF5722' 
-      : (isUrgent ? '0 0 8px #f44336' : '0 0 2px #FF5722'),
+    opacity: isDragging ? 0.8 : 1,
     cursor: 'grab',
   };
+
+  const formattedDate = new Date(request.start_date).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short'
+  });
 
   return (
     <Card 
@@ -73,102 +62,93 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
       {...listeners} 
       sx={{
         mb: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(5px)',
-        WebkitBackdropFilter: 'blur(5px)',
-        border: isUrgent ? '2px solid #f44336' : '1px solid #FF5722',
-        borderRadius: '8px',
-        color: '#FFFFFF', // Set default text color to white for the card
-        position: 'relative',
-        overflow: 'visible',
+        backgroundColor: 'rgba(30, 30, 30, 0.6)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 87, 34, 0.3)',
+        borderRadius: '12px',
+        color: '#FFFFFF',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          borderColor: '#FF5722',
+          backgroundColor: 'rgba(40, 40, 40, 0.8)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+        }
       }}
     >
-      <CardContent>
-        {isUrgent && (
-          <Chip
-            icon={<WarningIcon style={{ color: 'white', fontSize: '14px' }} />}
-            label="URGENTE"
-            size="small"
-            color="error"
-            sx={{
-              position: 'absolute',
-              top: -10,
-              right: 10,
-              height: '20px',
-              fontSize: '0.6rem',
-              fontWeight: 'bold',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-            }}
-          />
-        )}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 'bold' }}>
+      <CardContent sx={{ p: '16px !important' }}>
+        {/* CABECERA: ROL Y ACCIONES */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+          <Box sx={{ maxWidth: '70%' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#FF5722', textTransform: 'uppercase', fontSize: '0.9rem' }}>
               {request.role}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#E0E0E0' }} gutterBottom>
+            <Typography variant="body2" sx={{ color: '#bdbdbd', fontWeight: 500, mt: 0.5 }}>
               {request.hotelName}
             </Typography>
           </Box>
-          <Box>
-            {onArchive && (
-              <IconButton onClick={onArchive} size="small" sx={{ color: '#FFFFFF' }}>
-                <ArchiveIcon fontSize="small" />
-              </IconButton>
-            )}
-            <IconButton onClick={onEdit} size="small" sx={{ color: '#FFFFFF' }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton onClick={(e) => { e.stopPropagation(); onEdit(); }} size="small" sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff' } }}>
               <EditIcon fontSize="small" />
             </IconButton>
-            {onDelete && (
-              <IconButton onClick={onDelete} size="small" sx={{ color: '#FFFFFF' }}>
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
+            <IconButton onClick={(e) => { e.stopPropagation(); onArchive?.(); }} size="small" sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff' } }}>
+              <ArchiveIcon fontSize="small" />
+            </IconButton>
           </Box>
         </Box>
 
-        {/* Semáforo de 72 Horas */}
+        {/* MEDIO: SEMÁFORO DE TIEMPO */}
         {!['Completada', 'Cancelada por Hotel', 'Vencida'].includes(request.status) && (
-          <Box sx={{ mt: 1.5, mb: 1.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: timeStats.color === 'error' ? '#ff5252' : '#E0E0E0' }}>
+          <Box sx={{ mt: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: timeStats.color === 'error' ? '#ff5252' : '#E0E0E0', fontWeight: 'bold' }}>
                 <AccessTimeIcon sx={{ fontSize: 14 }} />
-                {timeStats.isOverdue ? `Vencida por ${timeStats.diffInHours - 72}h` : `${timeStats.remainingHours}h restantes`}
+                {timeStats.isOverdue ? `RETRASO: ${timeStats.diffInHours - 72}h` : `${timeStats.remainingHours}h restantes`}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#E0E0E0' }}>
-                Meta: 72h
-              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>Meta 72h</Typography>
             </Box>
-            <Tooltip title={`Tiempo transcurrido: ${timeStats.diffInHours} horas`}>
-              <LinearProgress 
-                variant="determinate" 
-                value={timeStats.progress} 
-                color={timeStats.color}
-                sx={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.1)' }}
-              />
-            </Tooltip>
+            <LinearProgress 
+              variant="determinate" 
+              value={timeStats.progress} 
+              color={timeStats.color}
+              sx={{ height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.05)' }}
+            />
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-          <Typography variant="caption" sx={{ color: '#E0E0E0' }}>{new Date(request.start_date).toLocaleDateString()}</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {request.candidate_count > 0 && (
-              <Chip 
-                icon={<PeopleIcon />}
-                label={String(request.candidate_count)} 
-                size="small" 
-                variant="outlined"
-                sx={{ color: '#90caf9', borderColor: '#90caf9' }} // Light blue color
-              />
-            )}
-            <Chip 
-              label={`${request.num_of_people} persona(s)`} 
-              size="small" 
-              sx={{ color: '#FFFFFF', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-            />
+        <Divider sx={{ my: 1.5, borderColor: 'rgba(255,255,255,0.05)' }} />
+
+        {/* PIE: INDICADORES RÁPIDOS */}
+        <Stack direction="row" spacing={1} justifyContent="space-between" alignItems="center">
+          {/* Fecha */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <CalendarMonthIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.4)' }} />
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>{formattedDate}</Typography>
           </Box>
-        </Box>
+
+          {/* Progreso de Vacantes */}
+          <Tooltip title={`${request.candidate_count} candidatos asignados de ${request.num_of_people} requeridos`}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, backgroundColor: 'rgba(255,255,255,0.05)', px: 1, py: 0.2, borderRadius: '4px' }}>
+              <PeopleIcon sx={{ fontSize: 16, color: request.candidate_count >= request.num_of_people ? '#4caf50' : '#90caf9' }} />
+              <Typography variant="caption" sx={{ fontWeight: 700, color: request.candidate_count >= request.num_of_people ? '#4caf50' : '#90caf9' }}>
+                {request.candidate_count} / {request.num_of_people}
+              </Typography>
+            </Box>
+          </Tooltip>
+
+          {/* Tipo */}
+          <Chip 
+            label={request.request_type === 'temporal' ? 'TEMP' : 'PERM'} 
+            size="small"
+            sx={{ 
+              height: '18px', 
+              fontSize: '0.65rem', 
+              fontWeight: 900,
+              backgroundColor: request.request_type === 'temporal' ? 'rgba(33, 150, 243, 0.2)' : 'rgba(156, 39, 176, 0.2)',
+              color: request.request_type === 'temporal' ? '#2196f3' : '#ce93d8',
+              border: '1px solid currentColor'
+            }}
+          />
+        </Stack>
       </CardContent>
     </Card>
   );
