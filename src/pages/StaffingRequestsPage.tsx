@@ -3,6 +3,7 @@ import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, I
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useHotels } from '../hooks/useHotels';
+import { useAuth } from '../hooks/useAuth';
 import type { StaffingRequest } from '../types';
 import KanbanColumn from '../components/staffing-requests/KanbanColumn';
 import SearchIcon from '@mui/icons-material/Search';
@@ -30,6 +31,7 @@ const statusColors: { [key in StaffingRequest['status']]: { bg: string, text: st
 };
 
 export default function StaffingRequestsPage() {
+  const { profile } = useAuth();
   const { activeRequests, loading, addRequest, updateRequest, archiveRequest, deleteRequest, fetchRequests } = useStaffingRequestsContext();
   const { hotels } = useHotels();
 
@@ -42,6 +44,8 @@ export default function StaffingRequestsPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'archived'>('kanban');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
+
+  const isAdmin = profile?.role === 'ADMIN';
 
   const handleOpenDialog = (request?: StaffingRequest) => {
     setEditingRequest(request || null);
@@ -200,7 +204,16 @@ export default function StaffingRequestsPage() {
             <Grid container spacing={2} sx={{ flexWrap: 'wrap' }}>
               {statusColumns.map(status => (
                 <Grid item key={status} xs={12} sm={6} md={4} lg={3} sx={{ flexGrow: (requestsByStatus[status]?.length || 0) > 0 ? 1 : 0.1, transition: 'flex-grow 0.3s ease-out' }}>
-                  <KanbanColumn id={status} title={status} requests={requestsByStatus[status] || []} bgColor={statusColors[status].bg} textColor={statusColors[status].text} onEditRequest={handleOpenDialog} onArchiveRequest={archiveRequest} onDeleteRequest={handleDeleteRequest} />
+                  <KanbanColumn 
+                    id={status} 
+                    title={status} 
+                    requests={requestsByStatus[status] || []} 
+                    bgColor={statusColors[status].bg} 
+                    textColor={statusColors[status].text} 
+                    onEditRequest={handleOpenDialog} 
+                    onArchiveRequest={archiveRequest} 
+                    onDeleteRequest={isAdmin ? handleDeleteRequest : undefined}
+                  />
                 </Grid>
               ))}
             </Grid>
