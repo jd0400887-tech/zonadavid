@@ -128,10 +128,15 @@ export function useDashboardStats(hotelIds?: string[]) {
       return isSoon && isNotFull && req.status !== 'Completada';
     }).length;
 
-    // 3. Eficiencia de Candidatos (Basado en el historial o estados actuales si estuvieran disponibles)
-    // Nota: Como no tenemos acceso directo a todos los candidatos aquí, usaremos los totales de las solicitudes
-    const totalRequired = activeStaffingRequests.reduce((sum, r) => sum + r.num_of_people, 0);
-    const totalAssigned = activeStaffingRequests.reduce((sum, r) => sum + r.candidate_count, 0);
+    // 3. Eficiencia de Candidatos (Cobertura de Vacantes)
+    const validRequestsForCoverage = activeStaffingRequests.filter(r => 
+      r.status !== 'Cancelada por Hotel'
+    );
+    
+    const totalRequired = validRequestsForCoverage.reduce((sum, r) => sum + (r.num_of_people || 0), 0);
+    const totalAssigned = validRequestsForCoverage.reduce((sum, r) => sum + (r.candidate_count || 0), 0);
+
+    const coverageRate = totalRequired > 0 ? Math.round((totalAssigned / totalRequired) * 100) : 0;
 
     // 4. Distribución por Zonas
     const requestsByZone = activeStaffingRequests.reduce((acc, req) => {
