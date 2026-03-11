@@ -212,6 +212,7 @@ export const useStaffingRequests = () => {
     deleteRequest, 
     archiveRequest, 
     unarchiveRequest, 
-    fetchHistory 
+    fetchHistory,
+    fetchRequests
   };
 };
