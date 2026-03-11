@@ -88,11 +88,30 @@ export function useHotels() {
   };
 
   const deleteHotel = async (id: string) => {
-    const { error } = await supabase.from('hotels').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting hotel:', error);
-    } else {
-      setHotels(prev => prev.filter(h => h.id !== id));
+    try {
+      // 1. Eliminar datos dependientes primero para evitar error 409 (Foreign Key Constraints)
+      
+      // Eliminar registros de asistencia (Nombre correcto: attendance_records)
+      await supabase.from('attendance_records').delete().eq('hotelId', id);
+      
+      // Eliminar solicitudes de personal (staffing_requests)
+      await supabase.from('staffing_requests').delete().eq('hotel_id', id);
+      
+      // Eliminar empleados vinculados
+      await supabase.from('employees').delete().eq('hotelId', id);
+
+      // 2. Finalmente borrar el hotel
+      const { error } = await supabase.from('hotels').delete().eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting hotel:', error);
+        throw error;
+      } else {
+        setHotels(prev => prev.filter(h => h.id !== id));
+      }
+    } catch (err) {
+      console.error('Fallo el proceso de eliminacion completa:', err);
+      throw err;
     }
   };
 

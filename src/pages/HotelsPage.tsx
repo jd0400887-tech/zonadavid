@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, IconButton, Stack, Toolbar, TextField, InputAdornment, Link, Card, CardMedia, CardContent, CardActions, FormControlLabel, Switch } from '@mui/material';
+import { Box, Typography, Button, Paper, IconButton, Stack, Toolbar, TextField, InputAdornment, Link, Card, CardMedia, CardContent, CardActions, FormControlLabel, Switch, Grid } from '@mui/material';
 import { Masonry } from '@mui/lab';
 import { Link as RouterLink } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -154,36 +154,49 @@ export default function HotelsPage() {
       </Paper>
 
       {filteredHotels.length > 0 ? (
-        <Masonry columns={{ xs: 1, sm: 2, md: 3, lg: 4 }} spacing={3}>
+        <Grid container spacing={3}>
           {filteredHotels.map((hotel) => (
-            <Card key={hotel.id}>
-              {hotel.imageUrl ? (
-                <CardMedia component="img" height="140" image={hotel.imageUrl} alt={hotel.name} />
-              ) : (
-                <Box sx={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.800' }}>
-                  <ApartmentIcon sx={{ fontSize: 60, color: 'grey.500' }} />
-                </Box>
-              )}
-              <CardContent>
-                <Typography gutterBottom variant="h5" component="div">
-                  <Link component={RouterLink} to={`/hotel/${hotel.id}`} sx={{ color: 'text.primary', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                    {hotel.name}
-                  </Link>
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {hotel.city} - {hotel.address}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Personal: {hotel.activeEmployees} activos / {hotel.totalEmployees} en total
-                </Typography>
-              </CardContent>
-              <CardActions sx={{ justifyContent: 'flex-end' }}>
-                <IconButton aria-label="edit" onClick={() => handleOpenEditModal(hotel)}><EditIcon /></IconButton>
-                <IconButton aria-label="delete" onClick={() => handleDelete(hotel.id)}><DeleteIcon /></IconButton>
-              </CardActions>
-            </Card>
+            <Grid item key={hotel.id} xs={12} sm={6} md={4} lg={3}>
+              <Card sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                borderLeft: '4px solid #FF5722',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 20px rgba(0,0,0,0.1)'
+                }
+              }}>
+                {hotel.imageUrl ? (
+                  <CardMedia component="img" height="160" image={hotel.imageUrl} alt={hotel.name} />
+                ) : (
+                  <Box sx={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'background.default' }}>
+                    <ApartmentIcon sx={{ fontSize: 60, color: 'grey.500' }} />
+                  </Box>
+                )}
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" component="div" sx={{ fontWeight: 800, mb: 1 }}>
+                    <Link component={RouterLink} to={`/hotel/${hotel.id}`} sx={{ color: 'primary.main', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                      {hotel.name}
+                    </Link>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <b>Ciudad:</b> {hotel.city}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <PeopleIcon sx={{ fontSize: 16 }} /> 
+                    <b>Personal:</b> {hotel.activeEmployees} activos / {hotel.totalEmployees} total
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'flex-end', p: 1, backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                  <IconButton size="small" onClick={() => handleOpenEditModal(hotel)} sx={{ color: 'primary.main' }}><EditIcon fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={() => handleDelete(hotel.id)} sx={{ color: 'error.light' }}><DeleteIcon fontSize="small" /></IconButton>
+                </CardActions>
+              </Card>
+            </Grid>
           ))}
-        </Masonry>
+        </Grid>
       ) : (
         <Paper sx={{ mt: 2 }}>
           <EmptyState icon={<ApartmentIcon />} title="No se encontraron hoteles" subtitle="Intenta con otro término de búsqueda o añade un nuevo hotel." />
