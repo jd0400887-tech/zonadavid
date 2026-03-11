@@ -203,12 +203,21 @@ export default function MainLayout() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    const name = profile?.email?.split('@')[0] || 'Usuario';
-    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     
-    if (hour < 12) return `Buenos días, ${capitalize(name)}`;
-    if (hour < 18) return `Buenas tardes, ${capitalize(name)}`;
-    return `Buenas noches, ${capitalize(name)}`;
+    // Personalizar nombre según el rol
+    let displayName = 'Usuario';
+    if (profile?.role === 'ADMIN') displayName = 'Admin';
+    else if (profile?.role === 'RECRUITER') displayName = 'Reclutamiento';
+    else if (profile?.role === 'COORDINATOR') displayName = 'Coordinación';
+    else if (profile?.role === 'INSPECTOR') displayName = 'Inspección';
+    else if (profile?.email) {
+      const nameFromEmail = profile.email.split('@')[0];
+      displayName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
+    }
+    
+    if (hour < 12) return `¡Buenos días, ${displayName}!`;
+    if (hour < 18) return `¡Buenas tardes, ${displayName}!`;
+    return `¡Buenas noches, ${displayName}!`;
   };
 
   const getRequestStatus = (startDate: string) => {
