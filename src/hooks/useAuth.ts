@@ -1,100 +1,14 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
-import { Profile } from '../types';
-
-type Session = import('@supabase/supabase-js').Session;
+import { useAuthContext } from '../contexts/AuthContext';
 
 export function useAuth() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Si no hay perfil, creamos uno básico de RECRUITER por defecto
-          setProfile({ id: userId, email: '', role: 'RECRUITER', assigned_zone: null });
-        } else {
-          console.error('Error fetching profile:', error);
-        }
-        return;
-      }
-      setProfile(data);
-    } catch (err) {
-      console.error('Error in fetchProfile:', err);
-    }
-  };
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        if (session?.user) {
-          fetchProfile(session.user.id); // No usamos await aquí para no bloquear
-        }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      setSession(session);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  const signOut = async () => {
-    setLoading(true);
-    try {
-      // 1. Limpieza agresiva de caché local antes de Supabase
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // 2. Cerrar sesión en Supabase
-      await supabase.auth.signOut();
-      
-      // 3. Limpiar estados internos de React
-      setSession(null);
-      setProfile(null);
-    } catch (err) {
-      console.error('Error during signOut:', err);
-      // Fallback: si falla Supabase, igual limpiamos todo localmente
-      localStorage.clear();
-      sessionStorage.clear();
-      setSession(null);
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const context = useAuthContext();
+  
   return {
-    session,
-    profile,
-    loading,
-    signIn: (email: string, password: string) => supabase.auth.signInWithPassword({ email, password }),
-    signOut,
-    updateUser: (data: object) => supabase.auth.updateUser({ data }),
+    session: context.session,
+    profile: context.profile,
+    loading: context.loading,
+    signIn: context.signIn,
+    signOut: context.signOut,
+    updateUser: (data: object) => import('../utils/supabase').then(s => s.supabase.auth.updateUser({ data })),
   };
 }

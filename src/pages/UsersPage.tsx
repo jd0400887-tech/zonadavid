@@ -11,7 +11,8 @@ const ALL_MODULES = [
   'Aplicaciones',
   'Reporte Asistencia',
   'Revisión de Nómina',
-  'Seguimiento Workrecord'
+  'Seguimiento Workrecord',
+  'Mi Domicilio'
 ];
 
 export default function UsersPage() {

@@ -88,12 +88,15 @@ export default function DashboardPieChart({ data, title }: DashboardPieChartProp
       backgroundColor: 'rgba(0, 0, 0, 0.2)',
       border: '1px solid',
       borderColor: 'primary.main',
-      boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`
+      boxShadow: `0 0 5px #FF5722, 0 0 10px #FF5722`,
+      height: '420px', // Match BarChart height
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
         {title}
       </Typography>
-      <Box sx={{ height: 300 }}>
+      <Box sx={{ flexGrow: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

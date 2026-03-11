@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ToggleButton, ToggleButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import MonthlyGrowthChart from '../components/dashboard/MonthlyGrowthChart';
 import HotelRankingTable from '../components/dashboard/HotelRankingTable';
 import DashboardPieChart from '../components/dashboard/DashboardPieChart';
 import { DashboardBarChart } from '../components/dashboard/DashboardBarChart';
+import RecruiterDashboard from '../components/dashboard/RecruiterDashboard';
 
 // Utils
 import { getDistanceInMeters, getDistanceInMiles } from '../utils/geolocation';
@@ -36,6 +37,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import WarningIcon from '@mui/icons-material/Warning';
 
 // Fix for default marker icon issue with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -184,33 +186,10 @@ function DashboardPage() {
   const hotelsWithLocation = filteredHotels.filter(h => h.latitude != null && h.longitude != null);
   const mapCenter: [number, number] = hotelsWithLocation.length > 0 ? [hotelsWithLocation[0].latitude!, hotelsWithLocation[0].longitude!] : [40.7128, -74.0060];
 
-  if (isRecruiter) {
-    return (
-      <Box sx={{ p: 3, textAlign: 'center', mt: 5 }}>
-        <Typography variant="h4" gutterBottom color="primary" sx={{ textShadow: '0 0 8px rgba(255, 87, 34, 0.5)' }}>
-          Panel de Reclutamiento
-        </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          Bienvenido. El panel de métricas generales está restringido para tu perfil.<br/>
-          Usa el menú lateral para gestionar solicitudes y aplicaciones.
-        </Typography>
-        <Button 
-          variant="contained" 
-          size="large" 
-          onClick={() => navigate('/solicitudes')}
-          startIcon={<AssignmentIcon />}
-        >
-          Ver Solicitudes de Personal
-        </Button>
-      </Box>
-    );
-  }
-
-  return (
+  const renderAdminDashboard = () => (
     <>
-      <Box component="main" sx={{ p: 1 }}>
-        <ManualAttendance />
-        
+      <ManualAttendance />
+
         {isAdminOrCoord && (
             <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Typography variant="subtitle1" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
@@ -333,10 +312,26 @@ function DashboardPage() {
           <Box sx={{ mb: 3 }}><HotelRankingTable data={stats.hotelRankingByVisits} /></Box>
 
           <Paper sx={{ height: '60vh', overflow: 'hidden' }}><Typography variant="h6" sx={{ p: 2, pb: 0 }}>Mapa de Hoteles</Typography><Suspense fallback={<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress /><Typography sx={{ ml: 2 }}>Cargando mapa...</Typography></Box>}><LazyMapContainer center={mapCenter} zoom={4} style={{ height: '100%', width: '100%' }}><LazyTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{hotelsWithLocation.map((hotel) => (<LazyMarker key={hotel.id} position={[hotel.latitude!, hotel.longitude!]}><LazyPopup><b>{hotel.name}</b><br />{hotel.address}</LazyPopup></LazyMarker>))}</LazyMapContainer></Suspense></Paper>
-        </Box>
-        <Fab color="primary" aria-label="registrar asistencia" sx={{ position: 'fixed', bottom: 32, right: 32, transition: 'box-shadow 0.3s ease-in-out', '&:hover': { boxShadow: `0 0 12px 3px #FF5722`, } }} onClick={handleCheckIn} disabled={isCheckingIn}>{isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon />}</Fab>
-        <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}><Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
+    </>
+  );
+
+  return (
+    <>
+      <Box component="main" sx={{ p: 1 }}>
+        {isRecruiter ? (
+          <RecruiterDashboard 
+            stats={stats} 
+            selectedZone={selectedZone} 
+            onZoneChange={setSelectedZone} 
+          />
+        ) : (
+          renderAdminDashboard()
+        )}
+      </Box>
+      <Fab color="primary" aria-label="registrar asistencia" sx={{ position: 'fixed', bottom: 32, right: 32, transition: 'box-shadow 0.3s ease-in-out', '&:hover': { boxShadow: `0 0 12px 3px #FF5722`, } }} onClick={handleCheckIn} disabled={isCheckingIn}>{isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon />}</Fab>
+      <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}><Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
     </>
   );
 }
+
 export default DashboardPage;

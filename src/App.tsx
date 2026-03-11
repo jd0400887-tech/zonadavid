@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { CircularProgress } from '@mui/material';
 import MainLayout from './layouts/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
@@ -19,9 +21,26 @@ import { useAuth } from './hooks/useAuth';
 
 function App() {
   const { session, profile, loading } = useAuth(); // Added profile
+  const [forceShow, setForceShow] = useState(false);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  // Seguridad extra: si en 5 segundos no ha cargado, forzamos mostrar la app
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn('Forzando carga de la aplicación tras timeout');
+        setForceShow(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (loading && !forceShow) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#121212', color: '#ff5722' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Cargando...</h2>
+        <CircularProgress color="inherit" />
+      </div>
+    );
   }
 
   return (

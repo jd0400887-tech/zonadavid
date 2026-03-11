@@ -94,21 +94,71 @@ export function useDashboardStats(hotelIds?: string[]) {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
 
-    // NEW: Calculate unfulfilled requests
-    const unfulfilledRequests = filteredRequests.filter(req =>
+    // --- RECRUITMENT SPECIFIC STATS ---
+    const activeStaffingRequests = filteredRequests.filter(req => !req.is_archived);
+    
+    // NEW: Calculate unfulfilled requests (needed by MainLayout and others)
+    const unfulfilledRequests = activeStaffingRequests.filter(req =>
       ['Pendiente', 'Enviada a Reclutamiento', 'En Proceso'].includes(req.status)
     );
     const unfulfilledRequestsCount = unfulfilledRequests.length;
 
-    // Nota: Las aplicaciones son globales, pero podríamos filtrarlas si tuvieran hotel_id
-    const pendingApplications = applications.filter(app => app.status === 'pendiente').length;
+    // 1. Cumplimiento de 72h
+    const now = new Date();
+    const compliance72h = activeStaffingRequests.reduce((acc, req) => {
+      const created = new Date(req.created_at);
+      const hours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+      if (hours > 72) acc.overdue++;
+      else if (hours > 48) acc.critical++;
+      else acc.onTime++;
+      return acc;
+    }, { onTime: 0, critical: 0, overdue: 0 });
+
+    // 2. Urgencia por Fecha de Inicio (Hoy/Mañana y no cubiertas)
+    const todayNoTime = new Date(today);
+    todayNoTime.setHours(0,0,0,0);
+    const tomorrow = new Date(todayNoTime);
+    tomorrow.setDate(todayNoTime.getDate() + 1);
+
+    const urgentStarts = activeStaffingRequests.filter(req => {
+      const start = new Date(req.start_date);
+      start.setHours(0,0,0,0);
+      const isSoon = start <= tomorrow;
+      const isNotFull = req.candidate_count < req.num_of_people;
+      return isSoon && isNotFull && req.status !== 'Completada';
+    }).length;
+
+    // 3. Eficiencia de Candidatos (Basado en el historial o estados actuales si estuvieran disponibles)
+    // Nota: Como no tenemos acceso directo a todos los candidatos aquí, usaremos los totales de las solicitudes
+    const totalRequired = activeStaffingRequests.reduce((sum, r) => sum + r.num_of_people, 0);
+    const totalAssigned = activeStaffingRequests.reduce((sum, r) => sum + r.candidate_count, 0);
+
+    // 4. Distribución por Zonas
+    const requestsByZone = activeStaffingRequests.reduce((acc, req) => {
+      const hotel = hotels.find(h => h.id === req.hotel_id);
+      const zone = hotel?.zone || 'Sin Zona';
+      acc[zone] = (acc[zone] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
     const incompleteDocsCount = filteredEmployees.filter(e => !e.documentacion_completa).length;
+
+    const pendingApplications = applications.filter(app => app.status === 'pendiente').length;
 
     return {
       totalHotels: filteredHotels.filter(h => h.activeEmployees && h.activeEmployees > 0).length,
       activeEmployees: activeEmployeesList.length,
       visitsThisWeek: filteredAttendance.filter(r => new Date(r.timestamp).getTime() >= startOfWeek(today, { weekStartsOn: 0 }).getTime()).length,
+      
+      // Recruitment Metrics
+      activeRequestsCount: activeStaffingRequests.length,
+      pendingRequests: activeStaffingRequests.filter(r => r.status === 'Pendiente' || r.status === 'Enviada a Reclutamiento').length,
+      urgentStarts,
+      compliance72h,
+      requestsByZone: Object.entries(requestsByZone).map(([name, value]) => ({ name, value })),
+      coverageRate: totalRequired > 0 ? Math.round((totalAssigned / totalRequired) * 100) : 0,
       pendingApplications,
+
       activeEmployeesByRole: Object.entries(activeEmployeesByRole).map(([name, value]) => ({ name, value })),
       visitsByCity: Object.entries(visitsByCity).map(([name, value]) => ({ name, value })),
       hotelRankingByVisits,

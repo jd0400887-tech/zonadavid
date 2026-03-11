@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Grid, Badge, Popover, Chip, Dialog, DialogTitle, DialogContent, TextField, DialogActions, Button, Paper } from '@mui/material';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { isToday, isTomorrow, isPast } from 'date-fns';
 
@@ -171,14 +171,16 @@ export default function MainLayout() {
         </List>
         <Box sx={{ flexGrow: 1 }} />
         <List>
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleOpenHomeDialog}>
-              <ListItemIcon>
-                <HomeIcon />
-              </ListItemIcon>
-              <ListItemText primary="Mi Domicilio" />
-            </ListItemButton>
-          </ListItem>
+          {(profile?.role === 'ADMIN' || (profile?.permissions || []).includes('Mi Domicilio')) && (
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleOpenHomeDialog}>
+                <ListItemIcon>
+                  <HomeIcon />
+                </ListItemIcon>
+                <ListItemText primary="Mi Domicilio" />
+              </ListItemButton>
+            </ListItem>
+          )}
           <ListItem disablePadding>
             <ListItemButton onClick={handleLogout}>
               <ListItemIcon>
@@ -229,21 +231,49 @@ export default function MainLayout() {
             <MenuIcon />
           </IconButton>
           <Grid container alignItems="center" spacing={2}>
-            <Grid item sx={{ mr: 3 }}>
-              <Typography variant="h6" noWrap component="div" sx={{
-                color: 'primary.main',
-                textShadow: '0 0 4px #FF5722, 0 0 8px #FF5722'
-              }}>
-                {getGreeting()}
-              </Typography>
+            <Grid item sx={{ mr: 4 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" noWrap component="div" sx={{
+                  fontWeight: 700,
+                  color: 'primary.main',
+                  letterSpacing: '-0.5px',
+                  lineHeight: 1.1
+                }}>
+                  {getGreeting()}
+                </Typography>
+                <Typography variant="caption" sx={{ 
+                  color: 'text.secondary', 
+                  fontWeight: 500,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  mt: 0.5
+                }}>
+                  Bienvenido al Sistema
+                </Typography>
+              </Box>
             </Grid>
-            <Grid item>
-              <Typography variant="body1" noWrap sx={{ display: { xs: 'none', sm: 'block' } }}>
-                {currentDate}
-              </Typography>
-            </Grid>
-            {/* Notification Bell */}
-            <Grid item sx={{ ml: 'auto' }}> {/* ml: 'auto' pushes it to the right */}
+            {/* Notification Bell and Date */}
+            <Grid item sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}> 
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Paper sx={{ 
+                  backgroundColor: 'rgba(255, 87, 34, 0.05)',
+                  border: '1px solid rgba(255, 87, 34, 0.2)',
+                  borderRadius: '8px',
+                  px: 2,
+                  py: 0.5,
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                }}>
+                  <Typography variant="body2" sx={{ 
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {currentDate.toUpperCase()}
+                  </Typography>
+                </Paper>
+              </Box>
+
               <IconButton
                 color="inherit"
                 aria-label="show notifications"
