@@ -212,7 +212,7 @@ export default function StaffingRequestsPage() {
                     textColor={statusColors[status].text} 
                     onEditRequest={handleOpenDialog} 
                     onArchiveRequest={archiveRequest} 
-                    onDeleteRequest={isAdmin ? handleDeleteRequest : undefined}
+                    onDeleteRequest={profile?.role === 'ADMIN' ? handleDeleteRequest : undefined}
                   />
                 </Grid>
               ))}
