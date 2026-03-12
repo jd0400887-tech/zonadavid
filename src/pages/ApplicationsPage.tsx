@@ -1,101 +1,163 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Toolbar, Button, Snackbar, Alert, Grid, TextField, InputAdornment, Select, MenuItem, FormControl, InputLabel, Chip, FormControlLabel, Switch, IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { 
+  Box, Typography, Paper, Button, Snackbar, Alert, Grid, TextField, 
+  InputAdornment, Select, MenuItem, FormControl, InputLabel, Chip, 
+  IconButton, Dialog, DialogActions, DialogContent, DialogContentText, 
+  DialogTitle, Stack, Avatar, Divider, Tooltip, CircularProgress, useTheme,
+  FormControlLabel, Switch
+} from '@mui/material';
+
+// Iconos
+import SearchIcon from '@mui/icons-material/Search';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import CategoryIcon from '@mui/icons-material/Category';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import HistoryIcon from '@mui/icons-material/History';
+
 import { useApplications, Application } from '../hooks/useApplications';
 import { useHotels } from '../hooks/useHotels';
+import { useAuth } from '../hooks/useAuth';
 import EmployeeForm from '../components/employees/EmployeeForm';
 import FormModal from '../components/form/FormModal';
 import { useEmployees } from '../hooks/useEmployees';
-import SearchIcon from '@mui/icons-material/Search';
-import DeleteIcon from '@mui/icons-material/Delete';
 import ApplicationForm from '../components/applications/ApplicationForm';
 import { EMPLOYEE_POSITIONS } from '../data/constants';
 
-// Placeholder for the new Card component
-const applicationStatusColors: { [key in Application['status']]: 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error' } = {
-  'pendiente': 'warning',
-  'completada': 'info',
-  'empleado_creado': 'success',
+const statusConfig: { [key in Application['status']]: { label: string, color: any, icon: any } } = {
+  'pendiente': { label: 'Pendiente', color: 'warning', icon: <PendingActionsIcon fontSize="small" /> },
+  'completada': { label: 'Lista para Alta', color: 'info', icon: <CheckCircleIcon fontSize="small" /> },
+  'empleado_creado': { label: 'Contratado', color: 'success', icon: <AssignmentIndIcon fontSize="small" /> },
 };
 
-const ApplicationCard = ({ application, onStatusChange, onAddEmployee, onDelete, getHotelName }: any) => (
-  <Paper sx={{
-    position: 'relative', // Needed for absolute positioning of the delete icon
-    p: 2, 
-    height: '100%', 
-    border: '1px solid #FF5722', 
-    boxShadow: '0 0 2px #FF5722',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', // Subtle background for cards
-    color: '#FFFFFF',
-  }}>
-    <IconButton 
-      aria-label="delete"
-      onClick={() => onDelete(application.id)}
-      sx={{
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        color: 'grey.500',
-      }}
-    >
-      <DeleteIcon />
-    </IconButton>
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1, pr: 4 /* Make space for delete icon */ }}>
-      <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'primary.main' }}>
-        {application.candidate_name}
-      </Typography>
-      <Chip 
-        label={application.status === 'empleado_creado' ? 'Empleado Creado' : application.status}
-        color={applicationStatusColors[application.status] || 'default'}
-        size="small"
-        sx={{ textTransform: 'capitalize' }}
-      />
-    </Box>
-    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-      Cargo: {application.role}
-    </Typography>
-    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-      Hotel: {getHotelName(application.hotel_id)}
-    </Typography>
-    <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-      Creada: {new Date(application.created_at).toLocaleDateString()}
-    </Typography>
-    <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-      <Button 
-        variant={application.status === 'pendiente' ? 'contained' : 'outlined'} 
-        onClick={() => onStatusChange(application.id, 'pendiente')}
-        size="small"
-        disabled={application.status === 'empleado_creado'}
-      >
-        Pendiente
-      </Button>
-      <Button 
-        variant={application.status === 'completada' ? 'contained' : 'outlined'} 
-        onClick={() => onStatusChange(application.id, 'completada')}
-        size="small"
-        disabled={application.status === 'empleado_creado'}
-      >
-        Completada
-      </Button>
-    </Box>
-    {application.status === 'completada' && (
-      <Button 
-        variant="contained" 
-        color="success" 
-        size="small" 
-        onClick={() => onAddEmployee(application)} 
-        sx={{ mt: 1 }}
-        disabled={application.status === 'empleado_creado'}
-      >
-        Añadir Empleado
-      </Button>
-    )}
-  </Paper>
-);
+const ApplicationCard = ({ application, onStatusChange, onAddEmployee, onDelete, getHotelName }: any) => {
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+  const config = statusConfig[application.status as Application['status']] || { label: application.status, color: 'default', icon: null };
+
+  return (
+    <Card sx={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      borderRadius: 4,
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backgroundColor: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.05)',
+      '&:hover': {
+        transform: 'translateY(-8px)',
+        boxShadow: `0 12px 30px -10px rgba(0,0,0,0.3)`,
+        borderColor: 'primary.main',
+      }
+    }}>
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48, fontWeight: 'bold' }}>
+              {application.candidate_name[0]}
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                {application.candidate_name}
+              </Typography>
+              <Chip 
+                icon={config.icon}
+                label={config.label.toUpperCase()}
+                color={config.color}
+                size="small"
+                sx={{ height: 20, fontSize: '0.6rem', fontWeight: 900, mt: 0.5 }}
+              />
+            </Box>
+          </Box>
+          <Tooltip title="Eliminar Aplicación">
+            <IconButton size="small" onClick={() => onDelete(application.id)} sx={{ color: 'error.light', '&:hover': { bgcolor: 'rgba(244, 67, 54, 0.1)' } }}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Divider sx={{ my: 2, opacity: 0.05 }} />
+
+        <Stack spacing={1.5}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <CategoryIcon sx={{ fontSize: 18, color: 'primary.main', opacity: 0.7 }} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>{application.role}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <ApartmentIcon sx={{ fontSize: 18, color: 'primary.main', opacity: 0.7 }} />
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{getHotelName(application.hotel_id)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <HistoryIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+            <Typography variant="caption" color="text.secondary">
+              Recibida: {new Date(application.created_at).toLocaleDateString()}
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {application.status !== 'empleado_creado' && (
+            <>
+              <Button 
+                variant={application.status === 'pendiente' ? 'contained' : 'outlined'} 
+                onClick={() => onStatusChange(application.id, 'pendiente')}
+                size="small"
+                fullWidth={application.status === 'pendiente'}
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 'bold', flex: 1 }}
+              >
+                Pendiente
+              </Button>
+              <Button 
+                variant={application.status === 'completada' ? 'contained' : 'outlined'} 
+                onClick={() => onStatusChange(application.id, 'completada')}
+                size="small"
+                fullWidth={application.status === 'completada'}
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 'bold', flex: 1 }}
+              >
+                Lista
+              </Button>
+            </>
+          )}
+        </Box>
+
+        {application.status === 'completada' && (
+          <Button 
+            variant="contained" 
+            color="success" 
+            fullWidth
+            startIcon={<PersonAddIcon />}
+            onClick={() => onAddEmployee(application)} 
+            sx={{ 
+              mt: 1.5, borderRadius: 2, fontWeight: 'bold',
+              boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)'
+            }}
+          >
+            Dar de Alta como Empleado
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// --- REST OF THE IMPORTS FOR UI ---
+import { Card, CardContent } from '@mui/material';
 
 export default function ApplicationsPage() {
   const { applications, loading, updateApplicationStatus, deleteApplication, addApplication } = useApplications();
   const { hotels } = useHotels();
+  const { profile } = useAuth();
   const { employees, addEmployee } = useEmployees();
+
+  const isInspector = profile?.role === 'INSPECTOR';
+  const isAdmin = profile?.role === 'ADMIN';
 
   // State for Modals and Snackbar
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
@@ -110,28 +172,32 @@ export default function ApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [hotelFilter, setHotelFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreated, setShowCreated] = useState(false); // State for the new toggle
+  const [showCreated, setShowCreated] = useState(false);
+
+  // SEGURIDAD: Hoteles permitidos para este usuario
+  const allowedHotels = useMemo(() => {
+    if (isInspector && profile?.assigned_zone) {
+      return hotels.filter(h => h.zone === profile.assigned_zone);
+    }
+    return hotels;
+  }, [hotels, isInspector, profile]);
 
   const handleStatusChange = async (id: number, newStatus: Application['status']) => {
     try {
       await updateApplicationStatus(id, newStatus);
-      setSnackbar({ open: true, message: 'Estado de la aplicación actualizado', severity: 'success' });
+      setSnackbar({ open: true, message: 'Estado actualizado correctamente', severity: 'success' });
     } catch (error) {
       setSnackbar({ open: true, message: 'Error al actualizar el estado', severity: 'error' });
     }
-  };
-
-  const handleDelete = (id: number) => {
-    setConfirmDelete({ open: true, id });
   };
 
   const handleConfirmDelete = async () => {
     if (confirmDelete.id) {
       try {
         await deleteApplication(confirmDelete.id);
-        setSnackbar({ open: true, message: 'Aplicación eliminada correctamente', severity: 'success' });
+        setSnackbar({ open: true, message: 'Aplicación eliminada', severity: 'success' });
       } catch (error) {
-        setSnackbar({ open: true, message: 'Error al eliminar la aplicación', severity: 'error' });
+        setSnackbar({ open: true, message: 'Error al eliminar', severity: 'error' });
       }
     }
     setConfirmDelete({ open: false, id: null });
@@ -145,8 +211,8 @@ export default function ApplicationsPage() {
       role: application.role,
       isActive: true,
       isBlacklisted: false,
-      payrollType: 'timesheet', // Default value
-      employeeType: 'permanente', // Default value
+      payrollType: 'timesheet',
+      employeeType: 'permanente',
     });
     setIsEmployeeModalOpen(true);
   };
@@ -162,14 +228,6 @@ export default function ApplicationsPage() {
     setIsAppModalOpen(true);
   };
 
-  const handleCloseNewAppModal = () => {
-    setIsAppModalOpen(false);
-  };
-
-  const handleNewAppFormChange = (field: string, value: any) => {
-    setNewApplicationFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleSaveApplication = async () => {
     try {
       await addApplication(newApplicationFormData);
@@ -177,27 +235,12 @@ export default function ApplicationsPage() {
     } catch (error) {
       setSnackbar({ open: true, message: 'Error al crear la aplicación', severity: 'error' });
     }
-    handleCloseNewAppModal();
-  };
-
-  const handleEmployeeFormChange = (field: string, value: any) => {
-    setNewEmployeeFormData((prev: any) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setIsAppModalOpen(false);
   };
 
   const handleSaveEmployee = async () => {
     try {
-      await addEmployee({
-        name: newEmployeeFormData.name,
-        hotelId: newEmployeeFormData.hotelId,
-        role: newEmployeeFormData.role,
-        payrollType: newEmployeeFormData.payrollType,
-        employeeType: newEmployeeFormData.employeeType,
-        isActive: newEmployeeFormData.isActive,
-        isBlacklisted: newEmployeeFormData.isBlacklisted,
-      });
+      await addEmployee(newEmployeeFormData);
       if (currentCandidate?.id) {
         await updateApplicationStatus(currentCandidate.id, 'empleado_creado');
       }
@@ -205,227 +248,188 @@ export default function ApplicationsPage() {
     } catch (error) {
       setSnackbar({ open: true, message: 'Error al crear el empleado', severity: 'error' });
     }
-    handleCloseEmployeeModal();
+    setIsEmployeeModalOpen(false);
   };
 
   const getHotelName = (hotelId: string) => {
-    return hotels.find(h => h.id === hotelId)?.name || 'Hotel no encontrado';
+    return hotels.find(h => h.id === hotelId)?.name || 'Desconocido';
   };
-
-  const hotelsWithEmployees = useMemo(() => {
-    const employeeHotelIds = new Set(employees.map(emp => emp.hotelId));
-    return hotels.filter(hotel => employeeHotelIds.has(hotel.id));
-  }, [employees, hotels]);
-
-
 
   const filteredApplications = useMemo(() => {
     return applications
       .filter(app => {
-        // Hotel filter
-        if (hotelFilter !== 'all' && app.hotel_id !== hotelFilter) {
-          return false;
-        }
+        // SEGURIDAD: Solo ver aplicaciones de su zona
+        const hotel = hotels.find(h => h.id === app.hotel_id);
+        if (isInspector && hotel?.zone !== profile?.assigned_zone) return false;
+
+        if (hotelFilter !== 'all' && app.hotel_id !== hotelFilter) return false;
         
-        // Status and toggle filter
         if (statusFilter === 'all') {
           return app.status !== 'empleado_creado' || showCreated;
         }
         return app.status === statusFilter;
       })
       .filter(app => app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [applications, statusFilter, hotelFilter, searchTerm, showCreated]);
+  }, [applications, statusFilter, hotelFilter, searchTerm, showCreated, isInspector, profile, hotels]);
 
-  const pendingApplications = filteredApplications.filter(app => app.status === 'pendiente');
-  const completedApplications = filteredApplications.filter(app => app.status === 'completada' || app.status === 'empleado_creado');
+  const pendingApps = filteredApplications.filter(app => app.status === 'pendiente');
+  const completedApps = filteredApplications.filter(app => app.status === 'completada' || app.status === 'empleado_creado');
 
   return (
-    <Box>
-      <Toolbar />
-      <Box component="main" sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>Seguimiento de Aplicaciones</Typography>
-
-        {/* Filter Controls */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                label="Buscar por Nombre de Candidato"
-                variant="outlined"
-                size="small"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Estado</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Estado"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Todos (sin creados)</MenuItem>
-                  <MenuItem value="pendiente">Pendiente</MenuItem>
-                  <MenuItem value="completada">Completada</MenuItem>
-                  <MenuItem value="empleado_creado">Solo Empleados Creados</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Hotel</InputLabel>
-                <Select
-                  value={hotelFilter}
-                  label="Hotel"
-                  onChange={(e) => setHotelFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Todos los Hoteles</MenuItem>
-                  {hotels.map(hotel => (
-                    <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Button fullWidth variant="contained" onClick={handleOpenNewAppModal}>
-                Nueva Aplicación
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-        
-        {/* ... Rest of the component, modals will be at the end */}
-        
-        {/* Modal for creating application */}
-        <FormModal
-          open={isAppModalOpen}
-          onClose={handleCloseNewAppModal}
-          onSave={handleSaveApplication}
-          title="Crear Nueva Aplicación"
-        >
-          <ApplicationForm
-            formData={newApplicationFormData}
-            onFormChange={handleNewAppFormChange}
-            hotels={hotelsWithEmployees}
-            roles={EMPLOYEE_POSITIONS}
-          />
-        </FormModal>
-
-        {/* Pending Applications */}
-        <Box mb={4}>
-          <Typography variant="h5" gutterBottom>Pendientes ({pendingApplications.length})</Typography>
-          {loading ? (
-            <Typography>Cargando...</Typography>
-          ) : pendingApplications.length > 0 ? (
-            <Grid container spacing={3}>
-              {pendingApplications.map(app => (
-                <Grid item key={app.id} xs={12} sm={6} md={4}>
-                  <ApplicationCard 
-                    application={app} 
-                    onStatusChange={handleStatusChange} 
-                    onAddEmployee={handleOpenAddEmployeeModal} 
-                    onDelete={handleDelete}
-                    getHotelName={getHotelName} 
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Typography>No hay aplicaciones pendientes.</Typography>
-          )}
+    <Box component="main" sx={{ p: 2 }}>
+      {/* ENCABEZADO MODERNO */}
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, mb: 3, borderRadius: 3, 
+          background: 'linear-gradient(135deg, rgba(255, 87, 34, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+          border: '1px solid rgba(255, 87, 34, 0.1)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ backgroundColor: 'primary.main', p: 1, borderRadius: 2, display: 'flex', boxShadow: '0 4px 12px rgba(255, 87, 34, 0.3)' }}>
+            <PendingActionsIcon sx={{ color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.5px' }}>Aplicaciones</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+              Seguimiento de Candidatos en {isInspector ? `Zona ${profile?.assigned_zone}` : 'Todas las Zonas'}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* Completed Applications */}
-        <Box>
-          <Typography variant="h5" gutterBottom>Completadas ({completedApplications.length})</Typography>
-          {loading ? (
-            <Typography>Cargando...</Typography>
-          ) : completedApplications.length > 0 ? (
-            <Box sx={{ 
-              maxHeight: 600, 
-              overflowY: 'auto',
-              '&::-webkit-scrollbar': {
-                width: '8px',
-              },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: 'rgba(0,0,0,0.1)',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: '#FF5722',
-                borderRadius: '4px',
-                boxShadow: '0 0 6px #FF5722',
-              },
-            }}>
+        {isAdmin && (
+          <Button 
+            variant="contained" startIcon={<AddIcon />} 
+            onClick={handleOpenNewAppModal}
+            sx={{ 
+              borderRadius: 2, px: 3, fontWeight: 'bold',
+              background: 'linear-gradient(45deg, #FF5722 30%, #FF8A65 90%)',
+              boxShadow: '0 4px 14px rgba(255, 87, 34, 0.4)',
+            }}
+          >
+            Nueva Aplicación (Admin)
+          </Button>
+        )}
+      </Paper>
+
+      {/* FILTROS PREMIUM */}
+      <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField 
+              fullWidth placeholder="Buscar candidato..." variant="outlined" size="small" 
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} 
+              InputProps={{ 
+                startAdornment: <InputAdornment position="start"><SearchIcon color="primary" fontSize="small" /></InputAdornment>,
+                sx: { borderRadius: 2 }
+              }} 
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Estado</InputLabel>
+              <Select 
+                value={statusFilter} label="Estado" onChange={(e) => setStatusFilter(e.target.value)}
+                startAdornment={<InputAdornment position="start"><FilterListIcon color="primary" fontSize="small" /></InputAdornment>}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="all">Pendientes y Listas</MenuItem>
+                <MenuItem value="pendiente">Solo Pendientes</MenuItem>
+                <MenuItem value="completada">Listas para Alta</MenuItem>
+                <MenuItem value="empleado_creado">Candidatos Contratados</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Hotel</InputLabel>
+              <Select 
+                value={hotelFilter} label="Hotel" onChange={(e) => setHotelFilter(e.target.value)}
+                startAdornment={<InputAdornment position="start"><ApartmentIcon color="primary" fontSize="small" /></InputAdornment>}
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="all">Todos los Hoteles</MenuItem>
+                {allowedHotels.map(h => <MenuItem key={h.id} value={h.id}>{h.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <FormControlLabel
+              control={<Switch checked={showCreated} onChange={(e) => setShowCreated(e.target.checked)} size="small" />}
+              label={<Typography variant="caption" sx={{ fontWeight: 'bold' }}>VER CONTRATADOS</Typography>}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* LISTADO DE APLICACIONES */}
+      {loading ? (
+        <Box sx={{ textAlign: 'center', py: 10 }}><CircularProgress /></Box>
+      ) : (
+        <Stack spacing={5}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'warning.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PendingActionsIcon /> Pendientes ({pendingApps.length})
+            </Typography>
+            {pendingApps.length > 0 ? (
               <Grid container spacing={3}>
-                {completedApplications.map(app => (
+                {pendingApps.map(app => (
                   <Grid item key={app.id} xs={12} sm={6} md={4}>
-                    <ApplicationCard 
-                      application={app} 
-                      onStatusChange={handleStatusChange} 
-                      onAddEmployee={handleOpenAddEmployeeModal}
-                      onDelete={handleDelete}
-                      getHotelName={getHotelName} 
-                    />
+                    <ApplicationCard application={app} onStatusChange={handleStatusChange} onAddEmployee={handleOpenAddEmployeeModal} onDelete={(id: any) => setConfirmDelete({ open: true, id })} getHotelName={getHotelName} />
                   </Grid>
                 ))}
               </Grid>
-            </Box>
-          ) : (
-            <Typography>No hay aplicaciones completadas.</Typography>
-          )}
-        </Box>
+            ) : (
+              <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 3, opacity: 0.6 }}>
+                <Typography variant="body2">No hay aplicaciones pendientes de revisión.</Typography>
+              </Paper>
+            )}
+          </Box>
 
-        {/* Modal for adding employee */}
-        {currentCandidate && newEmployeeFormData && (
-          <FormModal
-            open={isEmployeeModalOpen}
-            onClose={handleCloseEmployeeModal}
-            onSave={handleSaveEmployee}
-            title={`Añadir Nuevo Empleado: ${currentCandidate.candidate_name}`}
-          >
-            <EmployeeForm
-              employeeData={newEmployeeFormData}
-              onFormChange={handleEmployeeFormChange}
-              hotels={hotels}
-              onToggleBlacklist={() => {}}
-            />
-          </FormModal>
-        )}
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, color: 'success.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CheckCircleIcon /> Listas y Contratadas ({completedApps.length})
+            </Typography>
+            {completedApps.length > 0 ? (
+              <Grid container spacing={3}>
+                {completedApps.map(app => (
+                  <Grid item key={app.id} xs={12} sm={6} md={4}>
+                    <ApplicationCard application={app} onStatusChange={handleStatusChange} onAddEmployee={handleOpenAddEmployeeModal} onDelete={(id: any) => setConfirmDelete({ open: true, id })} getHotelName={getHotelName} />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 3, opacity: 0.6 }}>
+                <Typography variant="body2">No hay aplicaciones completadas recientemente.</Typography>
+              </Paper>
+            )}
+          </Box>
+        </Stack>
+      )}
 
-        <Snackbar open={snackbar?.open} autoHideDuration={6000} onClose={() => setSnackbar(null)}>
-          <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity || 'success'} sx={{ width: '100%' }}>
-            {snackbar?.message}
-          </Alert>
-        </Snackbar>
+      {/* MODALS */}
+      <FormModal open={isAppModalOpen} onClose={() => setIsAppModalOpen(false)} onSave={handleSaveApplication} title="Nueva Aplicación de Candidato">
+        <ApplicationForm formData={newApplicationFormData} onFormChange={(f, v) => setNewApplicationFormData(prev => ({ ...prev, [f]: v }))} hotels={allowedHotels} roles={EMPLOYEE_POSITIONS} />
+      </FormModal>
 
-        <Dialog
-          open={confirmDelete.open}
-          onClose={() => setConfirmDelete({ open: false, id: null })}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">
-            {"¿Confirmar eliminación?"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              ¿Estás seguro de que quieres eliminar esta aplicación? Esta acción no se puede deshacer.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirmDelete({ open: false, id: null })}>Cancelar</Button>
-            <Button onClick={handleConfirmDelete} autoFocus color="error">
-              Eliminar
-            </Button>
-          </DialogActions>
-        </Dialog>
+      <FormModal open={isEmployeeModalOpen} onClose={handleCloseEmployeeModal} onSave={handleSaveEmployee} title={`Alta de Empleado: ${currentCandidate?.candidate_name}`}>
+        <EmployeeForm employeeData={newEmployeeFormData || {}} onFormChange={(f, v) => setNewEmployeeFormData((prev: any) => ({ ...prev, [f]: v }))} hotels={allowedHotels} onToggleBlacklist={() => {}} />
+      </FormModal>
 
-      </Box>
+      <Snackbar open={!!snackbar} autoHideDuration={4000} onClose={() => setSnackbar(null)} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{ mt: 7 }}>
+        <Alert severity={snackbar?.severity} variant="filled" sx={{ width: '100%' }}>{snackbar?.message}</Alert>
+      </Snackbar>
+
+      <Dialog open={confirmDelete.open} onClose={() => setConfirmDelete({ open: false, id: null })} PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>¿Confirmar eliminación?</DialogTitle>
+        <DialogContent><DialogContentText>Esta acción es permanente y eliminará el registro del candidato del sistema.</DialogContentText></DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setConfirmDelete({ open: false, id: null })} color="inherit">Cancelar</Button>
+          <Button onClick={handleConfirmDelete} variant="contained" color="error" sx={{ borderRadius: 2 }}>Eliminar permanentemente</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

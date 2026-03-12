@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { List, ListItem, ListItemText, FormControl, InputLabel, Select, MenuItem, Box, Typography } from '@mui/material';
 
 interface EmployeeListFilterableProps {

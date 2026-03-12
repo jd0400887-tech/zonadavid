@@ -1,8 +1,8 @@
 import { Box, Typography } from '@mui/material';
-import React from 'react';
+import { ReactNode } from 'react';
 
 interface EmptyStateProps {
-  icon: React.ReactElement;
+  icon: ReactNode;
   title: string;
   subtitle?: string;
 }
