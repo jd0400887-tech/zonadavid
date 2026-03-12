@@ -10,6 +10,7 @@ import ApartmentIcon from '@mui/icons-material/Apartment';
 import PeopleIcon from '@mui/icons-material/People';
 
 import { useHotels } from '../hooks/useHotels';
+import { useAuth } from '../hooks/useAuth';
 import type { Hotel } from '../types';
 import FormModal from '../components/form/FormModal';
 import HotelForm from '../components/hotels/HotelForm';
@@ -19,6 +20,7 @@ import BulkImportButton from '../components/common/BulkImportButton';
 
 export default function HotelsPage() {
   const { hotels, addHotel, updateHotel, deleteHotel, uploadHotelImage } = useHotels();
+  const { profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   
   const [showHotelsWithEmployees, setShowHotelsWithEmployees] = useState(() => {
@@ -33,10 +35,16 @@ export default function HotelsPage() {
     localStorage.setItem('showHotelsWithEmployeesFilter', JSON.stringify(showHotelsWithEmployees));
   }, [showHotelsWithEmployees]);
 
-  const filteredHotels = hotels.filter(hotel =>
-    hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+  const filteredHotels = hotels.filter(hotel => {
+    // Si es INSPECTOR, forzamos su zona. Si no tiene zona (fallback), le damos una por defecto para no ver todo.
+    if (profile?.role === 'INSPECTOR') {
+      const allowedZone = profile.assigned_zone || 'Centro';
+      if (hotel.zone !== allowedZone) return false;
+    }
+    
+    return hotel.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
     (!showHotelsWithEmployees || (hotel.totalEmployees && hotel.totalEmployees > 0))
-  );
+  });
 
   const handleOpenAddModal = () => {
     setCurrentHotel({ imageUrl: null });

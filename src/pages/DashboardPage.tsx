@@ -56,6 +56,17 @@ function DashboardPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [selectedZone, setSelectedZone] = useState<'Todas' | 'Centro' | 'Norte' | 'Noroeste'>('Todas');
+
+  // Inicializar zona según el perfil del usuario
+  useEffect(() => {
+    if (profile?.assigned_zone) {
+      setSelectedZone(profile.assigned_zone);
+    } else if (profile?.role === 'INSPECTOR') {
+      // Si es INSPECTOR pero no tiene zona en BD (usando fallback), 
+      // al menos inicializamos en una para no ver 'Todas' si no es admin
+      setSelectedZone('Centro'); 
+    }
+  }, [profile]);
   
   const { hotels } = useHotels();
   const { addRecord } = useAttendance({ start: null, end: null });
@@ -78,6 +89,7 @@ function DashboardPage() {
   const monthlyGrowthData = useMonthlyGrowthStats(filteredHotelIds);
 
   const isRecruiter = profile?.role === 'RECRUITER';
+  const isInspector = profile?.role === 'INSPECTOR';
   const isAdminOrCoord = profile?.role === 'ADMIN' || profile?.role === 'COORDINATOR';
 
   const handleGenerateWeeklyReport = () => {
@@ -185,6 +197,113 @@ function DashboardPage() {
 
   const hotelsWithLocation = filteredHotels.filter(h => h.latitude != null && h.longitude != null);
   const mapCenter: [number, number] = hotelsWithLocation.length > 0 ? [hotelsWithLocation[0].latitude!, hotelsWithLocation[0].longitude!] : [40.7128, -74.0060];
+
+  const renderInspectorDashboard = () => (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold', mb: 4 }}>
+        Panel de Inspección
+      </Typography>
+      
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={4}>
+          <StatCard 
+            title="Hoteles en Zona" 
+            value={stats.totalHotels} 
+            icon={<ApartmentIcon />} 
+            onClick={() => navigate('/hoteles')} 
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard 
+            title="Personal Activo" 
+            value={stats.activeEmployees} 
+            icon={<PeopleIcon />} 
+            onClick={() => navigate('/empleados')} 
+          />
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <StatCard 
+            title="Aplicaciones Pendientes" 
+            value={stats.pendingApplications} 
+            icon={<PendingActionsIcon />} 
+            onClick={() => navigate('/aplicaciones')} 
+          />
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, borderRadius: 2, height: '100%', backgroundColor: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              Acciones Rápidas
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Utiliza estos accesos directos para gestionar el personal y los hoteles asignados.
+            </Typography>
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              <Button 
+                variant="outlined" 
+                fullWidth 
+                onClick={() => navigate('/hoteles')} 
+                startIcon={<ApartmentIcon />}
+                sx={{ justifyContent: 'flex-start', py: 1.5 }}
+              >
+                Ver Mis Hoteles
+              </Button>
+              <Button 
+                variant="outlined" 
+                fullWidth 
+                onClick={() => navigate('/empleados')} 
+                startIcon={<PeopleIcon />}
+                sx={{ justifyContent: 'flex-start', py: 1.5 }}
+              >
+                Lista de Empleados
+              </Button>
+              <Button 
+                variant="outlined" 
+                fullWidth 
+                onClick={() => navigate('/aplicaciones')} 
+                startIcon={<PendingActionsIcon />}
+                sx={{ justifyContent: 'flex-start', py: 1.5 }}
+              >
+                Revisar Aplicaciones
+              </Button>
+              <Button 
+                variant="outlined" 
+                fullWidth 
+                onClick={() => navigate('/reporte-asistencia')} 
+                startIcon={<EventAvailableIcon />}
+                sx={{ justifyContent: 'flex-start', py: 1.5 }}
+              >
+                Reporte de Asistencia
+              </Button>
+            </Stack>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 0, borderRadius: 2, height: '100%', overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ p: 2, fontWeight: 'bold' }}>
+              Mapa de Hoteles Cercanos
+            </Typography>
+            <Box sx={{ height: '300px', width: '100%' }}>
+              <Suspense fallback={<CircularProgress />}>
+                <LazyMapContainer center={mapCenter} zoom={6} style={{ height: '100%', width: '100%' }}>
+                  <LazyTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  {hotelsWithLocation.map((hotel) => (
+                    <LazyMarker key={hotel.id} position={[hotel.latitude!, hotel.longitude!]}>
+                      <LazyPopup>
+                        <b>{hotel.name}</b><br />{hotel.address}
+                      </LazyPopup>
+                    </LazyMarker>
+                  ))}
+                </LazyMapContainer>
+              </Suspense>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Box>
+  );
 
   const renderAdminDashboard = () => (
     <>
@@ -324,6 +443,8 @@ function DashboardPage() {
             selectedZone={selectedZone} 
             onZoneChange={setSelectedZone} 
           />
+        ) : isInspector ? (
+          renderInspectorDashboard()
         ) : (
           renderAdminDashboard()
         )}

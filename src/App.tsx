@@ -25,7 +25,7 @@ function App() {
   const [forceShow, setForceShow] = useState(false);
 
   // Seleccionar tema basado en el rol
-  const theme = profile?.role === 'RECRUITER' ? lightTheme : darkTheme;
+  const theme = (profile?.role === 'RECRUITER' || profile?.role === 'INSPECTOR') ? lightTheme : darkTheme;
 
   // Seguridad extra: si en 5 segundos no ha cargado, forzamos mostrar la app
   useEffect(() => {

@@ -122,8 +122,13 @@ export default function UsersPage() {
               {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    {user.id}
-                    {user.role === 'ADMIN' && <Chip label="ADMIN" size="small" color="primary" sx={{ ml: 1 }} />}
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography variant="body2">
+                        {user.email || (user.role === 'INSPECTOR' ? `Inspector ${user.assigned_zone || 'Sin Zona'}` : 'Usuario en Sistema')}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">{user.id}</Typography>
+                      {user.role === 'ADMIN' && <Chip label="ADMIN" size="small" color="primary" sx={{ mt: 0.5, width: 'fit-content' }} />}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

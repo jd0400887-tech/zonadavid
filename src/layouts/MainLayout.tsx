@@ -47,8 +47,20 @@ export default function MainLayout() {
     if (profile?.role === 'ADMIN') return true; // Admin ve todo siempre
     if (item.text === 'Usuarios') return false; // Solo Admin ve Usuarios
     
+    const userPermissions = profile?.permissions || [];
+    
+    // Si es INSPECTOR y no tiene permisos definidos, le damos los básicos
+    if (profile?.role === 'INSPECTOR' && userPermissions.length === 0) {
+      return ['Dashboard', 'Hoteles', 'Empleados', 'Aplicaciones', 'Reporte Asistencia', 'Seguimiento Workrecord'].includes(item.text);
+    }
+    
+    // Si es RECRUITER y no tiene permisos definidos, le damos los suyos
+    if (profile?.role === 'RECRUITER' && userPermissions.length === 0) {
+      return ['Dashboard', 'Solicitudes', 'Aplicaciones'].includes(item.text);
+    }
+
     // El resto depende de los permisos marcados
-    return (profile?.permissions || []).includes(item.text);
+    return userPermissions.includes(item.text);
   });
 
   // State for Home Location Dialog

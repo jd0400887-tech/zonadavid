@@ -18,20 +18,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, email?: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        return { id: userId, email: '', role: 'RECRUITER', assigned_zone: null } as Profile;
+        console.error('Error al obtener perfil:', error.message);
+        throw error;
+      }
+
+      if (!data) {
+        // Si no existe el perfil, devolvemos uno temporal basado en la sesión
+        console.info('Perfil no encontrado en BD para el usuario:', userId, '. Usando perfil temporal.');
+        return { 
+          id: userId, 
+          email: email || '', 
+          role: 'INSPECTOR', 
+          assigned_zone: null,
+          permissions: [] 
+        } as Profile;
       }
       return data;
     } catch (err) {
-      return { id: userId, email: '', role: 'RECRUITER', assigned_zone: null } as Profile;
+      console.warn('Error recuperando perfil, usando fallback:', err);
+      return { id: userId, email: email || '', role: 'INSPECTOR', assigned_zone: null, permissions: [] } as Profile;
     }
   };
 
@@ -44,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setSession(newSession);
       if (newSession?.user) {
-        const userProfile = await fetchProfile(newSession.user.id);
+        const userProfile = await fetchProfile(newSession.user.id, newSession.user.email);
         if (isMounted) setProfile(userProfile);
       } else {
         if (isMounted) setProfile(null);

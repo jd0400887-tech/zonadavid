@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Button, ToggleButton, ToggleButtonGroup, CircularProgress, IconButton } from '@mui/material';
+import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Button, ToggleButton, ToggleButtonGroup, CircularProgress, IconButton, Snackbar, Alert } from '@mui/material';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
 import { useHotels } from '../hooks/useHotels';
@@ -44,10 +44,33 @@ export default function StaffingRequestsPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'archived'>('kanban');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<number | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'info' | 'warning' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   const isAdmin = profile?.role === 'ADMIN';
+  const isInspector = profile?.role === 'INSPECTOR';
+  const isRecruiter = profile?.role === 'RECRUITER';
+
+  const showMessage = (message: string, severity: 'success' | 'info' | 'warning' | 'error' = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   const handleOpenDialog = (request?: StaffingRequest) => {
+    // Restricción: Reclutamiento no puede crear nuevas
+    if (!request && isRecruiter) {
+      showMessage('Como reclutador, no tienes permisos para crear nuevas solicitudes.', 'warning');
+      return;
+    }
+    
+    // Restricción: Inspector solo puede editar si es Pendiente
+    if (request && isInspector && request.status !== 'Pendiente') {
+      showMessage('Como inspector, solo puedes editar solicitudes en estado "Pendiente".', 'warning');
+      return;
+    }
+
     setEditingRequest(request || null);
     setIsDialogOpen(true);
   };
@@ -58,10 +81,16 @@ export default function StaffingRequestsPage() {
   };
 
   const handleSubmit = async (formData: Omit<StaffingRequest, 'id' | 'created_at' | 'hotelName' | 'is_archived'>) => {
-    if (editingRequest) {
-      await updateRequest(editingRequest.id, formData);
-    } else {
-      await addRequest(formData);
+    try {
+      if (editingRequest) {
+        await updateRequest(editingRequest.id, formData);
+        showMessage('Solicitud actualizada correctamente', 'success');
+      } else {
+        await addRequest(formData);
+        showMessage('Nueva solicitud creada', 'success');
+      }
+    } catch (error) {
+      showMessage('Error al procesar la solicitud', 'error');
     }
   };
 
@@ -78,7 +107,12 @@ export default function StaffingRequestsPage() {
 
   const handleConfirmDelete = async () => {
     if (requestToDelete) {
-      await deleteRequest(requestToDelete);
+      try {
+        await deleteRequest(requestToDelete);
+        showMessage('Solicitud eliminada', 'success');
+      } catch (error) {
+        showMessage('Error al eliminar la solicitud', 'error');
+      }
     }
     setDeleteConfirmOpen(false);
     setRequestToDelete(null);
@@ -116,10 +150,42 @@ export default function StaffingRequestsPage() {
     const activeId = active.id;
     const overId = over.id;
     if (activeId === overId) return;
+
+    const request = activeRequests.find(r => r.id === activeId);
+    if (!request) return;
+
     const activeContainer = active.data.current.sortable.containerId;
-    const overContainer = over.data.current?.sortable?.containerId || over.id;
+    const overContainer = (over.data.current?.sortable?.containerId || over.id) as StaffingRequest['status'];
+
+    // Lógica de restricciones de movimiento
+    if (isInspector) {
+      // Inspector solo puede mover a Pendiente o Enviada a Reclutamiento
+      if (overContainer !== 'Pendiente' && overContainer !== 'Enviada a Reclutamiento') {
+        showMessage('Como inspector, solo puedes enviar solicitudes a Reclutamiento.', 'info');
+        return;
+      }
+      // Y solo puede moverlas si están en Pendiente
+      if (request.status !== 'Pendiente') {
+        showMessage('Esta solicitud ya está siendo gestionada por Reclutamiento.', 'warning');
+        return;
+      }
+    }
+
+    if (isRecruiter) {
+      // Reclutador no puede devolver a Pendiente
+      if (overContainer === 'Pendiente') {
+        showMessage('No puedes devolver una solicitud a estado Pendiente.', 'error');
+        return;
+      }
+      // Reclutador solo actúa si ya fue enviada
+      if (request.status === 'Pendiente') {
+        showMessage('Debes esperar a que el inspector envíe la solicitud a Reclutamiento.', 'info');
+        return;
+      }
+    }
+
     if (activeContainer !== overContainer) {
-      updateRequest(activeId, { status: overContainer as StaffingRequest['status'] });
+      updateRequest(activeId, { status: overContainer });
     }
   };
 
@@ -154,7 +220,11 @@ export default function StaffingRequestsPage() {
             <ToggleButton value="kanban"><ViewKanbanIcon /></ToggleButton>
             <ToggleButton value="archived"><ArchiveIcon /></ToggleButton>
           </ToggleButtonGroup>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>Nueva Solicitud</Button>
+          {!isRecruiter && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+              Nueva Solicitud
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -225,6 +295,23 @@ export default function StaffingRequestsPage() {
 
       <StaffingRequestDialog open={isDialogOpen} onClose={handleCloseDialog} onSubmit={handleSubmit} initialData={editingRequest} />
       <ConfirmationDialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleConfirmDelete} title="Confirmar Eliminación" message="¿Estás seguro de que quieres eliminar esta solicitud? Esta acción no se puede deshacer." />
+      
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ mt: 7 }} // Un poco de margen para que no tape el AppBar
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity} 
+          variant="filled"
+          sx={{ width: '100%', boxShadow: 3 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

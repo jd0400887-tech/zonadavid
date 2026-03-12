@@ -7,6 +7,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import { useEmployees } from '../hooks/useEmployees';
 import { useHotels } from '../hooks/useHotels';
+import { useAuth } from '../hooks/useAuth';
 import type { Employee, Hotel } from '../types';
 import FormModal from '../components/form/FormModal';
 import EmployeeForm from '../components/employees/EmployeeForm';
@@ -21,11 +22,18 @@ import BulkImportButton from '../components/common/BulkImportButton';
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee, toggleEmployeeBlacklist } = useEmployees();
   const { hotels } = useHotels();
+  const { profile } = useAuth();
   
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
-  const [zoneFilter, setZoneFilter] = useState('all');
+  
+  // Si es INSPECTOR, forzamos su zona. Si no tiene zona (fallback), le damos una por defecto para no ver 'all'
+  const initialZone = profile?.role === 'INSPECTOR' 
+    ? (profile.assigned_zone || 'Centro') 
+    : 'all';
+    
+  const [zoneFilter, setZoneFilter] = useState(initialZone);
   const [hotelFilter, setHotelFilter] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
 
@@ -34,6 +42,13 @@ export default function EmployeesPage() {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
+
+  // Efecto para asegurar que si el perfil cambia, la zona se mantenga filtrada
+  useEffect(() => {
+    if (profile?.role === 'INSPECTOR') {
+      setZoneFilter(profile.assigned_zone || 'Centro');
+    }
+  }, [profile]);
 
   const filteredEmployees = useMemo(() => {
     const documentationFilter = searchParams.get('documentation');
