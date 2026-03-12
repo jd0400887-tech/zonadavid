@@ -173,6 +173,7 @@ export default function MainLayout() {
   );
 
   const currentDate = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  const isLight = theme.palette.mode === 'light';
   
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -190,15 +191,16 @@ export default function MainLayout() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F1F5F9' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: theme.palette.background.default }}>
       <AppBar 
         position="fixed" 
         sx={{ 
           zIndex: (theme) => theme.zIndex.drawer - 1,
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          backgroundColor: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(30, 30, 30, 0.8)',
           backdropFilter: 'blur(12px)',
-          color: '#0F172A',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          color: isLight ? '#0F172A' : '#FFFFFF',
+          boxShadow: isLight ? '0 1px 3px rgba(0,0,0,0.1)' : '0 1px 10px rgba(0,0,0,0.5)',
+          borderBottom: `1px solid ${isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
           left: 0, width: '100%',
         }}
       >
@@ -207,15 +209,15 @@ export default function MainLayout() {
             <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 1 }}><MenuIcon /></IconButton>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main', lineHeight: 1.2 }}>{getGreeting()}</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>Sistema de Gestión DA</Typography>
+              <Typography variant="caption" sx={{ color: isLight ? 'text.secondary' : 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase' }}>Sistema de Gestión DA</Typography>
             </Box>
           </Box>
 
           <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="body2" sx={{ display: { xs: 'none', lg: 'block' }, fontWeight: 700, opacity: 0.7, textTransform: 'capitalize' }}>{currentDate}</Typography>
-            <Divider orientation="vertical" flexItem sx={{ height: 24, alignSelf: 'center', opacity: 0.1, display: { xs: 'none', md: 'block' } }} />
+            <Typography variant="body2" sx={{ display: { xs: 'none', lg: 'block' }, fontWeight: 700, opacity: 0.7, textTransform: 'capitalize', color: isLight ? 'inherit' : '#FFFFFF' }}>{currentDate}</Typography>
+            <Divider orientation="vertical" flexItem sx={{ height: 24, alignSelf: 'center', opacity: 0.1, display: { xs: 'none', md: 'block' }, bgcolor: isLight ? 'inherit' : 'rgba(255,255,255,0.2)' }} />
             
-            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ bgcolor: 'rgba(255, 87, 34, 0.05)', color: 'primary.main' }}>
+            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ bgcolor: isLight ? 'rgba(255, 87, 34, 0.05)' : 'rgba(255, 255, 255, 0.05)', color: 'primary.main' }}>
               <Badge badgeContent={unfulfilledRequestsCount} color="error" overlap="circular"><NotificationsIcon fontSize="small" /></Badge>
             </IconButton>
           </Stack>
