@@ -1,16 +1,27 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, InputLabel, Select, MenuItem, Button, ToggleButton, ToggleButtonGroup, CircularProgress, IconButton, Snackbar, Alert } from '@mui/material';
+import { 
+  Box, Typography, Paper, Grid, TextField, InputAdornment, FormControl, 
+  InputLabel, Select, MenuItem, Button, ToggleButton, ToggleButtonGroup, 
+  CircularProgress, IconButton, Snackbar, Alert, Stack, Divider, Tooltip
+} from '@mui/material';
 import { DndContext, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
-import { useHotels } from '../hooks/useHotels';
-import { useAuth } from '../hooks/useAuth';
-import type { StaffingRequest } from '../types';
-import KanbanColumn from '../components/staffing-requests/KanbanColumn';
+
+// Iconos
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import MapIcon from '@mui/icons-material/Map';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import CategoryIcon from '@mui/icons-material/Category';
+
+import { useStaffingRequestsContext } from '../contexts/StaffingRequestsContext';
+import { useHotels } from '../hooks/useHotels';
+import { useAuth } from '../hooks/useAuth';
+import type { StaffingRequest } from '../types';
+import KanbanColumn from '../components/staffing-requests/KanbanColumn';
 import StaffingRequestDialog from '../components/staffing-requests/StaffingRequestDialog';
 import ArchivedRequestsPage from './ArchivedRequestsPage';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
@@ -199,46 +210,134 @@ export default function StaffingRequestsPage() {
   }
 
   return (
-    <Box component="main" sx={{ p: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+    <Box component="main" sx={{ p: 2 }}>
+      {/* ENCABEZADO MODERNO */}
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          mb: 3, 
+          borderRadius: 3, 
+          background: 'linear-gradient(135deg, rgba(255, 87, 34, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+          border: '1px solid rgba(255, 87, 34, 0.1)',
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          flexWrap: 'wrap', 
+          gap: 2 
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h4">Gestión de Solicitudes</Typography>
-          <IconButton 
-            onClick={() => fetchRequests()} 
-            disabled={loading} 
-            color="primary"
-            sx={{ 
-              animation: loading ? 'spin 2s linear infinite' : 'none',
-              '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } }
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
+          <Box sx={{ 
+            backgroundColor: 'primary.main', 
+            p: 1, 
+            borderRadius: 2, 
+            display: 'flex', 
+            boxShadow: '0 4px 12px rgba(255, 87, 34, 0.3)' 
+          }}>
+            <FilterListIcon sx={{ color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.5px' }}>
+              Solicitudes
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
+              Gestión de personal y vacantes
+            </Typography>
+          </Box>
+          
+          <Tooltip title="Actualizar datos">
+            <IconButton 
+              onClick={() => fetchRequests()} 
+              disabled={loading} 
+              sx={{ 
+                ml: 1,
+                backgroundColor: 'rgba(255,255,255,0.05)',
+                '&:hover': { backgroundColor: 'rgba(255, 87, 34, 0.1)' },
+                animation: loading ? 'spin 2s linear infinite' : 'none',
+                '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } }
+              }}
+            >
+              <RefreshIcon fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewModeChange} size="small">
-            <ToggleButton value="kanban"><ViewKanbanIcon /></ToggleButton>
-            <ToggleButton value="archived"><ArchiveIcon /></ToggleButton>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <ToggleButtonGroup 
+            value={viewMode} 
+            exclusive 
+            onChange={handleViewModeChange} 
+            size="small"
+            sx={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2, p: 0.5 }}
+          >
+            <ToggleButton value="kanban" sx={{ border: 'none', borderRadius: '8px !important', px: 2 }}>
+              <ViewKanbanIcon sx={{ mr: 1, fontSize: 20 }} /> Kanban
+            </ToggleButton>
+            <ToggleButton value="archived" sx={{ border: 'none', borderRadius: '8px !important', px: 2 }}>
+              <ArchiveIcon sx={{ mr: 1, fontSize: 20 }} /> Histórico
+            </ToggleButton>
           </ToggleButtonGroup>
+
           {!isRecruiter && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+            <Button 
+              variant="contained" 
+              startIcon={<AddIcon />} 
+              onClick={() => handleOpenDialog()}
+              sx={{ 
+                borderRadius: 2, 
+                px: 3, 
+                py: 1,
+                fontWeight: 'bold',
+                boxShadow: '0 4px 14px 0 rgba(255, 87, 34, 0.39)',
+                background: 'linear-gradient(45deg, #FF5722 30%, #FF8A65 90%)',
+              }}
+            >
               Nueva Solicitud
             </Button>
           )}
-        </Box>
-      </Box>
+        </Stack>
+      </Paper>
 
       {viewMode === 'kanban' ? (
         <>
-          <Paper sx={{ p: 2, mb: 3 }}>
+          {/* BARRA DE FILTROS PREMIUM */}
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 2, 
+              mb: 4, 
+              borderRadius: 3, 
+              backgroundColor: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)'
+            }}
+          >
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={3}>
-                <TextField fullWidth label="Buscar por Cargo o Notas" variant="outlined" size="small" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }} />
+                <TextField 
+                  fullWidth 
+                  placeholder="Buscar cargo o notas..." 
+                  variant="outlined" 
+                  size="small" 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  InputProps={{ 
+                    startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" color="primary" /></InputAdornment>,
+                    sx: { borderRadius: 2 }
+                  }} 
+                />
               </Grid>
+              
               <Grid item xs={12} sm={4} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Filtrar por Zona</InputLabel>
-                  <Select value={zoneFilter} label="Filtrar por Zona" onChange={(e) => { setZoneFilter(e.target.value as any); setHotelFilter('all'); }}>
+                  <Select 
+                    value={zoneFilter} 
+                    label="Filtrar por Zona" 
+                    onChange={(e) => { setZoneFilter(e.target.value as any); setHotelFilter('all'); }}
+                    startAdornment={<InputAdornment position="start"><MapIcon fontSize="small" color="primary" /></InputAdornment>}
+                    sx={{ borderRadius: 2 }}
+                  >
                     <MenuItem value="Todas">Todas las Zonas</MenuItem>
                     <MenuItem value="Centro">Centro</MenuItem>
                     <MenuItem value="Norte">Norte</MenuItem>
@@ -246,10 +345,17 @@ export default function StaffingRequestsPage() {
                   </Select>
                 </FormControl>
               </Grid>
+
               <Grid item xs={12} sm={4} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Hotel</InputLabel>
-                  <Select value={hotelFilter} label="Hotel" onChange={(e) => setHotelFilter(e.target.value)}>
+                  <Select 
+                    value={hotelFilter} 
+                    label="Hotel" 
+                    onChange={(e) => setHotelFilter(e.target.value)}
+                    startAdornment={<InputAdornment position="start"><ApartmentIcon fontSize="small" color="primary" /></InputAdornment>}
+                    sx={{ borderRadius: 2 }}
+                  >
                     <MenuItem value="all">Todos los Hoteles</MenuItem>
                     {hotels.filter(h => zoneFilter === 'Todas' || h.zone === zoneFilter).map(hotel => (
                       <MenuItem key={hotel.id} value={hotel.id}>{hotel.name}</MenuItem>
@@ -257,11 +363,18 @@ export default function StaffingRequestsPage() {
                   </Select>
                 </FormControl>
               </Grid>
+
               <Grid item xs={12} sm={4} md={3}>
                 <FormControl fullWidth size="small">
                   <InputLabel>Tipo</InputLabel>
-                  <Select value={requestTypeFilter} label="Tipo" onChange={(e) => setRequestTypeFilter(e.target.value as any)}>
-                    <MenuItem value="all">Todos</MenuItem>
+                  <Select 
+                    value={requestTypeFilter} 
+                    label="Tipo" 
+                    onChange={(e) => setRequestTypeFilter(e.target.value as any)}
+                    startAdornment={<InputAdornment position="start"><CategoryIcon fontSize="small" color="primary" /></InputAdornment>}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    <MenuItem value="all">Todos los Tipos</MenuItem>
                     <MenuItem value="temporal">Temporal</MenuItem>
                     <MenuItem value="permanente">Permanente</MenuItem>
                   </Select>
@@ -273,7 +386,7 @@ export default function StaffingRequestsPage() {
           <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
             <Grid container spacing={2} sx={{ flexWrap: 'wrap' }}>
               {statusColumns.map(status => (
-                <Grid item key={status} xs={12} sm={6} md={4} lg={3} sx={{ flexGrow: (requestsByStatus[status]?.length || 0) > 0 ? 1 : 0.1, transition: 'flex-grow 0.3s ease-out' }}>
+                <Grid item key={status} xs={12} sm={6} md={4} lg={3} sx={{ flexGrow: (requestsByStatus[status]?.length || 0) > 0 ? 1 : 0.1, transition: 'all 0.3s ease-in-out' }}>
                   <KanbanColumn 
                     id={status} 
                     title={status} 

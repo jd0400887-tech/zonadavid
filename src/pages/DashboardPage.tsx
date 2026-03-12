@@ -1,5 +1,5 @@
 import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
-import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ToggleButton, ToggleButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material';
+import { Box, Toolbar, Button, Snackbar, Alert, CircularProgress, Typography, Grid, Paper, Stack, Fab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ToggleButton, ToggleButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Avatar } from '@mui/material';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
@@ -199,100 +199,141 @@ function DashboardPage() {
   const mapCenter: [number, number] = hotelsWithLocation.length > 0 ? [hotelsWithLocation[0].latitude!, hotelsWithLocation[0].longitude!] : [40.7128, -74.0060];
 
   const renderInspectorDashboard = () => (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold', mb: 4 }}>
-        Panel de Inspección
-      </Typography>
+    <Box sx={{ p: { xs: 1, md: 3 } }}>
+      {/* Cabecera de Bienvenida */}
+      <Box sx={{ mb: 5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main', letterSpacing: '-1px' }}>
+          Panel de Inspección
+        </Typography>
+        <Typography variant="body1" component="div" color="text.secondary" sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+          Control y gestión de la zona <Chip label={selectedZone} size="small" color="primary" sx={{ fontWeight: 'bold' }} />
+        </Typography>
+      </Box>
       
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Tarjetas de Estadísticas con Estilo */}
+      <Grid container spacing={3} sx={{ mb: 5 }}>
         <Grid item xs={12} sm={4}>
-          <StatCard 
-            title="Hoteles en Zona" 
-            value={stats.totalHotels} 
-            icon={<ApartmentIcon />} 
-            onClick={() => navigate('/hoteles')} 
-          />
+          <Paper 
+            onClick={() => navigate('/hoteles')}
+            sx={{ 
+              p: 3, borderRadius: 4, cursor: 'pointer',
+              background: 'linear-gradient(135deg, rgba(255, 87, 34, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
+              border: '1px solid rgba(255, 87, 34, 0.2)',
+              transition: 'all 0.3s ease',
+              '&:hover': { transform: 'translateY(-5px)', boxShadow: '0 8px 25px rgba(255, 87, 34, 0.2)' }
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: 'primary.main' }}>{stats.totalHotels}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Hoteles en Zona</Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56, boxShadow: '0 4px 12px rgba(255, 87, 34, 0.4)' }}>
+                <ApartmentIcon fontSize="large" />
+              </Avatar>
+            </Box>
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <StatCard 
-            title="Personal Activo" 
-            value={stats.activeEmployees} 
-            icon={<PeopleIcon />} 
-            onClick={() => navigate('/empleados')} 
-          />
+          <Paper 
+            onClick={() => navigate('/empleados')}
+            sx={{ 
+              p: 3, borderRadius: 4, cursor: 'pointer',
+              background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
+              border: '1px solid rgba(33, 150, 243, 0.2)',
+              transition: 'all 0.3s ease',
+              '&:hover': { transform: 'translateY(-5px)', boxShadow: '0 8px 25px rgba(33, 150, 243, 0.2)' }
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#2196F3' }}>{stats.activeEmployees}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Personal Activo</Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: '#2196F3', width: 56, height: 56, boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)' }}>
+                <PeopleIcon fontSize="large" />
+              </Avatar>
+            </Box>
+          </Paper>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <StatCard 
-            title="Aplicaciones Pendientes" 
-            value={stats.pendingApplications} 
-            icon={<PendingActionsIcon />} 
-            onClick={() => navigate('/aplicaciones')} 
-          />
+          <Paper 
+            onClick={() => navigate('/aplicaciones')}
+            sx={{ 
+              p: 3, borderRadius: 4, cursor: 'pointer',
+              background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
+              border: '1px solid rgba(76, 175, 80, 0.2)',
+              transition: 'all 0.3s ease',
+              '&:hover': { transform: 'translateY(-5px)', boxShadow: '0 8px 25px rgba(76, 175, 80, 0.2)' }
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 900, color: '#4CAF50' }}>{stats.pendingApplications}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Aplicaciones</Typography>
+              </Box>
+              <Avatar sx={{ bgcolor: '#4CAF50', width: 56, height: 56, boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)' }}>
+                <PendingActionsIcon fontSize="large" />
+              </Avatar>
+            </Box>
+          </Paper>
         </Grid>
       </Grid>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: 2, height: '100%', backgroundColor: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Acciones Rápidas
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Utiliza estos accesos directos para gestionar el personal y los hoteles asignados.
-            </Typography>
-            <Stack spacing={2} sx={{ mt: 2 }}>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                onClick={() => navigate('/hoteles')} 
-                startIcon={<ApartmentIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1.5 }}
+      <Grid container spacing={4}>
+        {/* Acciones Rápidas Modernas */}
+        <Grid item xs={12} md={5}>
+          <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, px: 1 }}>Acciones Rápidas</Typography>
+          <Stack spacing={2}>
+            {[
+              { label: 'Mis Hoteles', icon: <ApartmentIcon />, color: 'primary', path: '/hoteles', desc: 'Gestionar ubicaciones asignadas' },
+              { label: 'Lista de Empleados', icon: <PeopleIcon />, color: 'info', path: '/empleados', desc: 'Ver personal activo en zona' },
+              { label: 'Aplicaciones', icon: <PendingActionsIcon />, color: 'success', path: '/aplicaciones', desc: 'Revisar nuevos candidatos' },
+              { label: 'Reporte Asistencia', icon: <EventAvailableIcon />, color: 'secondary', path: '/reporte-asistencia', desc: 'Control de ingresos diarios' }
+            ].map((action) => (
+              <Button
+                key={action.label}
+                variant="outlined"
+                fullWidth
+                onClick={() => navigate(action.path)}
+                sx={{
+                  justifyContent: 'flex-start',
+                  p: 2, borderRadius: 3,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'primary.main', transform: 'scale(1.02)' },
+                  transition: 'all 0.2s'
+                }}
               >
-                Ver Mis Hoteles
+                <Avatar sx={{ bgcolor: `${action.color}.main`, mr: 2, width: 40, height: 40 }}>{action.icon}</Avatar>
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'text.primary', lineHeight: 1 }}>{action.label}</Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>{action.desc}</Typography>
+                </Box>
               </Button>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                onClick={() => navigate('/empleados')} 
-                startIcon={<PeopleIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1.5 }}
-              >
-                Lista de Empleados
-              </Button>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                onClick={() => navigate('/aplicaciones')} 
-                startIcon={<PendingActionsIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1.5 }}
-              >
-                Revisar Aplicaciones
-              </Button>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                onClick={() => navigate('/reporte-asistencia')} 
-                startIcon={<EventAvailableIcon />}
-                sx={{ justifyContent: 'flex-start', py: 1.5 }}
-              >
-                Reporte de Asistencia
-              </Button>
-            </Stack>
-          </Paper>
+            ))}
+          </Stack>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 0, borderRadius: 2, height: '100%', overflow: 'hidden' }}>
-            <Typography variant="h6" sx={{ p: 2, fontWeight: 'bold' }}>
-              Mapa de Hoteles Cercanos
-            </Typography>
-            <Box sx={{ height: '300px', width: '100%' }}>
-              <Suspense fallback={<CircularProgress />}>
+
+        {/* Mapa Premium */}
+        <Grid item xs={12} md={7}>
+          <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, px: 1 }}>Mapa de Operaciones</Typography>
+          <Paper sx={{ 
+            borderRadius: 4, overflow: 'hidden', height: '400px',
+            border: '1px solid rgba(255,255,255,0.05)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+          }}>
+            <Box sx={{ height: '100%', width: '100%' }}>
+              <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>}>
                 <LazyMapContainer center={mapCenter} zoom={6} style={{ height: '100%', width: '100%' }}>
                   <LazyTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   {hotelsWithLocation.map((hotel) => (
                     <LazyMarker key={hotel.id} position={[hotel.latitude!, hotel.longitude!]}>
                       <LazyPopup>
-                        <b>{hotel.name}</b><br />{hotel.address}
+                        <Box sx={{ p: 1 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{hotel.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">{hotel.address}</Typography>
+                        </Box>
                       </LazyPopup>
                     </LazyMarker>
                   ))}
@@ -449,7 +490,30 @@ function DashboardPage() {
           renderAdminDashboard()
         )}
       </Box>
-      <Fab color="primary" aria-label="registrar asistencia" sx={{ position: 'fixed', bottom: 32, right: 32, transition: 'box-shadow 0.3s ease-in-out', '&:hover': { boxShadow: `0 0 12px 3px #FF5722`, } }} onClick={handleCheckIn} disabled={isCheckingIn}>{isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon />}</Fab>
+      
+      {!isRecruiter && (
+        <Fab 
+          color="primary" 
+          aria-label="registrar asistencia" 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 32, 
+            right: 32, 
+            background: 'linear-gradient(45deg, #FF5722 30%, #FF8A65 90%)',
+            boxShadow: '0 4px 20px 0 rgba(255, 87, 34, 0.4)',
+            transition: 'all 0.3s ease-in-out', 
+            '&:hover': { 
+              boxShadow: '0 6px 25px 0 rgba(255, 87, 34, 0.6)',
+              transform: 'scale(1.1) rotate(5deg)'
+            } 
+          }} 
+          onClick={handleCheckIn} 
+          disabled={isCheckingIn}
+        >
+          {isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon sx={{ fontSize: 28 }} />}
+        </Fab>
+      )}
+      
       <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}><Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
     </>
   );

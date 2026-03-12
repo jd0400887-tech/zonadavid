@@ -8,6 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useHotels } from '../../hooks/useHotels';
 import type { StaffingRequest } from '../../types';
 
 interface RequestCardProps {
@@ -26,6 +27,12 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
     data: { request },
   });
 
+  const { hotels } = useHotels();
+
+  const hotelInfo = useMemo(() => {
+    return hotels.find(h => h.id === request.hotel_id);
+  }, [hotels, request.hotel_id]);
+
   // Lógica de Semáforo de 72 Horas
   const timeStats = useMemo(() => {
     const createdAt = new Date(request.created_at);
@@ -35,13 +42,20 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
     const progress = Math.min((diffInHours / limit) * 100, 100);
     
     let color: 'success' | 'warning' | 'error' = 'success';
-    if (diffInHours >= 48) color = 'error';
-    else if (diffInHours >= 24) color = 'warning';
+    let borderColor = '#4caf50'; // Verde por defecto
+
+    if (diffInHours >= 48) {
+      color = 'error';
+      borderColor = '#f44336'; // Rojo si > 48h
+    } else if (diffInHours >= 24) {
+      color = 'warning';
+      borderColor = '#ff9800'; // Naranja si > 24h
+    }
 
     const isOverdue = diffInHours > limit;
     const remainingHours = Math.max(limit - diffInHours, 0);
 
-    return { diffInHours, progress, color, isOverdue, remainingHours };
+    return { diffInHours, progress, color, borderColor, isOverdue, remainingHours };
   }, [request.created_at]);
 
   const style = {
@@ -67,18 +81,18 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
         backgroundColor: isLight ? '#FFFFFF' : 'rgba(30, 30, 30, 0.6)',
         backdropFilter: isLight ? 'none' : 'blur(10px)',
         border: 'none',
-        borderLeft: '4px solid #FF5722', // Borde naranja grueso siempre a la izquierda
+        borderLeft: `4px solid ${timeStats.borderColor}`, // Borde dinámico según urgencia
         borderRadius: '12px',
         color: isLight ? '#0F172A' : '#FFFFFF',
         transition: 'all 0.2s ease-in-out',
         boxShadow: isLight 
           ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' 
-          : `0 0 5px #FF5722`,
+          : `0 0 5px ${timeStats.borderColor}`,
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: isLight 
             ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' 
-            : `0 0 15px #FF5722`,
+            : `0 0 15px ${timeStats.borderColor}`,
           backgroundColor: isLight ? '#FFFFFF' : 'rgba(40, 40, 40, 0.8)',
         }
       }}
@@ -87,9 +101,25 @@ export default function RequestCard({ request, onEdit, onArchive, onDelete }: Re
         {/* CABECERA: ROL Y ACCIONES */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
           <Box sx={{ maxWidth: onDelete ? '65%' : '80%' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: '#FF5722', textTransform: 'uppercase', fontSize: '0.85rem' }}>
-              {request.role}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, color: 'primary.main', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                {request.role}
+              </Typography>
+              {hotelInfo?.zone && (
+                <Chip 
+                  label={hotelInfo.zone.toUpperCase()} 
+                  size="small" 
+                  sx={{ 
+                    height: 16, 
+                    fontSize: '0.6rem', 
+                    fontWeight: 'bold',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    color: isLight ? 'text.secondary' : 'rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(0,0,0,0.1)'
+                  }} 
+                />
+              )}
+            </Box>
             <Typography variant="body2" sx={{ color: isLight ? '#475569' : '#bdbdbd', fontWeight: 600, mt: 0.5, fontSize: '0.8rem' }}>
               {request.hotelName}
             </Typography>

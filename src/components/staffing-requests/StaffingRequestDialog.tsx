@@ -140,10 +140,21 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
 
   const availableStatuses = useMemo(() => {
     const allStatuses: StaffingRequest['status'][] = ['Pendiente', 'Enviada a Reclutamiento', 'En Proceso', 'Completada', 'Completada Parcialmente', 'Candidato No Presentado', 'Cancelada por Hotel', 'Vencida'];
-    if (isInspector) return ['Pendiente', 'Enviada a Reclutamiento'];
-    if (isRecruiter) return allStatuses.filter(s => s !== 'Pendiente');
-    return allStatuses;
-  }, [isInspector, isRecruiter]);
+    
+    let filtered = allStatuses;
+    if (isInspector) {
+      filtered = ['Pendiente', 'Enviada a Reclutamiento'];
+    } else if (isRecruiter) {
+      filtered = allStatuses.filter(s => s !== 'Pendiente');
+    }
+
+    // Asegurar que el estado actual siempre esté presente para evitar el error de MUI 'out-of-range'
+    if (formData.status && !filtered.includes(formData.status as any)) {
+      filtered = [formData.status as any, ...filtered];
+    }
+
+    return filtered;
+  }, [isInspector, isRecruiter, formData.status]);
 
   return (
     <Dialog 
@@ -422,6 +433,14 @@ export default function StaffingRequestDialog({ open, onClose, onSubmit, initial
                     size="small"
                     options={employees}
                     getOptionLabel={(option) => option.name}
+                    // Forzar el uso del ID como clave única para evitar errores con nombres duplicados
+                    renderOption={(props, option) => {
+                      return (
+                        <li {...props} key={option.id}>
+                          {option.name}
+                        </li>
+                      );
+                    }}
                     onChange={(_e, val) => setSelectedExistingEmployeeId(val ? val.id : '')}
                     renderInput={(params) => <TextField {...params} label="Buscar Empleado" />}
                   />

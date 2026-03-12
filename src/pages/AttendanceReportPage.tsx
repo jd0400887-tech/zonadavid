@@ -22,8 +22,30 @@ export default function AttendanceReportPage() {
   const [dateRange, setDateRange] = useState<DateRange>({ start: subDays(new Date(), 30), end: new Date() });
   const [selectedHotelId, setSelectedHotelId] = useState<string | undefined>();
 
-  const { session } = useAuth();
+  const { profile, session } = useAuth();
   const { filteredRecords, visitsByHotel, hotels, hotelsLoading, deleteRecord } = useAttendance(dateRange, selectedHotelId);
+
+  // Filtrar registros por zona si el usuario es INSPECTOR
+  const zoneFilteredRecords = useMemo(() => {
+    if (profile?.role === 'INSPECTOR' && profile.assigned_zone) {
+      return filteredRecords.filter(record => {
+        const hotel = hotels.find(h => h.id === record.hotelId);
+        return hotel?.zone === profile.assigned_zone;
+      });
+    }
+    return filteredRecords;
+  }, [filteredRecords, hotels, profile]);
+
+  // Filtrar el resumen de visitas por hotel para que coincida con la zona
+  const zoneFilteredVisitsByHotel = useMemo(() => {
+    if (profile?.role === 'INSPECTOR' && profile.assigned_zone) {
+      return visitsByHotel.filter(v => {
+        const hotel = hotels.find(h => h.id === v.hotelId);
+        return hotel?.zone === profile.assigned_zone;
+      });
+    }
+    return visitsByHotel;
+  }, [visitsByHotel, hotels, profile]);
 
   const homeLocation = useMemo(() => {
     const lat = session?.user?.user_metadata?.home_lat;
@@ -48,7 +70,7 @@ export default function AttendanceReportPage() {
   };
 
   const renderContent = () => {
-    if (filteredRecords.length === 0) {
+    if (zoneFilteredRecords.length === 0) {
       return (
         <EmptyState 
           icon={<AssessmentIcon />}
@@ -62,14 +84,14 @@ export default function AttendanceReportPage() {
       case 'report':
         return (
           <Box>
-            <AttendanceChart data={visitsByHotel} />
-            <AttendanceGroupedList groupedData={visitsByHotel} allRecords={filteredRecords} deleteRecord={deleteRecord} />
+            <AttendanceChart data={zoneFilteredVisitsByHotel} />
+            <AttendanceGroupedList groupedData={zoneFilteredVisitsByHotel} allRecords={zoneFilteredRecords} deleteRecord={deleteRecord} />
           </Box>
         );
       case 'calendar':
-        return <AttendanceCalendar records={filteredRecords} hotels={hotels} />;
+        return <AttendanceCalendar records={zoneFilteredRecords} hotels={hotels} />;
       case 'mileage':
-        return <MileageReport records={recordsWithHotels} homeLocation={homeLocation} />;
+        return <MileageReport records={recordsWithHotels.filter(r => zoneFilteredRecords.some(z => z.id === r.id))} homeLocation={homeLocation} />;
       default:
         return null;
     }
