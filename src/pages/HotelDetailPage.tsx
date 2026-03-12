@@ -1,12 +1,25 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
-import { Box, Typography, Toolbar, Paper, Grid, List, ListItem, ListItemText, Chip, IconButton, Snackbar, FormControlLabel, Switch } from '@mui/material';
+import { 
+  Box, Typography, Paper, Grid, List, ListItem, ListItemText, Chip, 
+  IconButton, Snackbar, FormControlLabel, Switch, Avatar, Stack, 
+  Divider, Button, Tooltip, CircularProgress, useTheme
+} from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PeopleIcon from '@mui/icons-material/People';
+import MapIcon from '@mui/icons-material/Map';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import BadgeIcon from '@mui/icons-material/Badge';
+
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useEmployees } from '../hooks/useEmployees';
 import type { Employee } from '../types';
 import L from 'leaflet';
 import { useHotels } from '../hooks/useHotels';
+import { useAuth } from '../hooks/useAuth';
 import TurnoverAnalysis from '../components/hotel/TurnoverAnalysis';
 
 // Leaflet icon fix
@@ -23,8 +36,14 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function HotelDetailPage() {
   const { hotelId } = useParams<{ hotelId: string }>();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isLight = theme.palette.mode === 'light';
+  
   const { hotels, loading } = useHotels();
   const { employees } = useEmployees();
+  const { profile } = useAuth();
+  
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showOnlyPermanent, setShowOnlyPermanent] = useState(false);
 
@@ -37,158 +56,213 @@ export default function HotelDetailPage() {
       });
     }
   };
+
   const assignedEmployees = employees.filter(emp => emp.hotelId === hotelId);
   
   const displayedEmployees = useMemo(() => {
     return assignedEmployees.filter(employee => {
-      if (showOnlyPermanent) {
-        return employee.employeeType === 'permanente';
-      }
-      return true; // If switch is off, show all
+      if (showOnlyPermanent) return employee.employeeType === 'permanente';
+      return true;
     });
   }, [assignedEmployees, showOnlyPermanent]);
 
-  const activeEmployees = displayedEmployees.filter(emp => emp.isActive && !emp.isBlacklisted).length;
-  const inactiveEmployees = displayedEmployees.filter(emp => !emp.isActive && !emp.isBlacklisted).length;
-  const blacklistedEmployees = displayedEmployees.filter(emp => emp.isBlacklisted).length;
+  const stats = useMemo(() => ({
+    total: assignedEmployees.length,
+    active: assignedEmployees.filter(emp => emp.isActive && !emp.isBlacklisted).length,
+    inactive: assignedEmployees.filter(emp => !emp.isActive && !emp.isBlacklisted).length,
+    blocked: assignedEmployees.filter(emp => emp.isBlacklisted).length
+  }), [assignedEmployees]);
 
-  if (loading) {
-    return (
-      <Box>
-        <Toolbar />
-        <Box component="main" sx={{ p: 3 }}>
-          <Typography variant="h4">Cargando hotel...</Typography>
-        </Box>
-      </Box>
-    );
-  }
-
-  if (!hotel) {
-    return (
-      <Box>
-        <Toolbar />
-        <Box component="main" sx={{ p: 3 }}>
-          <Typography variant="h4" color="error">Hotel no encontrado</Typography>
-        </Box>
-      </Box>
-    );
-  }
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><CircularProgress /></Box>;
+  if (!hotel) return <Box sx={{ p: 4, textAlign: 'center' }}><Typography variant="h5" color="error">Hotel no encontrado</Typography></Box>;
 
   const mapCenter: [number, number] | null = hotel.latitude ? [hotel.latitude, hotel.longitude!] : null;
 
   return (
-    <Box>
-      <Toolbar />
-      <Box component="main" sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>{hotel.name}</Typography>
-        
-        <Grid container spacing={3} columns={12} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6}>
-            <Paper sx={{ p: 2, height: '100%' }}>
-              {hotel.imageUrl && (
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-                  <img
-                    src={hotel.imageUrl}
-                    alt={`Imagen de ${hotel.name}`}
-                    style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px' }}
-                  />
-                </Box>
-              )}
-              <Typography variant="h6">Detalles</Typography>
-              <Typography variant="body1"><strong>Ciudad:</strong> {hotel.city}</Typography>
-              <Typography variant="body1"><strong>Dirección:</strong> {hotel.address}</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <Typography variant="body1" component="span" sx={{ mr: 1 }}>
-                  <strong>ID:</strong> <code>{hotel.id}</code>
-                </Typography>
-                <IconButton onClick={handleCopyId} size="small">
-                  <ContentCopyIcon fontSize="small" />
-                </IconButton>
-              </Box>
-              {hotel.latitude && (
-                <Typography variant="body1" sx={{ mt: 1 }}>
-                  <strong>Coordenadas:</strong> {hotel.latitude.toFixed(4)}, {hotel.longitude?.toFixed(4)}</Typography>
-              )}
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            {mapCenter ? (
-              <Box sx={{ height: 250, borderRadius: 1, overflow: 'hidden' }}>
-                <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Marker position={mapCenter}>
-                    <Popup>{hotel.name}</Popup>
-                  </Marker>
-                </MapContainer>
-              </Box>
-            ) : (
-              <Paper sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                <Typography color="text.secondary">Ubicación no disponible para este hotel.</Typography>
+    <Box sx={{ pb: 5 }}>
+      {/* HEADER / BANNER HERO */}
+      <Box sx={{ 
+        height: 220, 
+        width: '100%', 
+        position: 'relative', 
+        overflow: 'hidden',
+        background: hotel.imageUrl 
+          ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.8)), url(${hotel.imageUrl})`
+          : 'linear-gradient(45deg, #1a237e 30%, #FF5722 90%)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        display: 'flex',
+        alignItems: 'flex-end',
+        p: { xs: 2, md: 4 },
+        mb: 4
+      }}>
+        <Button 
+          startIcon={<ArrowBackIcon />} 
+          onClick={() => navigate('/hoteles')}
+          sx={{ position: 'absolute', top: 20, left: 20, color: 'white', bgcolor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(5px)', '&:hover': { bgcolor: 'rgba(0,0,0,0.5)' } }}
+        >
+          Volver
+        </Button>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, width: '100%' }}>
+          <Avatar 
+            variant="rounded" 
+            sx={{ width: 100, height: 100, bgcolor: 'primary.main', border: '4px solid rgba(255,255,255,0.2)', boxShadow: 10 }}
+          >
+            <ApartmentIcon sx={{ fontSize: 60 }} />
+          </Avatar>
+          <Box sx={{ color: 'white', flexGrow: 1 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+              <Chip label={hotel.zone} size="small" sx={{ bgcolor: 'primary.main', color: 'white', fontWeight: 'bold' }} />
+              <Chip label={hotel.city} size="small" variant="outlined" sx={{ color: 'white', borderColor: 'white' }} />
+            </Stack>
+            <Typography variant="h3" sx={{ fontWeight: 900, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+              {hotel.name}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, opacity: 0.8 }}>
+              <LocationOnIcon fontSize="small" />
+              <Typography variant="body1">{hotel.address}</Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box sx={{ px: { xs: 2, md: 4 } }}>
+        {/* TARJETAS DE ESTADÍSTICAS */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {[
+            { label: 'Total Personal', val: stats.total, color: 'primary.main', icon: <PeopleIcon /> },
+            { label: 'Activos', val: stats.active, color: 'success.main', icon: <TrendingUpIcon /> },
+            { label: 'Inactivos', val: stats.inactive, color: 'text.secondary', icon: <PeopleIcon /> },
+            { label: 'Restringidos', val: stats.blocked, color: 'error.main', icon: <BadgeIcon /> },
+          ].map((s) => (
+            <Grid item xs={6} md={3} key={s.label}>
+              <Paper sx={{ p: 2, borderRadius: 3, textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)' }}>
+                <Box sx={{ color: s.color, mb: 1, display: 'flex', justifyContent: 'center' }}>{s.icon}</Box>
+                <Typography variant="h4" sx={{ fontWeight: 900 }}>{s.val}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{s.label}</Typography>
               </Paper>
-            )}
-          </Grid>
+            </Grid>
+          ))}
         </Grid>
 
-        <Box sx={{ my: 3 }}>
-          <TurnoverAnalysis hotelId={hotel.id} />
-        </Box>
-
-        <Paper>
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="h6">
-              Empleados en este Hotel ({displayedEmployees.length})
-            </Typography>
-            <FormControlLabel
-              control={<Switch checked={showOnlyPermanent} onChange={(e) => setShowOnlyPermanent(e.target.checked)} />}
-              label="Mostrar solo permanentes"
-            />
-          </Box>
-          <Box sx={{ px: 2, pb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip label={`Activos: ${activeEmployees}`} color="success" />
-            <Chip label={`Inactivos: ${inactiveEmployees}`} color="default" />
-            <Chip label={`En Lista Negra: ${blacklistedEmployees}`} sx={{ bgcolor: 'black', color: 'white' }} />
-          </Box>
-          <List>
-            {displayedEmployees.map(employee => (
-              <ListItem key={employee.id} divider>
-                <ListItemText
-                  primary={
-                    <Box component="span" sx={{ display: 'flex', alignItems: 'center' }}>
-                      {employee.name}
-                      <Chip
-                        label={employee.isActive ? 'Activo' : 'Inactivo'}
-                        color={employee.isActive ? 'success' : 'error'}
-                        size="small"
-                        sx={{ ml: 2 }}
-                      />
-                      {employee.isBlacklisted && (
-                        <Chip
-                          label="En Lista Negra"
-                          color="default"
-                          size="small"
-                          sx={{ ml: 1, bgcolor: 'black', color: 'white' }}
-                        />
-                      )}
+        <Grid container spacing={4}>
+          {/* COLUMNA IZQUIERDA: INFO Y MAPA */}
+          <Grid item xs={12} lg={5}>
+            <Stack spacing={3}>
+              <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>Información Técnica</Typography>
+                <Stack spacing={2}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography color="text.secondary">ID del Sistema:</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', bgcolor: 'rgba(0,0,0,0.2)', px: 1, borderRadius: 1 }}>{hotel.id}</Typography>
+                      <IconButton onClick={handleCopyId} size="small" color="primary"><ContentCopyIcon fontSize="inherit" /></IconButton>
                     </Box>
-                  }
-                  secondary={`Nº: ${employee.employeeNumber} | Cargo: ${employee.role} | Nómina: ${employee.payrollType} | Tipo: ${employee.employeeType}`}
-                />
-              </ListItem>
-            ))}
-            {displayedEmployees.length === 0 && (
-               <ListItem>
-                <ListItemText primary="No hay empleados que coincidan con el filtro." />
-              </ListItem>
-            )}
-          </List>
-        </Paper>
+                  </Box>
+                  <Divider sx={{ opacity: 0.05 }} />
+                  {hotel.latitude && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography color="text.secondary">Coordenadas:</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{hotel.latitude.toFixed(4)}, {hotel.longitude?.toFixed(4)}</Typography>
+                    </Box>
+                  )}
+                </Stack>
+              </Paper>
+
+              <Paper sx={{ borderRadius: 3, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', height: 300 }}>
+                {mapCenter ? (
+                  <MapContainer center={mapCenter} zoom={15} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={mapCenter}>
+                      <Popup>{hotel.name}</Popup>
+                    </Marker>
+                  </MapContainer>
+                ) : (
+                  <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(0,0,0,0.1)' }}>
+                    <MapIcon sx={{ fontSize: 40, opacity: 0.2, mr: 1 }} />
+                    <Typography color="text.secondary">Mapa no disponible</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Stack>
+          </Grid>
+
+          {/* COLUMNA DERECHA: TURNOVER Y LISTA */}
+          <Grid item xs={12} lg={7}>
+            <Stack spacing={3}>
+              <Box>
+                <TurnoverAnalysis hotelId={hotel.id} />
+              </Box>
+
+              <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>Personal del Hotel</Typography>
+                  <FormControlLabel
+                    control={<Switch size="small" checked={showOnlyPermanent} onChange={(e) => setShowOnlyPermanent(e.target.checked)} />}
+                    label={<Typography variant="caption" sx={{ fontWeight: 'bold' }}>SÓLO PERMANENTES</Typography>}
+                  />
+                </Box>
+
+                <List sx={{ px: 0 }}>
+                  {displayedEmployees.map(employee => (
+                    <ListItem 
+                      key={employee.id} 
+                      divider 
+                      sx={{ 
+                        px: 1, 
+                        py: 2,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                        borderRadius: 2, mb: 1, border: '1px solid transparent'
+                      }}
+                    >
+                      <Avatar sx={{ bgcolor: 'primary.main', mr: 2, width: 40, height: 40, fontWeight: 'bold' }}>
+                        {employee.name[0]}
+                      </Avatar>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{employee.name}</Typography>
+                            <Chip 
+                              label={employee.isActive ? 'ACTIVO' : 'INACTIVO'} 
+                              size="small" 
+                              color={employee.isActive ? 'success' : 'default'}
+                              sx={{ height: 18, fontSize: '0.6rem', fontWeight: 900 }}
+                            />
+                            {employee.isBlacklisted && <Chip label="BLOQUEADO" size="small" color="error" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 900 }} />}
+                          </Box>
+                        }
+                        secondary={
+                          <Typography variant="caption" color="text.secondary">
+                            {employee.role} • {employee.payrollType.toUpperCase()} • ID: {employee.employeeNumber}
+                          </Typography>
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                  {displayedEmployees.length === 0 && (
+                    <Box sx={{ py: 4, textAlign: 'center', opacity: 0.5 }}>
+                      <PeopleIcon sx={{ fontSize: 40, mb: 1 }} />
+                      <Typography>No hay personal registrado</Typography>
+                    </Box>
+                  )}
+                </List>
+              </Paper>
+            </Stack>
+          </Grid>
+        </Grid>
       </Box>
+
       <Snackbar
         open={showCopySuccess}
         autoHideDuration={2000}
         onClose={() => setShowCopySuccess(false)}
-        message="ID copiado al portapapeles"
-      />
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Paper sx={{ bgcolor: 'success.main', color: 'white', px: 3, py: 1, borderRadius: 2 }}>
+          ID copiado al portapapeles
+        </Paper>
+      </Snackbar>
     </Box>
   );
 }
