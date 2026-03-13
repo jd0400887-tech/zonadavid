@@ -9,8 +9,6 @@ import {
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { startOfWeek, startOfMonth, endOfWeek, endOfMonth, subMonths, subWeeks } from 'date-fns';
 
 // Iconos
 import MyLocationIcon from '@mui/icons-material/MyLocation';
@@ -64,7 +62,10 @@ function DashboardPage() {
 
   const { hotels } = useHotels();
   const { addRecord } = useAttendance({ start: null, end: null });
-  const { stats: globalStats, loading: statsLoading } = useDashboardStats(selectedZone === 'Todas' ? undefined : selectedZone);
+  
+  // Memoize el filtro para evitar re-renderizados innecesarios del hook
+  const statsFilter = useMemo(() => ({ zone: selectedZone }), [selectedZone]);
+  const { stats: globalStats, loading: statsLoading } = useDashboardStats(statsFilter);
 
   // Cargar promedio de calidad
   useEffect(() => {
@@ -99,13 +100,12 @@ function DashboardPage() {
 
   const filteredHotels = hotels.filter(h => selectedZone === 'Todas' || h.zone === selectedZone);
   const hotelsWithLocation = filteredHotels.filter(h => h.latitude != null && h.longitude != null);
-  const mapCenter: [number, number] = [25.7617, -80.1918]; // Default center
+  const mapCenter: [number, number] = [25.7617, -80.1918];
 
   const handleCheckIn = async () => {
     setIsCheckingIn(true);
     try {
       if (!navigator.geolocation) throw new Error("Geolocalización no soportada");
-      
       navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
         const result = await addRecord(latitude, longitude);
@@ -121,15 +121,8 @@ function DashboardPage() {
     }
   };
 
-  const handleCloseSnackbar = () => setSnackbarInfo({ ...snackbarInfo, open: false });
-
   const renderInspectorDashboard = () => {
-    // Validación de seguridad para evitar errores mientras cargan las estadísticas
-    const safeStats = globalStats || {
-      totalHotels: 0,
-      activeEmployees: 0,
-      pendingApplications: 0
-    };
+    const safeStats = globalStats || { totalHotels: 0, activeEmployees: 0, pendingApplications: 0 };
 
     return (
       <Box sx={{ p: { xs: 1, md: 3 } }}>
@@ -243,7 +236,7 @@ function DashboardPage() {
           {isCheckingIn ? <CircularProgress color="inherit" size={24} /> : <MyLocationIcon sx={{ fontSize: 28 }} />}
         </Fab>
       )}
-      <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={handleCloseSnackbar}><Alert onClose={handleCloseSnackbar} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
+      <Snackbar open={snackbarInfo.open} autoHideDuration={6000} onClose={() => setSnackbarInfo({ ...snackbarInfo, open: false })}><Alert onClose={() => setSnackbarInfo({ ...snackbarInfo, open: false })} severity={snackbarInfo.severity} sx={{ width: '100%' }}>{snackbarInfo.message}</Alert></Snackbar>
     </>
   );
 }

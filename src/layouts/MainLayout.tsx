@@ -50,7 +50,9 @@ export default function MainLayout() {
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const { signOut, session, profile, updateUser } = useAuth();
-  const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats();
+  const { stats: dashboardStats } = useDashboardStats();
+  const unfulfilledRequestsCount = dashboardStats?.unfulfilledRequestsCount || 0;
+  const unfulfilledRequests = dashboardStats?.unfulfilledRequests || [];
 
   const handleDrawerToggle = () => setOpen(!open);
 
