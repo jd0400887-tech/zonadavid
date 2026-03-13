@@ -13,6 +13,7 @@ import StaffingRequestsPage from './pages/StaffingRequestsPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import ArchivedRequestsPage from './pages/ArchivedRequestsPage';
 import AdoptionTrackerPage from './pages/AdoptionTrackerPage'; // Import the new page
+import QAPage from './pages/QAPage';
 import CorporateReportPage from './pages/CorporateReportPage';
 import HistoricalReportPage from './pages/HistoricalReportPage';
 import LoginPage from './pages/LoginPage';
@@ -70,6 +71,7 @@ function App() {
               <Route path="informes" element={<InformesPage />} /> {/* Add the new route */}
               <Route path="solicitudes" element={<StaffingRequestsPage />} />
               <Route path="aplicaciones" element={<ApplicationsPage />} />
+              <Route path="calidad" element={<QAPage />} />
               <Route path="solicitudes-archivadas" element={<ArchivedRequestsPage />} />
               <Route path="seguimiento-workrecord" element={<AdoptionTrackerPage />} />
               <Route path="reporte-corporativo" element={<CorporateReportPage />} />

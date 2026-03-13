@@ -22,6 +22,7 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import HomeIcon from '@mui/icons-material/Home';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardStats } from '../hooks/useDashboardStats';
@@ -35,6 +36,7 @@ const allMenuItems = [
   { text: 'Hoteles', icon: <ApartmentIcon />, path: '/hoteles' },
   { text: 'Solicitudes', icon: <AssignmentIcon />, path: '/solicitudes' },
   { text: 'Aplicaciones', icon: <PlaylistAddCheckIcon />, path: '/aplicaciones' },
+  { text: 'Calidad QA', icon: <VerifiedUserIcon />, path: '/calidad' },
   { text: 'Reporte Asistencia', icon: <AssessmentIcon />, path: '/reporte-asistencia' },
   { text: 'Revisión de Nómina', icon: <FactCheckIcon />, path: '/revision-nomina' },
   { text: 'Seguimiento Workrecord', icon: <QueryStatsIcon />, path: '/seguimiento-workrecord' },
@@ -45,32 +47,33 @@ export default function MainLayout() {
   const location = useLocation();
   const theme = useTheme();
   
-  // 'open' controla el menú deslizante en todas las pantallas
   const [open, setOpen] = useState(false);
-  
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const { signOut, session, profile, updateUser } = useAuth();
   const { unfulfilledRequestsCount, unfulfilledRequests } = useDashboardStats();
 
-  const handleDrawerToggle = () => {
-    setOpen(!open);
-  };
+  const handleDrawerToggle = () => setOpen(!open);
 
   const handleNavigation = (path: string) => {
     navigate(path);
-    setOpen(false); // Cerramos el menú al elegir una opción
+    setOpen(false);
   };
 
   const menuItems = allMenuItems.filter(item => {
     if (profile?.role === 'ADMIN') return true;
     if (item.text === 'Usuarios') return false;
+    
     const userPermissions = profile?.permissions || [];
+    
+    // Si es INSPECTOR y no tiene permisos definidos, le damos los básicos (sin incluir Calidad QA automáticamente)
     if (profile?.role === 'INSPECTOR' && userPermissions.length === 0) {
       return ['Dashboard', 'Hoteles', 'Empleados', 'Aplicaciones', 'Reporte Asistencia', 'Seguimiento Workrecord'].includes(item.text);
     }
+    
     if (profile?.role === 'RECRUITER' && userPermissions.length === 0) {
       return ['Dashboard', 'Solicitudes', 'Aplicaciones'].includes(item.text);
     }
+    
     return userPermissions.includes(item.text);
   });
 
@@ -82,7 +85,6 @@ export default function MainLayout() {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0F172A' }}>
-      {/* HEADER INTERNO CON BOTÓN DE CIERRE */}
       <Box sx={{ 
         minHeight: 70, 
         display: 'flex', 
@@ -100,7 +102,6 @@ export default function MainLayout() {
 
       <Divider sx={{ bgcolor: 'rgba(255,255,255,0.05)', mb: 2 }} />
 
-      {/* PERFIL DE USUARIO */}
       <Box sx={{ px: 2, mb: 3 }}>
         <Paper sx={{ 
           p: 2, borderRadius: 3, 
@@ -126,7 +127,6 @@ export default function MainLayout() {
         </Paper>
       </Box>
 
-      {/* LISTA DE MÓDULOS */}
       <Box sx={{ flexGrow: 1, px: 1, overflowY: 'auto' }}>
         <List>
           {menuItems.map((item) => {
@@ -157,7 +157,6 @@ export default function MainLayout() {
 
       <Divider sx={{ bgcolor: 'rgba(255,255,255,0.05)', mt: 'auto' }} />
 
-      {/* BOTÓN CERRAR SESIÓN */}
       <List sx={{ px: 1, py: 2 }}>
         <ListItem disablePadding>
           <ListItemButton 
@@ -224,7 +223,6 @@ export default function MainLayout() {
         </Toolbar>
       </AppBar>
 
-      {/* Menú Lateral Deslizante (Oculto por defecto) */}
       <Drawer
         variant="temporary"
         open={open}
@@ -243,12 +241,10 @@ export default function MainLayout() {
         {drawerContent}
       </Drawer>
 
-      {/* Contenido Principal ocupa el 100% */}
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3 }, mt: 8, width: '100%' }}>
         <Outlet />
       </Box>
 
-      {/* Notificaciones */}
       <Popover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}

@@ -9,6 +9,7 @@ const ALL_MODULES = [
   'Hoteles',
   'Solicitudes',
   'Aplicaciones',
+  'Calidad QA',
   'Reporte Asistencia',
   'Revisión de Nómina',
   'Seguimiento Workrecord',
